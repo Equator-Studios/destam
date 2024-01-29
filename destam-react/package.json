@@ -1,0 +1,15 @@
+{
+  "name": "destam-react",
+  "version": "0.0.1",
+  "description": "React bindings for destam",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Maple Precision",
+  "license": "MIT",
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "destam": ">=0.0.1"
+  }
+}

@@ -1,0 +1,1062 @@
+import {expect} from 'chai';
+import OObject from '../Object';
+import {Insert} from '../Events';
+
+test("should be instanceof itself", () => {
+	let arr = OObject();
+
+	expect(arr).to.be.an.instanceOf(OObject);
+});
+
+test("object hasOwnProperty", () => {
+	let arr = OObject({
+		"hello": true
+	});
+
+	expect(arr.hasOwnProperty("hello")).to.equal(true);
+});
+
+test("object prototype", () => {
+	const cons = () => {
+		return Object.create(cons.prototype);
+	};
+
+	cons.prototype = Object.create(OObject.prototype);
+	cons.prototype.constructor = cons;
+
+	const obj = OObject(cons());
+	expect(obj).to.be.an.instanceOf(OObject);
+	expect(obj).to.be.an.instanceOf(cons);
+});
+
+test("reading keys", () => {
+	let object = OObject({ one: '1', two: '2', three: '3' });
+
+	expect (Object.keys(object)).to.have.members(['one', 'two', 'three']);
+	expect (object.two).to.equal('2');
+	expect (object.three).to.equal('3');
+});
+
+test("reading properties from an object observer", () => {
+	let object = OObject({ one: '1', two: '2', three: '3' });
+
+	expect (object.one).to.equal('1');
+	expect (object.two).to.equal('2');
+	expect (object.three).to.equal('3');
+});
+
+test("reading keys", () => {
+	let object = OObject({});
+	object.one = '1';
+	object.two = '2';
+	object.three = '3';
+
+	expect (Object.keys(object)).to.have.members(['one', 'two', 'three']);
+	expect (object.one).to.equal('1');
+	expect (object.two).to.equal('2');
+	expect (object.three).to.equal('3');
+});
+
+test("deleting keys", () => {
+	let object = OObject({ one: '1', two: '2', three: '3' });
+
+	expect (Object.keys(object)).to.have.members(['one', 'two', 'three']);
+	expect (object.one).to.equal('1');
+	expect (object.two).to.equal('2');
+	expect (object.three).to.equal('3');
+
+	delete object.one;
+	delete object.two;
+	delete object.three;
+
+	expect (Object.keys(object)).to.have.members([]);
+	expect (object.one).to.equal(undefined);
+	expect (object.two).to.equal(undefined);
+	expect (object.three).to.equal(undefined);
+});
+
+test("this keyword must be the value of the observer in a called function", () => {
+	let arr = OObject();
+
+	arr.call = function () {
+		expect (this).to.equal(arr);
+	};
+
+	arr.call();
+});
+
+test("this keyword must be the value of the observer in a called function in a prototype", () => {
+	let arr = OObject(Object.create({
+		call () {
+			expect (this).to.equal(arr);
+		}
+	}));
+
+	arr.call();
+});
+
+test("basic events", () => {
+	let object = OObject({});
+	const events = [];
+	object.observer.watch(event => {
+		events.push(event.value);
+	});
+
+	object.one = '1';
+	object.two = '2';
+	object.three = '3';
+
+	expect (Object.keys(object)).to.have.members(['one', 'two', 'three']);
+	expect (object.one).to.equal('1');
+	expect (object.two).to.equal('2');
+	expect (object.three).to.equal('3');
+	expect (events).to.deep.equal(['1', '2', '3']);
+});
+
+test("remove event before setting values", () => {
+	let object = OObject({});
+	const events = [];
+	let event = object.observer.watch(event => {
+		events.push(event.value);
+	});
+
+	event.remove();
+
+	object.one = '1';
+	object.two = '2';
+	object.three = '3';
+
+	expect (Object.keys(object)).to.have.members(['one', 'two', 'three']);
+	expect (object.one).to.equal('1');
+	expect (object.two).to.equal('2');
+	expect (object.three).to.equal('3');
+	expect (events).to.deep.equal([]);
+});
+
+test("remove after unlink", () => {
+	let object = OObject({});
+	const events = [];
+	let event = object.observer.watch(event => {
+		events.push(event.value);
+	});
+
+	let nested = OObject();
+	object.nested = nested;
+
+	let nestedEvent = nested.observer.watch(event => {
+		events.push(event.value);
+	});
+
+	nested.one = 1;
+	event.remove();
+	nested.two = 2;
+	nestedEvent.remove();
+	nested.three = 3;
+
+	expect (events).to.have.ordered.members([nested, 1, 1, 2]);
+});
+
+test("remove event after setting values", () => {
+	let object = OObject({});
+	const events = [];
+	let event = object.observer.watch(event => {
+		events.push(event.value);
+	});
+
+	object.one = '1';
+	object.two = '2';
+	object.three = '3';
+
+	event.remove();
+
+	object.one = '4';
+	object.two = '5';
+	object.three = '6';
+
+	expect (Object.keys(object)).to.have.members(['one', 'two', 'three']);
+	expect (object.one).to.equal('4');
+	expect (object.two).to.equal('5');
+	expect (object.three).to.equal('6');
+	expect (events).to.deep.equal(['1', '2', '3']);
+});
+
+test("reset keys", () => {
+	let object = OObject({});
+	const events = [];
+	object.observer.watch(event => {
+		events.push(event.value);
+	});
+
+	object.one = '1';
+	object.two = '2';
+	object.three = '3';
+
+	object.one = '4';
+	object.two = '5';
+	object.three = '6';
+
+	object.one = '1';
+	object.two = '2';
+	object.three = '3';
+
+	expect (Object.keys(object)).to.have.members(['one', 'two', 'three']);
+	expect (object.one).to.equal('1');
+	expect (object.two).to.equal('2');
+	expect (object.three).to.equal('3');
+	expect (events).to.deep.equal(['1', '2', '3', '4', '5', '6', '1', '2', '3']);
+});
+
+test("prototype not linking", () => {
+	let arr = OObject(Object.create({
+		value: 'not linked'
+	}));
+
+	let events = [];
+	arr.observer.watch (state => {
+		if (state instanceof Insert) {
+			events.push(state.value);
+		}
+	});
+
+	arr.value = 'linked';
+
+	expect(events).to.deep.equal(['linked']);
+});
+
+test("object pathing", () => {
+	let object = OObject({});
+
+	const paths = [];
+	object.observer.watch(event => {
+		paths.push(event.path());
+	});
+
+	object.one = '1';
+	object.two = '2';
+	object.three = '3';
+
+	expect(paths).to.deep.equal([['one'], ['two'], ['three']]);
+});
+
+test("shallow query with a path", () => {
+	let object = OObject({});
+	let object2 = OObject({});
+	let object3 = OObject({});
+
+	const paths = [];
+	object.observer.path('next').shallow(1).watch(event => {
+		paths.push(event.path());
+	});
+
+	object.next = object2;
+
+	object2.one = '1';
+	object2.two = '2';
+	object2.three = '3';
+
+	object2.next = object3;
+
+	object3.one = '1';
+	object3.two = '2';
+	object3.three = '3';
+
+	object.one = '1';
+	object.two = '2';
+	object.three = '3';
+
+	expect(paths).to.deep.equal([['next'], ['next', 'one'], ['next', 'two'], ['next', 'three'], ['next', 'next']]);
+});
+
+test("shallow query with a path and memo", () => {
+	let object = OObject({});
+	let object2 = OObject({});
+
+	const paths = [];
+	object.observer.path('next').memo().shallow().watch(event => {
+		paths.push(event.path());
+	});
+
+	object.next = object2;
+	object2.thing = 'thing';
+
+	expect(paths).to.deep.equal([['next']]);
+});
+
+test("shallow query with a path and memo predefine", () => {
+	let object = OObject({});
+	let object2 = OObject({});
+
+	object.next = object2;
+
+	const paths = [];
+	object.observer.path('next').memo().shallow().watch(event => {
+		paths.push(event.path());
+	});
+
+	object2.thing = 'thing';
+
+	expect(paths).to.deep.equal([]);
+});
+
+test("double path", () => {
+	let object = OObject({});
+	let object2 = OObject({});
+
+	const paths = [];
+	object.observer.path('next').path('thing').watch(event => {
+		paths.push(event.path());
+	});
+
+	object.next = object2;
+	object2.thing = 'thing';
+	object2.thing2 = 'thing';
+
+	expect(paths).to.deep.equal([['next'], ['next', 'thing']]);
+});
+
+test("double path and memo", () => {
+	let object = OObject({});
+	let object2 = OObject({});
+
+	const paths = [];
+	object.observer.path('next').memo().path('thing').watch(event => {
+		paths.push(event.path());
+	});
+
+	object.next = object2;
+	object2.thing = 'thing';
+	object2.thing2 = 'thing';
+
+	expect(paths).to.deep.equal([['next'], ['next', 'thing']]);
+});
+
+test("double path and memo predefine", () => {
+	let object = OObject({});
+	let object2 = OObject({});
+
+	object.next = object2;
+
+	const paths = [];
+	object.observer.path('next').memo().path('thing').watch(event => {
+		paths.push(event.path());
+	});
+
+	object2.thing = 'thing';
+	object2.thing2 = 'thing';
+
+	expect(paths).to.deep.equal([['next', 'thing']]);
+});
+
+test("try to query an object path that doesn't have a path", () => {
+	let object = OObject({});
+	let object2 = OObject({});
+
+	const paths = [];
+	object.observer.shallow().watch(event => {
+		paths.push(event.path());
+	});
+
+	object.next = object2;
+	object._hidden = 'hidden';
+
+	object2.one = '1';
+	object2.two = '2';
+	object2.three = '3';
+
+	expect(paths).to.deep.equal([['next']]);
+});
+
+test("test parent object getter", () => {
+	let object = OObject({});
+	let object2 = OObject({});
+
+	const paths = [];
+	object.observer.watch(event => {
+		paths.push(event.getParent());
+	});
+
+	object.next = object2;
+
+	object2.one = '1';
+	object.two = '2';
+	object2.three = '3';
+
+	expect(paths).to.have.ordered.members([object, object2, object, object2]);
+});
+
+test("exists promise on already existing object", async () => {
+	let object = OObject({});
+
+	object.hello = 'world';
+
+	const promise = object.observer.path("hello").defined();
+
+	await promise;
+});
+
+test("exists promise on not existing object", async () => {
+	let object = OObject({});
+
+	const promise = object.observer.path("hello").defined();
+
+	object.hello = 'world';
+
+	await promise;
+});
+
+test("exists promise on not existing object", async () => {
+	let object = OObject({});
+
+	const promise = object.observer.path("hello").defined(state => state === 'world');
+	let resolved = false;
+
+	promise.then(() => resolved = true);
+
+	object.hello = 'hello';
+	expect(resolved).to.equal(false);
+
+	object.hello = 'world';
+	expect(resolved).to.equal(false);
+});
+
+test("exists promise on not existing object", () => {
+	let object = OObject({});
+
+	let called = false;
+	object.observer.path("hello").defined().then(() => {
+		called = true;
+	});
+
+	expect(called).to.equal(false);
+});
+
+test("path to hidden", () => {
+	let object = OObject({});
+	let object2 = OObject({});
+
+	const paths = [];
+	object.observer.path('_hidden').watch(event => {
+		paths.push(event.path());
+	});
+
+	object._hidden = object2;
+	object.a = '1';
+	object.b = '2';
+	object.c = '3';
+
+	object2.a = '1';
+	object2.b = '2';
+	object2.c = '3';
+
+	expect(paths).to.deep.equal([['_hidden'], ['_hidden', 'a'], ['_hidden', 'b'], ['_hidden', 'c']]);
+});
+
+test("path to hidden with shallow", () => {
+	let object = OObject({});
+	let object2 = OObject({});
+
+	const paths = [];
+	object.observer.path('_hidden').shallow().watch(event => {
+		paths.push(event.path());
+	});
+
+	object._hidden = object2;
+	object.a = '1';
+	object.b = '2';
+	object.c = '3';
+
+	object2.a = '1';
+	object2.b = '2';
+	object2.c = '3';
+
+	expect(paths).to.deep.equal([['_hidden']]);
+});
+
+test("parent of synthetic modify", () => {
+	let object = OObject({
+		value: 'value'
+	});
+
+	expect (() => {
+		object.observer.path('value').watch(event => {
+			event.getParent();
+		}).call();
+	}).to.throw();
+});
+
+test("object relinking", () => {
+	let object = OObject();
+
+	let events = [];
+	object.observer.watch(event => {
+		events.push(event.path());
+	});
+
+
+	object.value = 'initialize';
+	object.value = OObject();
+	object.value.property = 'property';
+
+	expect(events).to.deep.equal([['value'], ['value'], ['value', 'property']]);
+});
+
+test("pathing for deleted objects", () => {
+	let object = OObject();
+
+	let events = [];
+	object.observer.watch(event => {
+		events.push(event.path());
+	});
+
+	object.value = 'initialize';
+
+	delete object.value;
+
+	expect(events).to.deep.equal([['value'], ['value']]);
+});
+
+test("parent for deleted objects", () => {
+	let object = OObject();
+
+	let events = [];
+	object.observer.watch(event => {
+		events.push(event.getParent());
+	});
+
+	object.value = 'initialize';
+	delete object.value;
+
+	expect(events).to.have.ordered.members([object, object]);
+});
+
+test("pathing for called event", () => {
+	let object = OObject();
+
+	expect(() => {
+		let events = [];
+		object.observer.watch(event => {
+			events.push(event.path());
+		}).call();
+	}).to.throw();
+});
+
+test("chained path", () => {
+	let object = OObject({
+		nested: OObject({})
+	});
+
+	let events = [];
+	object.observer.path('nested').path('value').watch(event => {
+		events.push(event.value);
+	});
+
+	object.nested.value = 'hello';
+
+	expect(events).to.deep.equal(['hello']);
+});
+
+test("chained path and ignore", () => {
+	let object = OObject({
+		nested: OObject({})
+	});
+
+	let events = [];
+	object.observer.path('nested').ignore('value').watch(event => {
+		events.push(event.value);
+	});
+
+	object.nested.value = 'hello';
+	object.nested.second = 'second';
+
+	expect(events).to.deep.equal(['second']);
+});
+
+test("parent changing value", () => {
+	let object = OObject({
+		nested: OObject({
+			nested: OObject({
+
+			})
+		})
+	});
+
+	let events = [];
+	object.observer.path(['nested', 'nested', 'value']).watch(event => {
+		events.push(event.value);
+	});
+
+	object.nested.nested.value = 'hello';
+	object.nested.dude = 'dude';
+	object.nested = 'changed';
+
+	expect(events).to.deep.equal(['hello', 'changed']);
+});
+
+test("circle network", () => {
+	let object = OObject({
+		nested: OObject({
+
+		})
+	});
+
+	let events = [];
+	object.observer.watch(event => {
+		events.push(event.path());
+	});
+
+	object.nested.changed = 'yes';
+	object.nested2 = object.nested;
+	object.nested = null;
+	object.nested2.changed = 'again';
+
+	expect(events).to.deep.equal([['nested', 'changed'], ['nested2'], ['nested'], ['nested2', 'changed']]);
+});
+
+test("usage of unlinked network", () => {
+	let object = OObject();
+	let object2 = OObject();
+
+	object.nested2 = object.nested;
+
+	let events = [];
+	object.observer.watch(event => {
+		events.push(event.path());
+	});
+
+	let events2 = [];
+	object2.observer.watch(event => {
+		events2.push(event.path());
+	});
+
+	object.other = object2;
+	object2.whatever = 'what';
+	object.other = null;
+	object2.whatever = 'else';
+
+	expect(events).to.deep.equal([['other'], ['other', 'whatever'], ['other']]);
+	expect(events2).to.deep.equal([['whatever'], ['whatever']]);
+});
+
+test("usage of unlinked network with a circle", () => {
+	let object = OObject();
+	let object2 = OObject({
+		circle: OObject()
+	});
+
+	object2.circle = object2;
+
+	object.nested2 = object.nested;
+
+	let events = [];
+	object.observer.watch(event => {
+		events.push(event.path(object));
+	});
+
+	let events2 = [];
+	object2.observer.watch(event => {
+		events2.push(event.path(object2));
+	});
+
+	object.other = object2;
+	object2.whatever = 'what';
+	object.other = null;
+	object2.whatever = 'else';
+
+	expect(events).to.deep.equal([['other'], ['other', 'whatever'], ['other']]);
+	expect(events2).to.deep.equal([['whatever'], ['whatever']]);
+});
+
+test("usage of unlinked network with a circle of parent", () => {
+	let object2 = OObject();
+	let object = OObject({
+		circle: OObject()
+	});
+
+	object.circle = object;
+
+	object.nested2 = object.nested;
+
+	let events = [];
+	object.observer.watch(event => {
+		events.push(event.path());
+	});
+
+	let events2 = [];
+	object2.observer.watch(event => {
+		events2.push(event.path());
+	});
+
+	object.other = object2;
+	object2.whatever = 'what';
+	object.other = null;
+	object2.whatever = 'else';
+
+	expect(events).to.deep.equal([['other'], ['other', 'whatever'], ['other']]);
+	expect(events2).to.deep.equal([['whatever'], ['whatever']]);
+});
+
+test("unlinking then relinking", () => {
+	let object = OObject();
+	let object2 = OObject();
+
+	object.nested = object2;
+	object2.thing = 'hello';
+	object.nested = null;
+	object.nested = object2;
+});
+
+test("nested events", () => {
+	let object = OObject();
+
+	object.observer.shallow().watch(event => {
+		event.value.thing = 'thing';
+	});
+
+	let events = [];
+	object.observer.watch(event => {
+		events.push(event.path());
+	});
+
+	object.thing = OObject();
+
+	expect(object.thing.thing).to.equal('thing');
+	expect(events).to.deep.equal([['thing'], ['thing', 'thing']]);
+});
+
+test("event masking pre", () => {
+	let object = OObject();
+
+	let watcher = object.observer.watch(event => {
+		watcher.remove();
+	});
+
+	let events = [];
+	object.observer.watch(event => {
+		events.push(event.path());
+	});
+
+	object.thing = OObject();
+
+	expect(events).to.deep.equal([['thing']]);
+});
+
+test("event masking post", () => {
+	let object = OObject();
+
+	let events = [];
+	object.observer.watch(event => {
+		events.push(event.path());
+	});
+
+	let watcher = object.observer.watch(event => {
+		watcher.remove();
+	});
+
+	object.thing = OObject();
+
+	expect(events).to.deep.equal([['thing']]);
+});
+
+test("nested events of parents", () => {
+	let object = OObject();
+
+	object.observer.shallow().watch(event => {
+		event.value.thing = 'thing';
+	});
+
+	let events = [];
+	object.observer.watch(event => {
+		events.push(event.getParent());
+	});
+
+	object.thing = OObject();
+
+	expect(events).to.have.ordered.members([object, object.thing]);
+});
+
+test("skip and path", () => {
+	let object = OObject();
+
+	object.one = OObject();
+	object.two = OObject();
+	object.three = OObject();
+
+	const events = [];
+	object.observer.skip().path('value').watch(event => {
+		events.push(event.path());
+	});
+
+
+	object.one.value = 'value';
+	object.one.other = 'value';
+	object.two.value = 'value';
+	object.two.other = 'value';
+	object.three.value = 'value';
+	object.three.other = 'value';
+
+	expect(events).to.deep.equal([['one', 'value'], ['two', 'value'], ['three', 'value']]);
+});
+
+test("register hidden then public", () => {
+	let object = OObject();
+
+	const events = [];
+	object.observer.watch(event => {
+		events.push(event.path());
+	});
+
+	object._hidden = OObject();
+	object._hidden.thing = 'thing';
+	object.public = object._hidden;
+	object.public.thing2 = 'thing2';
+
+	expect(events).to.deep.equal([['public'], ['public', 'thing2']]);
+});
+
+test("skip and path and shallow", () => {
+	let object = OObject();
+
+	object.one = OObject();
+	object.two = OObject();
+	object.three = OObject();
+
+	const events = [];
+	object.observer.skip().path('value').shallow().watch(event => {
+		events.push(event.path());
+	});
+
+	object.one.value = OObject();
+	object.one.value.nested = 'nested';
+	object.one.other = OObject();
+	object.one.other.nested = 'nested';
+	object.two.value = OObject();
+	object.two.value.nested = 'nested';
+	object.two.other = OObject();
+	object.two.other.nested = 'nested';
+	object.three.value = OObject();
+	object.three.value.nested = 'nested';
+	object.three.other = OObject();
+	object.three.other.nested = 'nested';
+
+	expect(events).to.deep.equal([['one', 'value'], ['two', 'value'], ['three', 'value']]);
+});
+
+test("shallow listener on observer mutating to null", () => {
+	let object = OObject();
+
+	let events = [];
+	object.observer.path("hello").shallow().watch(event => {
+		events.push(event.path());
+	});
+
+	object.hello = OObject();
+	object.hello.dude = 'dude';
+
+	object.hello = null;
+
+	expect(events).to.deep.equal([['hello'], ['hello']]);
+});
+
+test("observer map with object", () => {
+	const object = OObject();
+	const observer = object.observer.path("value").map(x => x * 2, x => x / 2);
+	const values = [];
+	observer.watch(state => {
+		values.push(observer.get());
+	});
+
+	observer.set(10);
+	expect(object.value).to.equal(5);
+
+	object.value = 50;
+	expect(values).to.deep.equal([10, 100]);
+});
+
+test ("multi path listen", () => {
+	const events = [];
+	const obj = OObject();
+
+	obj.observer.anyPath('hello', 'world', 'together').watch(thing => {
+		events.push(thing.value);
+	});
+
+	obj.hello = 1;
+	obj.world = 2;
+	obj.together = 3;
+	obj.hello = 4;
+
+	expect(events).to.deep.equal([1, 2, 3, 4]);
+});
+
+test ("multi path listen nested", () => {
+	const events = [];
+	const obj = OObject();
+	const obj2 = OObject();
+
+	obj.observer.anyPath('hello', 'world', 'together').watch(thing => {
+		events.push(thing.value);
+	});
+
+	obj.hello = 1;
+	obj.world = 2;
+	obj.together = 3;
+	obj.hello = obj2;
+	obj2.color = 'red';
+
+	expect(events).to.have.ordered.members([1, 2, 3, obj2, 'red']);
+});
+
+test ("multi path get and set", () => {
+	const obj = OObject();
+
+	let observer = obj.observer.anyPath('hello', 'world', 'together');
+
+	observer.set([1, 2, 3]);
+
+	expect(obj.hello).to.equal(1);
+	expect(obj.world).to.equal(2);
+	expect(obj.together).to.equal(3);
+
+	obj.hello = 4;
+
+	expect(observer.get()).to.deep.equal([4, 2, 3]);
+});
+
+test ("usable observer after watch", () => {
+	const obj = OObject();
+
+	let observer = obj.observer.watch(() => {
+
+	});
+
+	expect(() => observer.set("whatever")).to.throw();
+	expect(observer.get()).to.equal(obj);
+
+	const events = [];
+	observer.watch(event => {
+		events.push(event.value);
+	});
+
+	obj.one = 'one';
+	obj.two = 'two';
+	obj.three = 'three';
+
+	expect(events).to.deep.equal(['one', 'two', 'three']);
+});
+
+test ("event cleanup manager", () => {
+	const obj = OObject();
+
+	const watcher = obj.observer.watch(event => {
+	}).cleanup(() => {
+		delete obj.thing;
+	});
+
+	obj.thing = 'hello';
+	watcher.remove();
+
+	expect(Object.keys(obj)).to.deep.equal([]);
+});
+
+test ("event cleanup manager unregister event", () => {
+	const obj = OObject();
+
+	const events = [];
+	const watcher = obj.observer.watch(event => {
+		events.push(event.path());
+	}).cleanup(() => {
+		delete obj.thing;
+	});
+
+	obj.thing = 'hello';
+	watcher.remove();
+
+	obj.thing2 = 'thing2';
+
+	expect(events).to.deep.equal([['thing']]);
+});
+
+test ("event cleanup remove multiple times", () => {
+	const obj = OObject();
+
+	let cleanups = 0;
+	const watcher = obj.observer.watch(event => {}).cleanup(() => {
+		cleanups++;
+	});
+
+	watcher.remove();
+	watcher.remove();
+
+	expect(cleanups).to.equal(1);
+});
+
+test("object delete check during listener", () => {
+	const obj = OObject();
+
+	obj.thing = 'thing';
+
+	let has;
+	obj.observer.watch(state => {
+		has = 'thing' in obj;
+	});
+
+	delete obj.thing;
+
+	expect(has).to.equal(false);
+});
+
+test("object observer memo", () => {
+	const obj = OObject();
+
+	let obs = obj.observer.path('nested').memo();
+
+	let stuff = [];
+	let w = obs.watch(state => stuff.push(state.value));
+	let w2 = obs.watch(state => stuff.push(state.value));
+
+	const oldNested = obj.nested = OObject();
+
+	obj.whatever = 'whatever';
+
+	obj.nested.hello = 'hello';
+	w.remove();
+	obj.nested.hello = 'world';
+
+	obj.nested = OObject();
+
+	expect(obs.get()).to.equal(obj.nested);
+
+	w2.remove();
+
+	obj.nested.hello = "shouldn't see thins";
+
+	expect(stuff).to.deep.equal([oldNested, oldNested, 'hello', 'hello', 'world', obj.nested]);
+	expect(obs.get()).to.equal(obj.nested);
+});
+
+test("object setter", () => {
+	const obj = OObject();
+
+	obj.observer.path('value').set("value 1");
+	obj.observer.path('value2').set("value 2");
+	obj.observer.path('value3').set("value 3");
+
+	expect(obj.observer.path('value').get()).to.equal("value 1");
+	expect(obj.observer.path('value2').get()).to.equal("value 2");
+	expect(obj.observer.path('value3').get()).to.equal("value 3");
+});
+
+test("object setter events", () => {
+	const obj = OObject();
+
+	const vals = [];
+	obj.observer.watch(delta => {
+		vals.push(delta.value);
+	});
+
+	obj.observer.path('value').set("value 1");
+	obj.observer.path('value2').set("value 2");
+	obj.observer.path('value3').set("value 3");
+
+	expect(vals).to.deep.equal(['value 1', 'value 2', 'value 3']);
+});
