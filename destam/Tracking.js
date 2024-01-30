@@ -184,10 +184,6 @@ OArray.apply = (reg, value, link, events) => {
 	}
 };
 
-export const apply = (commit, args, network) => {
-
-};
-
 /**
  * Creates a map of observable nodes inside the network. This is used for
  * generating and applying deltas.
@@ -519,7 +515,5 @@ createClass(Tracker, {
 		assert(this.size === 0);
 	},
 }, createInstance(UUID.Map));
-
-
 
 export default Tracker;
