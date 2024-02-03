@@ -12,6 +12,10 @@
   },
   "author": "Maple Precision",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Equator-Studios/destam.git"
+  },
   "devDependencies": {
     "chai": "^5.0.0"
   }
