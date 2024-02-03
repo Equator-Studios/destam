@@ -195,19 +195,16 @@ const call = events => {
 	}
 };
 
-let override;
 export const callListeners = (events, args) => {
-	if (override) {
-		override(events, args);
-		return;
-	}
-
 	events.args_ = args;
 	call(events);
 	if (events.hasError_) throw events.error_;
 };
 
+let override;
 export const linkApply = (link, createDelta, events) => {
+	if (override) events = override;
+
 	for (let entry = link.next_; entry !== link; entry = entry.next_){
 		const downstream = createDelta();
 		const gov = entry.governor_;
@@ -228,16 +225,15 @@ export const linkApply = (link, createDelta, events) => {
 
 export const atomic = (cb, args) => {
 	let old = override;
-	let events = [];
-	override = (upstream) => events.push(...upstream);
+	let events = override = [];
 
 	try {
 		cb();
 	} finally {
 		events.args_ = args;
 		call(events);
-		if (events.hasError_) throw events.error_;
 
 		override = old;
+		if (events.hasError_) throw events.error_;
 	}
 };
