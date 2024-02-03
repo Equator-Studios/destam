@@ -1,7 +1,8 @@
 import {expect} from 'chai';
-import {Insert} from '../Events';
-import OObject from '../Object';
-import OArray, {positionIndex} from '../Array';
+import test from 'node:test';
+import {Insert} from '../Events.js';
+import OObject from '../Object.js';
+import OArray, {positionIndex} from '../Array.js';
 
 test("initialized with nested object", () => {
 	let nested = OObject({});

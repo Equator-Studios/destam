@@ -1,6 +1,7 @@
 import {expect} from 'chai';
-import OObject from '../Object';
-import {Insert, Modify, Delete} from '../Events';
+import test from 'node:test';
+import OObject from '../Object.js';
+import {Insert, Modify, Delete} from '../Events.js';
 
 test("event invert instanceof", () => {
 	expect(Insert().invert()).to.be.an.instanceOf(Delete);

@@ -1,6 +1,7 @@
 import {expect} from 'chai';
-import OArray, {indexPosition, positionIndex} from '../Array';
-import {Insert} from '../Events';
+import test from 'node:test';
+import OArray, {indexPosition, positionIndex} from '../Array.js';
+import {Insert} from '../Events.js';
 
 test("reverse and sort not accessible", () => {
 	let arr = OArray();

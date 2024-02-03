@@ -1,7 +1,8 @@
 import {expect} from 'chai';
-import OObject from '../Object';
-import OMap from '../UUIDMap';
-import UUID from '../UUID';
+import test from 'node:test';
+import OObject from '../Object.js';
+import OMap from '../UUIDMap.js';
+import UUID from '../UUID.js';
 
 test("omap instanceof", () => {
 	const map = OMap();

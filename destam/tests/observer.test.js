@@ -1,7 +1,8 @@
 import {expect} from 'chai';
-import Observer from '../Observer';
-import OObject from '../Object';
-import OArray from '../Array';
+import test from 'node:test';
+import Observer from '../Observer.js';
+import OObject from '../Object.js';
+import OArray from '../Array.js';
 
 test("Observer.mutable getter", () => {
 	const value = Observer.mutable('hello');

@@ -1,5 +1,6 @@
 import {expect} from 'chai';
-import UUID from '../UUID';
+import test from 'node:test';
+import UUID from '../UUID.js';
 
 test ("uuid instanceof", () => {
 	expect(UUID() instanceof UUID).to.equal(true);

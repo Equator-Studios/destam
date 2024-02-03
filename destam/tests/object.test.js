@@ -1,6 +1,7 @@
 import {expect} from 'chai';
-import OObject from '../Object';
-import {Insert} from '../Events';
+import test from 'node:test';
+import OObject from '../Object.js';
+import {Insert} from '../Events.js';
 
 test("should be instanceof itself", () => {
 	let arr = OObject();

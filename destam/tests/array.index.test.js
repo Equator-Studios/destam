@@ -1,5 +1,6 @@
 import {expect} from 'chai';
-import {indexCreate, indexLeading, indexCompare, indexAdd} from '../Array';
+import test from 'node:test';
+import {indexCreate, indexLeading, indexCompare, indexAdd} from '../Array.js';
 
 const signedLen = i => {
 	if (i < 0) i = -i;

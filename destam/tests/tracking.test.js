@@ -1,11 +1,12 @@
 import {expect} from 'chai';
-import OObject from '../Object';
-import OArray from '../Array';
-import OMap from '../UUIDMap';
-import UUID from '../UUID';
-import createNetwork from '../Tracking';
+import test from 'node:test';
+import OObject from '../Object.js';
+import OArray from '../Array.js';
+import OMap from '../UUIDMap.js';
+import UUID from '../UUID.js';
+import createNetwork from '../Tracking.js';
 
-import { clone } from './clone';
+import { clone } from './clone.js';
 
 [
 	(name, func) => test(name, async () => {

@@ -1,11 +1,12 @@
 import {expect} from 'chai';
-import OObject from '../Object';
-import OArray, {indexPosition} from '../Array';
-import UUID from '../UUID';
-import OMap from '../UUIDMap';
-import createNetwork from '../Tracking';
+import test from 'node:test';
+import OObject from '../Object.js';
+import OArray, {indexPosition} from '../Array.js';
+import UUID from '../UUID.js';
+import OMap from '../UUIDMap.js';
+import createNetwork from '../Tracking.js';
 
-import { stringify, parse, clone } from './clone';
+import { stringify, parse, clone } from './clone.js';
 
 [
 	(name, callback) => test("forward " + name, () => {

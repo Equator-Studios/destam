@@ -1,7 +1,0 @@
-{
-	"moduleFileExtensions": ["js"],
-	"transformIgnorePatterns": [],
-	"transform": {
-		"^.+\\.(js)$": "babel-jest"
-	}
-}
