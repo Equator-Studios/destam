@@ -1,5 +1,5 @@
 import {Synthetic} from './Events.js';
-import {isSymbol, isInstance, isEqual, createInstance, len, remove, push, callAll, createClass, assert, noop} from './util.js';
+import {isSymbol, isInstance, isEqual, createInstance, len, remove, push, callAll, createClass, assert, noop, call, callListeners} from './util.js';
 export const observerGetter = Symbol();
 
 const immutableSetter = () => {
@@ -841,9 +841,13 @@ Observer.mutable = value => {
 
 	return Observer(() => value, v => {
 		if (!isEqual(value, v)) {
-			callAll(listeners, [Synthetic(value, value = v)]);
+			if (listeners.event_) call(listeners);
+			listeners.event_ = [Synthetic(value, value = v)];
+			listeners.index_ = 0;
+			callListeners(listeners);
 		}
 	}, (listener) => {
+		listener = {listener_: listener};
 		push(listeners, listener);
 		return () => remove(listeners, listener);
 	});

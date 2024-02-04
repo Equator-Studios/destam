@@ -1,5 +1,5 @@
 import Observer, {baseGovernorParent} from './Observer.js';
-import {createInstance, push, len} from './util.js';
+import {createInstance, push, call, callListeners} from './util.js';
 
 const createLinkEntry = (link, parent, governor_, user) => {
 	const childNode_ = {};
@@ -180,26 +180,7 @@ export const createReg = (constructor, id) => {
 	return reg;
 };
 
-const call = events => {
-	for (events.index_ ||= 0; events.index_ < len(events);) {
-		const cur = events[events.index_++];
-
-		try {
-			cur.listener_(cur.current_, events.args_);
-		} catch (e) {
-			events.error_ = e;
-			events.hasError_ = 1;
-		}
-
-		cur.current_ = cur.events_ = 0;
-	}
-};
-
-export const callListeners = (events, args) => {
-	events.args_ = args;
-	call(events);
-	if (events.hasError_) throw events.error_;
-};
+export {call, callListeners};
 
 let override;
 export const linkApply = (link, createDelta, events) => {
