@@ -1,7 +1,7 @@
 {
   "name": "destam",
   "type": "module",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Short for Delta State Manager it's a state manager that works using commits on mutable state",
   "main": "index.js",
   "directories": {
