@@ -26,3 +26,6 @@ Deltas can be used to optimally:
 See [an introduciton](docs/intro.md)
 
 Documentation is split across multi-line comments in the source code for documentation about specific functions and functionality and the markdown files are for high level ideas. It's recommended to read everything under ./docs before starting an application with Destam.
+
+## Breaking changes
+Destam is still under development and breaking changes can and will be made as long as it stays version 0. Major breaking changes with widespread affects aren't expected though.
