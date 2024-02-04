@@ -22,5 +22,6 @@ jobs:
         node-version: '21.x'
         registry-url: https://registry.npmjs.org/
     - run: npm publish --access public
+      working-directory: ./destam
       env:
         NODE_AUTH_TOKEN: ${{secrets.NODE_AUTH_TOKEN}}
