@@ -68,7 +68,28 @@ stateTree.user = OObject({
 });
 ```
 
-The first listener will be notified of this change, however the second listener will continue to listen to the original user object and essentially follow it around. Both are valid ways of programing and both listener types will have their uses. Different governors can be chaned in abritrary ways so that listeners.
+The first listener will be notified of this change, however the second listener will continue to listen to the original user object and essentially follow it around. Both are valid ways of programing and both listener types will have their uses.
+
+## Chaining governors
+
+Governors can be changed to create more complex decision trees as to what a listener should attach to.
+
+```js
+const tree = OArray([
+	OObject({
+		state: 0
+	}),
+	OObject({
+		state: 1
+	}),
+]);
+
+tree.observer.skip().path('state').watch(() => {
+	console.log("One of the states has changed within the array");
+});
+```
+
+In the example, we use the `skip` governer to skip a decision and basically look at everything because we have the array. Then once we are looking at individual items in the array, we will then invoke the `tree` governor to look at specifically the `state`.
 
 ## List of governors
 - path
