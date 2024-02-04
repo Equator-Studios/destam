@@ -8,13 +8,13 @@ Destam introduces six important ideas:
  - Commits
  - Network
 
-## (Observer)[observer.md]
+## [Observer](observer.md)
 An observer is object that basically acts as a box around your state that may mutate at a later date. This box provides an interface to attach a listener to so that the rest of the application can react to these mutations. It also provides a miriad of functions to transform that state into something else. This is the most important concept in Destam and having a good understanding of Observers is key to making high performance well designed applications. Other state management libraries have similar concepts that are often called atoms.
 
 ## Observable
 An observable is a container of many different pieces of state that represent those pieces of state in unique ways for your application. Observables can be created that looks like a standard javascript object or array, but plug into the rest of the Destam infastructure. Most of your state will be stored in Observables. Observables can then be used to generate Observers that are used to listen for and react to state changes.
 
-## State tree
+## [State tree](state-tree.md)
 A state tree is a series of arbitrarily nested Observables. When Observables are combined into a state tree, they communicate with each other so that any listeners that maybe attached to your application can react to the state tree as a whole instead of for each observable individally.
 
 ## Deltas
@@ -23,5 +23,5 @@ Deltas represent a singular mutation to an Observer. They can be used to determi
 ## Commits
 A commit is simply an array of deltas. The deltas are position independent and represent an atomic change to your application using the least amount of deltas possible.
 
-## (Network)[network.md]
+## [Network](network.md)
 A Network represents a state tree in a way that is optimal for replaying deltas. Most simple applications won't need to touch networks, but they can be used to implement undo/redo or network transparency.
