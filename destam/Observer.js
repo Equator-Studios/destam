@@ -671,8 +671,8 @@ createClass(Observer, {
 					governor_: governor,
 				};
 
-				const obs = value?.[observerGetter];
-				if (info && obs) {
+				let obs;
+				if (info && (obs = value?.[observerGetter])) {
 					entry.user_ = governor(...info);
 					register(entry, obs);
 				}
@@ -839,20 +839,18 @@ Observer.NULL = Observer(() => null);
  *   constructed.
  */
 Observer.mutable = value => {
-	const listeners = [];
+	let listener = 0;
 
 	return Observer(() => value, v => {
-		if (!isEqual(value, v)) {
-			if (listeners.event_) call(listeners);
-			listeners.event_ = [Synthetic(value, value = v)];
-			listeners.index_ = 0;
-			callListeners(listeners);
+		if (listener) {
+			listener([Synthetic(value, value = v)]);
+		} else {
+			value = v;
 		}
-	}, (listener) => {
-		listener = {listener_: listener};
-		push(listeners, listener);
-		return () => remove(listeners, listener);
-	});
+	}, l => {
+		listener = l;
+		return () => listener = 0;
+	}).memo();
 };
 
 /**
