@@ -10,7 +10,8 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Equator-Studios/destam.git"
+    "url": "git+https://github.com/Equator-Studios/destam.git",
+    "directory": "destam-react"
   },
   "peerDependencies": {
     "react": ">=16.8.0",
