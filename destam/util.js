@@ -56,7 +56,7 @@ export const call = events => {
 			events.hasError_ = 1;
 		}
 
-		cur.current_ = cur.events_ = 0;
+		cur.current_ = cur.events_ = null;
 	}
 
 	events.event_ = 0;
