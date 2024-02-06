@@ -102,6 +102,76 @@ test("Observer.mutable event throw opposite", () => {
 	expect(events).to.deep.equal([0, 1]);
 });
 
+test("Observer.mutable memo event order", () => {
+	const value = Observer.mutable().memo();
+
+	const events = [];
+	value.watch(event => {
+		events.push(0);
+		value.set(1);
+	});
+
+	value.watch(event => {
+		events.push(1);
+	});
+
+	value.set(0);
+
+	expect(events).to.deep.equal([0, 1, 0, 1]);
+});
+
+test("Observer.mutable memo event opposite order", () => {
+	const value = Observer.mutable().memo();
+
+	const events = [];
+	value.watch(event => {
+		events.push(0);
+	});
+
+	value.watch(event => {
+		events.push(1);
+		value.set(1);
+	});
+
+	value.set(0);
+
+	expect(events).to.deep.equal([0, 1, 0, 1]);
+});
+
+test("Observer.mutable memo event throw", () => {
+	const value = Observer.mutable().memo();
+
+	const events = [];
+	value.watch(event => {
+		events.push(0);
+		throw new Error("oops");
+	});
+
+	value.watch(event => {
+		events.push(1);
+	});
+
+	expect(() => value.set(0)).to.throw();
+	expect(events).to.deep.equal([0, 1]);
+});
+
+test("Observer.mutable memo event throw opposite", () => {
+	const value = Observer.mutable().memo();
+
+	const events = [];
+	value.watch(event => {
+		events.push(0);
+	});
+
+	value.watch(event => {
+		events.push(1);
+		throw new Error("oops");
+	});
+
+	expect(() => value.set(0)).to.throw();
+	expect(events).to.deep.equal([0, 1]);
+});
+
 test ("observer def", () => {
 	const obj = OObject();
 
