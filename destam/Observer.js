@@ -640,12 +640,14 @@ createClass(Observer, {
 				if (!len(getAll())) {
 					value = this.get();
 
+					let currentEvents = 0;
 					parentListener = this.register_(commit => {
+						if (currentEvents) call(currentEvents);
 						value = this.get();
 
-						for (const entry of getAll()) {
-							entry.listener_(commit);
-						}
+						currentEvents = getAll();
+						currentEvents.event_ = commit;
+						callListeners(currentEvents);
 					}, (link, user, parent) => {
 						if (isSymbol(user)) {
 							for (const entry of getAll()) {
