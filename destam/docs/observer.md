@@ -33,7 +33,31 @@ observer.set("my watched state"); // prints "my wached state"
 Every observer provides a `watch()` function. These can be called with a single callback that will be invoked the moment state is changed.
 
 ## Transforms
-Observers may wrap a piece of state that is incopatible with another piece of code.
+Transforms are used to compute values on the fly from other observers. The tool observers provide is called `map` and the idea is that it maps values from the provided observer to whatever other values you need.
+
+```js
+const number = Observer.mutable(1);
+
+const doubled = number.map(x => x * 2);
+```
+
+In this example, we create a transform using the `map` function that will double the number that is set in the initial observer. However, `doubled` is now an immutable observer because it doesn't know how to transform the value back. `map` can be provided a second argument that does this.
+
+```js
+const doubled = number.map(x => x * 2, x => x / 2);
+```
+Now this transform will act almost as if we're working with any other regular observer where this transform value can be retrieved, it can be listened to for mutations, and it can be mutated.
+
+But, sometimes we want to depend on multiple values in order to compute something. Suppose we have two observers and we want to add them together.
+
+```js
+const a = Observer.mutable(1);
+const b = Observer.mutable(2);
+
+const sum = Observer.all([a, b]).map(([a, b]) => a * b);
+```
+
+The `Observer.all` function can be used to essentially combine observers into one. The observer will respond to any events that happen on any of the values it depends on. We then use the regular `map` funciton to take those two dependencies and add them together.
 
 ## Event filters
 
