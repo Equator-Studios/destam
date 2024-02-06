@@ -50,6 +50,46 @@ test("Observer.mutable event order", () => {
 	expect(events).to.deep.equal([0, 1, 0, 1]);
 });
 
+test("Observer.mutable event nested remove", () => {
+	const value = Observer.mutable();
+
+	const events = [];
+	const watcher = value.watch(event => {
+		events.push(0);
+	});
+
+	value.watch(event => {
+		events.push(1);
+		watcher.remove();
+	});
+
+	value.watch(event => {
+		events.push(2);
+	});
+
+	value.set(0);
+
+	expect(events).to.deep.equal([0, 1, 2]);
+});
+
+test("Observer.mutable event nested remove", () => {
+	const value = Observer.mutable();
+
+	const events = [];
+	value.watch(event => {
+		events.push(0);
+		watcher.remove();
+	});
+
+	const watcher = value.watch(event => {
+		events.push(1);
+	});
+
+	value.set(0);
+
+	expect(events).to.deep.equal([0, 1]);
+});
+
 test("Observer.mutable event opposite order", () => {
 	const value = Observer.mutable();
 
