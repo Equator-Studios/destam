@@ -599,7 +599,11 @@ import { clone } from './clone.js';
 	});
 
 	test('array prev', async (obj1, flush, obj2) => {
-		let arr = OArray(['hello']);
+		let arr = OArray([0, 0]);
+		// do weird things with the index
+		arr.splice(1, 0, 'hello');
+		arr.splice(0, 1);
+		arr.splice(1, 1);
 		obj1.arr = arr;
 		await flush();
 
