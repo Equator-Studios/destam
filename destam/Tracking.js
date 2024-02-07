@@ -179,8 +179,6 @@ OArray.apply = (reg, value, link, events) => {
 		Network.unlink(link);
 		init.splice(index, 1);
 		indexes.splice(index, 1);
-
-		link.deleteIndex = index;
 	}
 };
 
