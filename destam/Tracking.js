@@ -171,11 +171,11 @@ OArray.apply = (reg, value, link, events) => {
 		init.splice(index, 0, value.value);
 		Network.linkApply(link, () => cloneEvent(value), events);
 	} else if (isInstance(value, Modify)) {
-		Network.linkApply(link, () => cloneEvent(value, init[link.query_]), events);
+		Network.linkApply(link, () => cloneEvent(value, init[index]), events);
 		init[index] = value.value;
 		Network.relink(link, value.value?.[observerGetter]);
 	} else {
-		Network.linkApply(link, () => cloneEvent(value, init[link.query_]), events);
+		Network.linkApply(link, () => cloneEvent(value, init[index]), events);
 		Network.unlink(link);
 		init.splice(index, 1);
 		indexes.splice(index, 1);
