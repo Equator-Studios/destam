@@ -580,7 +580,40 @@ import { clone } from './clone.js';
 		await flush();
 		obj1.value = "dude";
 		obj1.value = "hello";
-	})
+	});
+
+	test('object prev', async (obj1, flush, obj2) => {
+		obj1.thing = 'hello';
+		await flush();
+
+		let prevs = [];
+		obj2.observer.watch(delta => prevs.push(delta.prev));
+
+		obj1.thing = 'world';
+		await flush();
+
+		delete obj1.thing;
+		await flush();
+
+		expect(prevs).to.deep.equal(['hello', 'world']);
+	});
+
+	test('array prev', async (obj1, flush, obj2) => {
+		let arr = OArray(['hello']);
+		obj1.arr = arr;
+		await flush();
+
+		let prevs = [];
+		obj2.observer.watch(delta => prevs.push(delta.prev));
+
+		arr[0] = 'world';
+		await flush();
+
+		arr.splice(0, 1);
+		await flush();
+
+		expect(prevs).to.deep.equal(['hello', 'world']);
+	});
 });
 
 test("track non observer", () => {
