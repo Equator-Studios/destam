@@ -618,26 +618,24 @@ createClass(Observer, {
 			});
 		};
 
-		const listeners = [];
-		const getAll = () => listeners.flat();
-
-		const create = local => Observer(
+		let len = 0;
+		const create = (local, getAll) => Observer(
 			() => {
-				if (len(getAll())) {
+				if (len) {
 					return value;
 				}
 
 				return this.get();
 			},
 			v => {
-				if (len(getAll()) && isEqual(v, value)) {
+				if (len && isEqual(v, value)) {
 					return;
 				}
 
 				this.set(v);
 			},
 			(listener, governor) => {
-				if (!len(getAll())) {
+				if (!len) {
 					value = this.get();
 
 					let currentEvents = 0;
@@ -645,7 +643,7 @@ createClass(Observer, {
 						if (currentEvents) call(currentEvents);
 						value = this.get();
 
-						currentEvents = getAll();
+						currentEvents = getAll().slice();
 						currentEvents.event_ = commit;
 						callListeners(currentEvents);
 					}, (link, user, parent) => {
@@ -678,12 +676,14 @@ createClass(Observer, {
 				}
 
 				push(local, entry);
+				len++;
 
 				return () => {
 					if (remove(local, entry)) {
+						len--;
 						entry.parent_?.();
 
-						if (!len(getAll())) {
+						if (!len) {
 							parentListener();
 							parentListener = value = info = 0;
 						}
@@ -692,14 +692,15 @@ createClass(Observer, {
 			},
 		);
 
+		const listeners = [];
 		if (!count) {
-			return create(listeners);
+			return create(listeners, () => listeners);
 		}
 
 		return Array.from(Array(count), () => {
 			const local = [];
 			push(listeners, local);
-			return create(local);
+			return create(local, () => listeners.flat());
 		});
 	},
 
