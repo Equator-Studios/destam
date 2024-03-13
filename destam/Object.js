@@ -52,6 +52,7 @@ const OObject = (init, id) => {
 		(_, prop) => {
 			const prev = init[prop];
 			let link = nodes.get(prop);
+			delete init[prop];
 
 			if (link) {
 				let events;
@@ -59,12 +60,10 @@ const OObject = (init, id) => {
 
 				Network.unlink(link);
 				nodes.delete(prop);
-				delete init[prop];
 
 				Network.callListeners(events);
-			} else {
-				delete init[prop];
 			}
+
 			return true;
 		},
 		Object, OObject
