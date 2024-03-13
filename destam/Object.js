@@ -51,9 +51,9 @@ const OObject = (init, id) => {
 		},
 		(_, prop) => {
 			const prev = init[prop];
-			let link = nodes.get(prop);
 			delete init[prop];
 
+			const link = nodes.get(prop);
 			if (link) {
 				let events;
 				Network.linkApply(link, () => Delete(prev, undefined, prop, reg.id), events = []);
