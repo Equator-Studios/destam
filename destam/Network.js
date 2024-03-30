@@ -87,10 +87,10 @@ export const link = (link, observer, insert) => {
 	link.observer_ = observer;
 
 	insert = insert ?? link.reg_;
-	link.linkPrev_ = insert;
-	link.linkNext_ = insert.linkNext_;
-	link.linkNext_.linkPrev_ = link;
-	insert.linkNext_ = link;
+	link.linkNext_ = insert;
+	link.linkPrev_ = insert.linkPrev_;
+	link.linkPrev_.linkNext_ = link;
+	insert.linkPrev_ = link;
 
 	link.next_ = link.prev_ = link;
 

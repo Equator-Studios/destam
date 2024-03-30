@@ -167,7 +167,7 @@ const splice = (reg, start, count, arr) => {
 		const significant = 31 - Math.clz32(insertCount);
 		d += entropy + ((1 << significant) === insertCount ? significant : significant + 1);
 
-		let link = indexes[start + count - 1];
+		let insert = indexes[start + count];
 		let error = 0;
 		for (let i = count; i < addCount; i++) {
 			const num = Math.floor(Math.random() * (1 << entropy));
@@ -175,7 +175,7 @@ const splice = (reg, start, count, arr) => {
 			error = (1 << entropy) - num;
 
 			const value = arr[i];
-			link = Network.link({reg_: reg, query_: prev}, value?.[observerGetter], link);
+			const link = Network.link({reg_: reg, query_: prev}, value?.[observerGetter], insert);
 
 			Network.linkApply(link, () => Insert(undefined, value, prev, reg.id), events);
 			links[i - count] = link;
