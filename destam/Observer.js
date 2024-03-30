@@ -840,18 +840,20 @@ Observer.NULL = Observer(() => null);
  *   constructed.
  */
 Observer.mutable = value => {
-	let listener = 0;
+	const listeners = [];
+	let currentEvents = 0;
 
 	return Observer(() => value, v => {
-		if (listener) {
-			listener([Synthetic(value, value = v)]);
-		} else {
-			value = v;
-		}
+		if (isEqual(value, v)) return;
+
+		if (currentEvents) call(currentEvents);
+		currentEvents = listeners.map(e => ({listener_: e}));
+		currentEvents.event_ = [Synthetic(value, value = v)];
+		callListeners(currentEvents);
 	}, l => {
-		listener = l;
-		return () => listener = 0;
-	}).memo();
+		listeners.push(l);
+		return () => remove(listeners, l);
+	});
 };
 
 /**
