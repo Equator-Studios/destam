@@ -88,6 +88,13 @@ const setPath = (obs, path, value) => {
 	}
 };
 
+const registerMemo = (entry, obs, info) => {
+	entry.parent_?.();
+	entry.parent_ = obs?.register_(entry.listener_, entry.governor_, {
+		link_: info[0], user_: entry.user_, parent_: info[2],
+	});
+};
+
 export const shallowListener = (obs, listener) => {
 	return obs.register_(listener, (child, info) => isSymbol(info));
 };
@@ -611,13 +618,6 @@ createClass(Observer, {
 		let value;
 		let info;
 
-		const register = (entry, obs) => {
-			entry.parent_?.();
-			entry.parent_ = obs?.register_(entry.listener_, entry.governor_, {
-				link_: info[0], user_: entry.user_, parent_: info[2],
-			});
-		};
-
 		let len = 0;
 		const create = (local, getAll) => Observer(
 			() => {
@@ -657,7 +657,7 @@ createClass(Observer, {
 
 						const obs = link.reg_.value?.[observerGetter];
 						for (const entry of getAll()) {
-							register(entry, obs);
+							registerMemo(entry, obs, info);
 						};
 
 						return 0;
@@ -672,7 +672,7 @@ createClass(Observer, {
 				let obs;
 				if (info && (obs = value?.[observerGetter])) {
 					entry.user_ = governor(...info);
-					register(entry, obs);
+					registerMemo(entry, obs, info);
 				}
 
 				push(local, entry);
