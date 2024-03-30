@@ -167,7 +167,7 @@ const splice = (reg, start, count, arr) => {
 		const significant = 31 - Math.clz32(insertCount);
 		d += entropy + ((1 << significant) === insertCount ? significant : significant + 1);
 
-		let link = indexes[start + count];
+		let link = indexes[start + count - 1];
 		let error = 0;
 		for (let i = count; i < addCount; i++) {
 			const num = Math.floor(Math.random() * (1 << entropy));
