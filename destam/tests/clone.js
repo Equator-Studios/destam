@@ -19,13 +19,6 @@ const encodeEvent = (value, name, encodeValue) => {
 	return wrap("observer_" + name, Object.fromEntries(encodeValue.map(name => {
 		let val = value[name];
 
-		if (val && typeof val === 'object' && 'decimal_' in val) {
-			val = {
-				decimal: val.decimal_,
-				val: val.toString(),
-			};
-		}
-
 		if (name === 'time') {
 			val = wrap('date', {date: +val});
 		}
@@ -52,9 +45,8 @@ export const stringify = (state, options) => JSON.stringify(state, (key, value) 
 			const out = [];
 
 			for (let i = 0; i < indexes.length; i++) {
-				out.push({
-					decimal: indexes[i].query_.decimal_,
-					ref: indexes[i].query_.toString(),
+				out.push( {
+					ref: indexes[i].query_,
 					val: value[i],
 				});
 			}
@@ -98,16 +90,6 @@ export const stringify = (state, options) => JSON.stringify(state, (key, value) 
 	}
 }, 2);
 
-const decodeRef = ref => {
-	if (typeof ref === 'object' && 'decimal' in ref) {
-		const val = new Uint8Array(ref.val.split(','));
-		val.decimal_ = ref.decimal;
-		return val;
-	}
-
-	return ref;
-};
-
 export const parse = (state, options) => JSON.parse(state, (key, value) => {
 	if (!(value && typeof value === 'object' && "OBJECT_TYPE" in value)) {
 		return value;
@@ -127,8 +109,7 @@ export const parse = (state, options) => JSON.parse(state, (key, value) => {
 		const init = reg.init_;
 
 		for (const val of value.vals) {
-			const ref = new Uint8Array(val.ref.split(','));
-			ref.decimal_ = val.decimal;
+			const ref = val.ref;
 
 			const link = {reg_: reg, query_: ref};
 			indexes.push(link);
@@ -169,14 +150,14 @@ export const parse = (state, options) => JSON.parse(state, (key, value) => {
 		const val = Insert();
 		val.id = value.id;
 		val.value = value.value;
-		val.ref = decodeRef(value.ref);
+		val.ref = value.ref;
 		val.time = value.time;
 		return val;
 	} else if (value.OBJECT_TYPE === 'observer_modify') {
 		const val = Modify();
 		val.id = value.id;
 		val.value = value.value;
-		val.ref = decodeRef(value.ref);
+		val.ref = value.ref;
 		val.time = value.time;
 		return val;
 	} else if (value.OBJECT_TYPE === "date") {
@@ -185,7 +166,7 @@ export const parse = (state, options) => JSON.parse(state, (key, value) => {
 		assert(value.OBJECT_TYPE === 'observer_delete', "unknown object type");
 		const val = Delete();
 		val.id = value.id;
-		val.ref = decodeRef(value.ref);
+		val.ref = value.ref;
 		val.time = value.time;
 		return val;
 	}

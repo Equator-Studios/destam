@@ -197,20 +197,20 @@ test("array splice identical", () => {
 
 test("array path no value", () => {
 	const obj = OArray([0, 1]);
-	expect(obj.observer.path(positionIndex(obj, 0)).get()).to.equal(0)
+	expect(obj.observer.path([positionIndex(obj, 0)]).get()).to.equal(0)
 
 	const index = positionIndex(obj, 1);
-	expect(obj.observer.path(index).get()).to.equal(1);
+	expect(obj.observer.path([index]).get()).to.equal(1);
 
 	obj.splice(1, 1);
-	expect(obj.observer.path(index).get()).to.equal(null);
+	expect(obj.observer.path([index]).get()).to.equal(null);
 
 	obj.push(1);
 
 	const index2 = positionIndex(obj, 0);
 	obj.splice(0, 1);
 
-	expect(obj.observer.path(index2).get()).to.equal(null);
+	expect(obj.observer.path([index2]).get()).to.equal(null);
 });
 
 test("array modify event previous value", () => {
@@ -285,9 +285,9 @@ test("array path getter", () => {
 	const obj = OArray(["hello", "third thing"]);
 	obj.splice(1, 0, "world");
 
-	let obs1 = obj.observer.path(positionIndex(obj, 0));
-	let obs2 = obj.observer.path(positionIndex(obj, 1));
-	let obs3 = obj.observer.path(positionIndex(obj, 2));
+	let obs1 = obj.observer.path([positionIndex(obj, 0)]);
+	let obs2 = obj.observer.path([positionIndex(obj, 1)]);
+	let obs3 = obj.observer.path([positionIndex(obj, 2)]);
 
 	expect(obs1.get()).to.equal(obj[0]);
 	expect(obs2.get()).to.equal(obj[1]);
@@ -298,9 +298,9 @@ test("array path setter", () => {
 	const obj = OArray(["hello", "third thing"]);
 	obj.splice(1, 0, "world");
 
-	let obs1 = obj.observer.path(positionIndex(obj, 0));
-	let obs2 = obj.observer.path(positionIndex(obj, 1));
-	let obs3 = obj.observer.path(positionIndex(obj, 2));
+	let obs1 = obj.observer.path([positionIndex(obj, 0)]);
+	let obs2 = obj.observer.path([positionIndex(obj, 1)]);
+	let obs3 = obj.observer.path([positionIndex(obj, 2)]);
 
 	obs1.set("new value 1");
 	obs2.set("new value 2");
@@ -320,9 +320,9 @@ test("array path setter events", () => {
 		vals.push(delta.value);
 	});
 
-	let obs1 = obj.observer.path(positionIndex(obj, 0));
-	let obs2 = obj.observer.path(positionIndex(obj, 1));
-	let obs3 = obj.observer.path(positionIndex(obj, 2));
+	let obs1 = obj.observer.path([positionIndex(obj, 0)]);
+	let obs2 = obj.observer.path([positionIndex(obj, 1)]);
+	let obs3 = obj.observer.path([positionIndex(obj, 2)]);
 
 	obs1.set("new value 1");
 	obs2.set("new value 2");

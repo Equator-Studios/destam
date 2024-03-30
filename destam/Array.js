@@ -7,9 +7,11 @@ const entropy = 8;
 const max = Math.max;
 const signBit = 0x80;
 
+const zero = [0, 0];
+
 const getByte = (num, pos) => {
-	pos += num.decimal_;
-	if (pos < 0) {
+	pos += num[0] + 1;
+	if (pos < 1) {
 		return 0;
 	}
 
@@ -20,15 +22,9 @@ const getByte = (num, pos) => {
 	return num[pos];
 };
 
-export const indexCreate = (data, decimal) => {
-	data = new Uint8Array(data);
-	data.decimal_ = decimal;
-	return data;
-};
-
 export const indexCompare = (a, b) => {
-	let i = max(len(a) - a.decimal_, len(b) - b.decimal_);
-	const e = -max(a.decimal_, b.decimal_);
+	let i = max(len(a) - a[0] - 1, len(b) - b[0] - 1);
+	const e = -max(a[0], b[0]);
 
 	let sign = 1;
 	for (; i >= e; i--) {
@@ -46,17 +42,18 @@ export const indexAdd = (a, c, dec = 0) => {
 	const d = (dec >> 3) + !!(dec & 0x7);
 	c <<= (8 - dec) & 0x7;
 
-	const data = [];
-	const e = max(len(a) - a.decimal_, 1);
+	let i = -max(a[0], d);
+	const e = max(len(a) - a[0] - 1, 1);
+	const data = [-i];
 
-	let i = -max(a.decimal_, d);
 	for (; i < -d;) {
 		push(data, getByte(a, i++));
 	}
 
 	let l;
 	for (; i < e || c !== l;) {
-		push(data, c += l = getByte(a, i++));
+		c += l = getByte(a, i++);
+		push(data, c & 0xFF);
 
 		if ((c ^ l) & signBit) {
 			if (c & signBit) {
@@ -71,12 +68,12 @@ export const indexAdd = (a, c, dec = 0) => {
 		c >>= 8;
 	}
 
-	return indexCreate(data, max(a.decimal_, d));
+	return data;
 };
 
 export const indexLeading = (a, b) => {
-	let i = -max(a.decimal_, b.decimal_);
-	const e = max(len(a) - a.decimal_, len(b) - b.decimal_);
+	let i = -max(a[0], b[0]);
+	const e = max(len(a) - a[0] - 1, len(b) - b[0] - 1);
 
 	let c = 0, l;
 	for (; i <= e; i++) {
@@ -157,7 +154,7 @@ const splice = (reg, start, count, arr) => {
 
 		let prev, d = 0;
 		if (len(indexes) === 0) {
-			prev = indexCreate(1, 0);
+			prev = zero;
 		} else if (len(indexes) === start) { // appending the array
 			prev = indexes[len(indexes) - 1].query_;
 		} else if (start === 0) { // prepending the array
@@ -197,7 +194,7 @@ const OArray = (init, id) => {
 	const reg = Network.createReg(OArray, id);
 
 	if (init) {
-		let index = indexCreate(1, 0);
+		let index = zero;
 		for (let i = 0; i < len(init); i++) {
 			push(indexes, Network.link({reg_: reg, query_: index}, init[i]?.[observerGetter]));
 			index = indexAdd(index, 1);

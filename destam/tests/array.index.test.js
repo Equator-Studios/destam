@@ -1,17 +1,22 @@
 import {expect} from 'chai';
 import test from 'node:test';
-import {indexCreate, indexLeading, indexCompare, indexAdd} from '../Array.js';
+import {indexLeading, indexCompare, indexAdd} from '../Array.js';
 
 const signedLen = i => {
 	if (i < 0) i = -i;
 	return i <= 0x7F ? 1 : i <= 0x7FFF ? 2 : i <= 0x7FFFFF ? 3 : 4;
 };
 
+const indexCreate = (arr, dec) => {
+	arr.unshift(dec);
+	return arr;
+};
+
 const indexFromSigned = (i) => {
 	const n = signedLen(i);
-	const num = indexCreate(n, 0);
+	const num = [0];
 	for (let ii = 0; ii < n; ii++) {
-		num[ii] = i;
+		num[ii + 1] = i & 0xFF;
 		i >>= 8;
 	}
 
@@ -21,13 +26,13 @@ const indexFromSigned = (i) => {
 const cmp = (a, b) => expect(indexCompare(a, indexFromSigned(b))).to.equal(0);
 
 test("basic numbers", () => {
-	expect(indexFromSigned(-1)).to.deep.equal(indexCreate(new Uint8Array([-1]), 0));
-	expect(indexFromSigned(1)).to.deep.equal(indexCreate(new Uint8Array([1]), 0));
-	expect(indexFromSigned(256)).to.deep.equal(indexCreate(new Uint8Array([0, 1]), 0));
-	expect(indexFromSigned(1 << 16)).to.deep.equal(indexCreate(new Uint8Array([0, 0, 1]), 0));
-	expect(indexFromSigned(1 << 24)).to.deep.equal(indexCreate(new Uint8Array([0, 0, 0, 1]), 0));
-	expect(indexFromSigned(-1 << 8)).to.deep.equal(indexCreate(new Uint8Array([0, 255]), 0));
-	expect(indexFromSigned(-1 << 16)).to.deep.equal(indexCreate(new Uint8Array([0, 0, 255]), 0));
+	expect(indexFromSigned(-1)).to.deep.equal(indexCreate([255], 0));
+	expect(indexFromSigned(1)).to.deep.equal(indexCreate([1], 0));
+	expect(indexFromSigned(256)).to.deep.equal(indexCreate([0, 1], 0));
+	expect(indexFromSigned(1 << 16)).to.deep.equal(indexCreate([0, 0, 1], 0));
+	expect(indexFromSigned(1 << 24)).to.deep.equal(indexCreate([0, 0, 0, 1], 0));
+	expect(indexFromSigned(-1 << 8)).to.deep.equal(indexCreate([0, 255], 0));
+	expect(indexFromSigned(-1 << 16)).to.deep.equal(indexCreate([0, 0, 255], 0));
 });
 
 test("compare", () => {
@@ -38,7 +43,7 @@ test("compare", () => {
 	expect(indexCompare(indexFromSigned(-1000), indexFromSigned(1001))).to.equal(-1);
 	expect(indexCompare(indexFromSigned(1000), indexFromSigned(1000))).to.equal(0);
 	expect(indexCompare(indexFromSigned(-1000), indexFromSigned(-1000))).to.equal(0);
-	expect(indexCompare(indexCreate(new Uint8Array([66, 255]), 1), indexCreate(new Uint8Array([66, 255]), 1))).to.equal(0);
+	expect(indexCompare(indexCreate([66, 255], 1), indexCreate([66, 255], 1))).to.equal(0);
 });
 
 test("add", () => {
