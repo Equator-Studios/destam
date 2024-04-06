@@ -135,39 +135,10 @@ createClass(Observer, {
 		assert(backward == null || typeof backward === 'function',
 			"Backward must be a function or undefined");
 
-		let cache, globalListener;
-		const listeners = [];
-
 		return Observer(
-			() => {
-				if (globalListener) {
-					return cache;
-				} else {
-					return forward(this.get());
-				}
-			},
+			() => forward(this.get()),
 			backward && (v => this.set(backward(v))),
-			(listener) => {
-				if (!len(listeners)) {
-					globalListener = this.register_(commit => {
-						const val = forward(this.get(), cache, commit);
-						if (!isEqual(val, cache)) {
-							callAll(listeners, [Synthetic(cache, cache = val)]);
-						}
-					}, watchGovernor);
-
-					cache = forward(this.get());
-				}
-
-				push(listeners, listener);
-
-				return () => {
-					if (remove(listeners, listener) && !len(listeners)) {
-						globalListener();
-						globalListener = 0;
-					}
-				};
-			}
+			this.register_,
 		);
 	},
 

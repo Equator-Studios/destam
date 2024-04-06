@@ -558,13 +558,13 @@ test("observer map", () => {
 	expect(() => obs.set(8)).to.throw();
 });
 
-test("observer map duplicate value", () => {
+test("observer map and memo duplicate value", () => {
 	let orig = Observer.mutable(0);
-	let obs = orig.map(x => x >> 1);
+	let obs = orig.map(x => x >> 1).memo();
 
 	const vals = [];
 	obs.watch(state => {
-		vals.push(state.value);
+		vals.push(obs.get());
 	});
 
 	orig.set(2);
@@ -575,18 +575,18 @@ test("observer map duplicate value", () => {
 	expect(vals).to.deep.equal([1, 2]);
 });
 
-test("observer mutable map", () => {
+test("observer mutable map and memo", () => {
 	let orig = Observer.mutable(1);
-	let obs = orig.map(x => x * 2, x => x / 2);
+	let obs = orig.map(x => x * 2, x => x / 2).memo();
 
 	let vals = [];
 	let watcher = obs.watch(delta => {
-		vals.push(delta.value);
+		vals.push(obs.get());
 	});
 
 	let vals2 = [];
 	let watcher2 = obs.watch(delta => {
-		vals2.push(delta.value);
+		vals2.push(obs.get());
 	});
 
 	orig.set(0);
