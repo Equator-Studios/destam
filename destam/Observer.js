@@ -851,7 +851,7 @@ Observer.mutable = value => {
 		currentEvents.event_ = [Synthetic(value, value = v)];
 		callListeners(currentEvents);
 	}, l => {
-		listeners.push(l);
+		push(listeners, l);
 		return () => remove(listeners, l);
 	});
 };
