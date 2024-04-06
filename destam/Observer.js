@@ -601,6 +601,9 @@ createClass(Observer, {
 	 * in the array will always have its listeners called before any listeners
 	 * defined in the second observer in the array.
 	 *
+	 * Note that events will not be forwarded if the value that the observer
+	 * resolves to the same value.
+	 *
 	 * Params:
 	 *   count: The number of observers to create to create observers have
 	 *     have an event order guarantee among them. If a falsy value is provided
@@ -641,8 +644,11 @@ createClass(Observer, {
 					let currentEvents = 0;
 					parentListener = this.register_(commit => {
 						if (currentEvents) call(currentEvents);
-						value = this.get();
 
+						const val = this.get();
+						if (isEqual(val, value)) return;
+
+						value = val;
 						currentEvents = getAll().slice();
 						currentEvents.event_ = commit;
 						callListeners(currentEvents);
