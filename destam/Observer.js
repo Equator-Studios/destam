@@ -623,6 +623,7 @@ createClass(Observer, {
 						currentEvents = getAll().slice();
 						currentEvents.event_ = commit;
 						callListeners(currentEvents);
+						currentEvents = 0;
 					}, (link, user, parent) => {
 						if (isSymbol(user)) {
 							for (const entry of getAll()) {
@@ -827,6 +828,7 @@ Observer.mutable = value => {
 		currentEvents = listeners.map(e => ({listener_: e}));
 		currentEvents.event_ = [Synthetic(value, value = v)];
 		callListeners(currentEvents);
+		currentEvents = 0;
 	}, l => {
 		push(listeners, l);
 		return () => remove(listeners, l);
