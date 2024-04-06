@@ -16,7 +16,7 @@ export const len = arr => arr.length;
 export const push = (arr, val) => arr.push(val);
 
 export const remove = (arr, item) => {
-	const i = arr.indexOf(item);
+	const i = arr.lastIndexOf(item);
 	if (i >= 0) arr.splice(i, 1);
 	return i >= 0;
 };
