@@ -135,10 +135,19 @@ createClass(Observer, {
 		assert(backward == null || typeof backward === 'function',
 			"Backward must be a function or undefined");
 
+		const get = () => forward(this.get());
 		return Observer(
-			() => forward(this.get()),
+			get,
 			backward && (v => this.set(backward(v))),
-			this.register_,
+			(listener, governor) => {
+				let val = get();
+
+				return this.register_((commit, args) => {
+					let newVal = get();
+					if (isEqual(val, newVal)) return;
+					listener([Synthetic(val, val = newVal)]);
+				}, governor);
+			},
 		);
 	},
 
