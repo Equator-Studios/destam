@@ -625,10 +625,7 @@ createClass(Observer, {
 					parentListener = this.register_(commit => {
 						if (currentEvents) call(currentEvents);
 
-						const val = this.get();
-						if (isEqual(val, value)) return;
-
-						value = val;
+						value = this.get();
 						currentEvents = getAll().slice();
 						currentEvents.event_ = commit;
 						callListeners(currentEvents);
