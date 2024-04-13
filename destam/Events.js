@@ -7,7 +7,6 @@ const createModifier = () => {
 		out.id = id;
 		out.value = value;
 		out.prev = prev;
-		out.time = new Date();
 
 		return out;
 	};

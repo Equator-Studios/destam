@@ -190,6 +190,7 @@ export const linkApply = (link, createDelta, events) => {
 		const downstream = createDelta();
 		const gov = entry.governor_;
 		downstream.network_ = entry;
+		downstream.time = (events.time_ ?? (events.time_ = new Date()));
 
 		if (gov.events_ !== events) {
 			if (gov.events_) {
