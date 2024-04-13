@@ -619,8 +619,6 @@ createClass(Observer, {
 			},
 			(listener, governor) => {
 				if (!numListeners) {
-					value = this.get();
-
 					let currentEvents = 0;
 					parentListener = this.register_(commit => {
 						if (currentEvents) call(currentEvents);
@@ -651,6 +649,8 @@ createClass(Observer, {
 
 						return 0;
 					});
+
+					value = this.get();
 				}
 
 				const entry = {
