@@ -123,6 +123,8 @@ createClass(Observer, {
 	/**
 	 * Transforms the values of this observer based on the callback functions.
 	 *
+	 * If the transform produces the same value, deltas will not be produced.
+	 *
 	 * Examples:
 	 *   integer.map(i => i * 10, i => i / 10)
 	 *
@@ -140,13 +142,15 @@ createClass(Observer, {
 			get,
 			backward && (v => this.set(backward(v))),
 			(listener, governor) => {
-				let val = get();
-
-				return this.register_((commit, args) => {
+				const remove = this.register_((commit, args) => {
 					let newVal = get();
-					if (isEqual(val, newVal)) return;
-					listener([Synthetic(val, val = newVal)]);
+					if (isEqual(remove.val_, newVal)) return;
+					listener([Synthetic(remove.val_, remove.val_ = newVal)]);
 				}, governor);
+
+				remove.computed_ = 1;
+				remove.val_ = get();
+				return remove;
 			},
 		);
 	},
@@ -623,12 +627,7 @@ createClass(Observer, {
 					parentListener = this.register_(commit => {
 						if (currentEvents) call(currentEvents);
 
-						if (len(commit) === 1 && isInstance(commit[0], Synthetic)) {
-							value = commit[0].value;
-						} else {
-							value = this.get();
-						}
-
+						get();
 						currentEvents = getAll().slice();
 						currentEvents.event_ = commit;
 						callListeners(currentEvents);
@@ -650,7 +649,15 @@ createClass(Observer, {
 						return 0;
 					});
 
-					value = this.get();
+					const get = () => {
+						if (parentListener.computed_) {
+							value = parentListener.val_;
+						} else {
+							value = this.get();
+						}
+					};
+
+					get();
 				}
 
 				const entry = {
