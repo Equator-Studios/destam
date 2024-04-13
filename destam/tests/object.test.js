@@ -96,10 +96,28 @@ test("this keyword must be the value of the observer in a called function in a p
 	arr.call();
 });
 
-test("basic events", () => {
+test("object basic events", () => {
 	let object = OObject({});
 	const events = [];
 	object.observer.watch(event => {
+		events.push(event.value);
+	});
+
+	object.one = '1';
+	object.two = '2';
+	object.three = '3';
+
+	expect (Object.keys(object)).to.have.members(['one', 'two', 'three']);
+	expect (object.one).to.equal('1');
+	expect (object.two).to.equal('2');
+	expect (object.three).to.equal('3');
+	expect (events).to.deep.equal(['1', '2', '3']);
+});
+
+test("object basic events with memo", () => {
+	let object = OObject({});
+	const events = [];
+	object.observer.memo().watch(event => {
 		events.push(event.value);
 	});
 
