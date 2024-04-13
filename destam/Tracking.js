@@ -264,9 +264,6 @@ const Tracker = observer => {
 					},
 				};
 
-				const childNode = dummy.childNode_ = {};
-				childNode.childNext_ = childNode.childPrev_ = childNode;
-
 				dummy.regNext_ = reg.regNext_;
 				reg.regNext_.regPrev_ = dummy;
 				reg.regNext_ = dummy;

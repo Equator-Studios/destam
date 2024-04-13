@@ -2,21 +2,16 @@ import Observer, {baseGovernorParent} from './Observer.js';
 import {createInstance, push, call, callListeners} from './util.js';
 
 const createLinkEntry = (link, parent, governor_, user) => {
-	const childNode_ = {};
-	childNode_.childNext_ = childNode_.childPrev_ = childNode_;
-
 	let child = {
 		link_: link,
 		parent_: parent,
 		user_: user,
 		governor_,
-		childNode_,
 	};
 
-	child.childPrev_ = parent.childNode_;
-	child.childNext_ = parent.childNode_.childNext_;
-	child.childNext_.childPrev_ = child;
-	parent.childNode_.childNext_ = child;
+	child.childNext_ = parent.children_;
+	if (child.childNext_) child.childNext_.childPrev_ = child;
+	parent.children_ = child;
 
 	// attach this child to the link listeners
 	child.next_ = link;
@@ -64,11 +59,7 @@ const removeListener = (reg, parent) => {
 	parent.regPrev_.regNext_ = parent.regNext_;
 	parent.regNext_.regPrev_ = parent.regPrev_;
 
-	for (
-		let entry = parent.childNode_.childNext_;
-		entry !== parent.childNode_;
-		entry = entry.childNext_
-	) {
+	for (let entry = parent.children_; entry; entry = entry.childNext_ ) {
 		entry.prev_.next_ = entry.next_;
 		entry.next_.prev_ = entry.prev_;
 
@@ -115,7 +106,7 @@ export const relink = (link, newObserver) => {
 				removeListener(oldObserver, entry);
 			}
 
-			entry.childNode_.childNext_ = entry.childNode_.childPrev_ = entry.childNode_;
+			entry.children_ = null;
 
 			if (newObserver) {
 				addListener(newObserver, entry);
@@ -129,8 +120,13 @@ export const unlink = (link) => {
 	link.linkNext_.linkPrev_ = link.linkPrev_;
 
 	for (let entry = link.next_; entry !== link; entry = entry.next_) {
-		entry.childNext_.childPrev_ = entry.childPrev_;
-		entry.childPrev_.childNext_ = entry.childNext_;
+		if (entry.childPrev_) {
+			entry.childPrev_.childNext_ = entry.childNext_;
+		} else {
+			entry.parent_.children_ = entry.childNext_;
+		}
+		if (entry.childNext_) entry.childNext_.childPrev_ = entry.childPrev_;
+
 
 		if (link.observer_) {
 			removeListener(link.observer_, entry);
@@ -159,9 +155,6 @@ export const createReg = (constructor, id) => {
 			governor_,
 			...options,
 		};
-
-		const childNode = listenerNode.childNode_ = {};
-		childNode.childNext_ = childNode.childPrev_ = childNode;
 
 		addListener(reg, listenerNode);
 
