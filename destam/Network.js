@@ -7,9 +7,9 @@ const createLinkEntry = (link, parent, governor_, user) => {
 		parent_: parent,
 		user_: user,
 		governor_,
+		childNext_: parent.children_,
 	};
 
-	child.childNext_ = parent.children_;
 	if (child.childNext_) child.childNext_.childPrev_ = child;
 	parent.children_ = child;
 
