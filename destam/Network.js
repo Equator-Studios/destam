@@ -176,11 +176,11 @@ export const createReg = (constructor, id) => {
 export {call, callListeners};
 
 let override;
-export const linkApply = (link, createDelta, events) => {
+export const linkApply = (link, events, deltaConstructor, ...args) => {
 	if (override) events = override;
 
 	for (let entry = link.next_; entry !== link; entry = entry.next_){
-		const downstream = createDelta();
+		const downstream = deltaConstructor(...args);
 		const gov = entry.governor_;
 		downstream.network_ = entry;
 		downstream.time = (events.time_ ?? (events.time_ = new Date()));

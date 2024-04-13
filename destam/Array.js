@@ -135,7 +135,7 @@ const splice = (reg, start, count, arr) => {
 
 		if (!isEqual(old, value)) {
 			Network.relink(link, value?.[observerGetter]);
-			Network.linkApply(link, () => Modify(old, value, link.query_, reg.id), events);
+			Network.linkApply(link, events, Modify, old, value, link.query_, reg.id);
 		}
 	}
 
@@ -145,7 +145,7 @@ const splice = (reg, start, count, arr) => {
 			const link = indexes[start + i];
 
 			Network.unlink(link);
-			Network.linkApply(link, () => Delete(init[start + i], undefined, link.query_, reg.id), events);
+			Network.linkApply(link, events, Delete, init[start + i], undefined, link.query_, reg.id);
 		}
 
 		indexes.splice(start, -insertCount);
@@ -177,7 +177,7 @@ const splice = (reg, start, count, arr) => {
 			const value = arr[i];
 			const link = Network.link({reg_: reg, query_: prev}, value?.[observerGetter], insert);
 
-			Network.linkApply(link, () => Insert(undefined, value, prev, reg.id), events);
+			Network.linkApply(link, events, Insert, undefined, value, prev, reg.id);
 			links[i - count] = link;
 		}
 
@@ -244,7 +244,7 @@ const OArray = (init, id) => {
 				assert(link, "Array write outside of bounds!");
 
 				let events;
-				Network.linkApply(link, () => Modify(old, value, link.query_, reg.id), events = []);
+				Network.linkApply(link, events = [], Modify, old, value, link.query_, reg.id);
 
 				Network.relink(link, value?.[observerGetter]);
 				init[num] = value;

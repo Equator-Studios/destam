@@ -33,14 +33,14 @@ const OObject = (init, id) => {
 			}
 
 			let link = nodes.get(prop);
-			let events;
+			const events = [];
 
 			if (link) {
-				Network.linkApply(link, () => Modify(prev, value, prop, reg.id), events = []);
+				Network.linkApply(link, events, Modify, prev, value, prop, reg.id);
 				Network.relink(link, value?.[observerGetter]);
 			} else {
 				link = Network.link({reg_: reg, query_: prop}, value?.[observerGetter]);
-				Network.linkApply(link, () => Insert(undefined, value, prop, reg.id), events = []);
+				Network.linkApply(link, events, Insert, undefined, value, prop, reg.id);
 
 				nodes.set(prop, link);
 			}
@@ -56,7 +56,7 @@ const OObject = (init, id) => {
 			const link = nodes.get(prop);
 			if (link) {
 				let events;
-				Network.linkApply(link, () => Delete(prev, undefined, prop, reg.id), events = []);
+				Network.linkApply(link, events = [], Delete, prev, undefined, prop, reg.id);
 
 				Network.unlink(link);
 				nodes.delete(prop);

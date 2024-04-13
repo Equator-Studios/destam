@@ -60,7 +60,7 @@ OMap.prototype = Object.assign(createInstance(UUID.Map), {
 	setElement (element) {
 		const prev = this.getElement(element.id);
 		const reg = this[observerGetter];
-		let events;
+		const events = [];
 		let link;
 
 		if (prev) {
@@ -71,11 +71,11 @@ OMap.prototype = Object.assign(createInstance(UUID.Map), {
 			link = prev[linkGetter];
 			delete prev[linkGetter];
 
-			Network.linkApply(link, () => Modify(prev, element, element.id, reg.id), events = []);
+			Network.linkApply(link, events, Modify, prev, element, element.id, reg.id);
 			Network.relink(link, element[observerGetter]);
 		} else {
 			link = Network.link({reg_: reg, user_: element, query_: element.id}, element[observerGetter]);
-			Network.linkApply(link, () => Insert(undefined, element, element.id, reg.id), events = []);
+			Network.linkApply(link, events, Insert, undefined, element, element.id, reg.id);
 		}
 
 		registerElement(element, link);
@@ -96,7 +96,7 @@ OMap.prototype = Object.assign(createInstance(UUID.Map), {
 			delete elem[linkGetter];
 
 			let events;
-			Network.linkApply(link, () => Delete(elem, undefined, id, reg.id), events = []);
+			Network.linkApply(link, events = [], Delete, elem, undefined, id, reg.id);
 			Network.unlink(link);
 			Network.callListeners(events);
 		}

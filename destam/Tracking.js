@@ -57,13 +57,13 @@ OMap.apply = (reg, value, link, events) => {
 		registerElement(element, link);
 		map.setElement(element);
 		Network.link(link, element[observerGetter]);
-		Network.linkApply(link, () => cloneEvent(value), events);
+		Network.linkApply(link, events, cloneEvent, value);
 	} else if (isInstance(value, Modify)) {
 		const current = link.user_;
 		delete current[linkGetter];
 
 		const element = value.value;
-		Network.linkApply(link, () => cloneEvent(value, current), events);
+		Network.linkApply(link, events, cloneEvent, value, current);
 
 		map.setElement(element);
 		Network.relink(link, element[observerGetter]);
@@ -72,7 +72,7 @@ OMap.apply = (reg, value, link, events) => {
 		const current = link.user_;
 		delete current[linkGetter];
 
-		Network.linkApply(link, () => cloneEvent(value, current), events);
+		Network.linkApply(link, events, cloneEvent, value, current);
 		Network.unlink(link);
 
 		map.deleteElement(current);
@@ -117,13 +117,13 @@ OObject.apply = (reg, value, link, events) => {
 		nodes.set(prop, link);
 		init[prop] = value.value;
 		Network.link(link, value.value?.[observerGetter]);
-		Network.linkApply(link, () => cloneEvent(value), events);
+		Network.linkApply(link, events, cloneEvent, value);
 	} else if (isInstance(value, Modify)) {
-		Network.linkApply(link, () => cloneEvent(value, init[link.query_]), events);
+		Network.linkApply(link, events, cloneEvent, value, init[link.query_]);
 		init[link.query_] = value.value;
 		Network.relink(link, value.value?.[observerGetter]);
 	} else {
-		Network.linkApply(link, () => cloneEvent(value, init[link.query_]), events);
+		Network.linkApply(link, events, cloneEvent, value, init[link.query_]);
 		Network.unlink(link);
 
 		nodes.delete(link.query_);
@@ -169,13 +169,13 @@ OArray.apply = (reg, value, link, events) => {
 		Network.link(link, value.value?.[observerGetter], indexes[index]);
 		indexes.splice(index, 0, link);
 		init.splice(index, 0, value.value);
-		Network.linkApply(link, () => cloneEvent(value), events);
+		Network.linkApply(link, events, cloneEvent, value);
 	} else if (isInstance(value, Modify)) {
-		Network.linkApply(link, () => cloneEvent(value, init[index]), events);
+		Network.linkApply(link, events, cloneEvent, value, init[index]);
 		init[index] = value.value;
 		Network.relink(link, value.value?.[observerGetter]);
 	} else {
-		Network.linkApply(link, () => cloneEvent(value, init[index]), events);
+		Network.linkApply(link, events, cloneEvent, value, init[index]);
 		Network.unlink(link);
 		init.splice(index, 1);
 		indexes.splice(index, 1);
