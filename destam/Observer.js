@@ -601,24 +601,24 @@ createClass(Observer, {
 		let value;
 		let info;
 
-		let len = 0;
+		let numListeners = 0;
 		const create = (local, getAll) => Observer(
 			() => {
-				if (len) {
+				if (numListeners) {
 					return value;
 				}
 
 				return this.get();
 			},
 			v => {
-				if (len && isEqual(v, value)) {
+				if (numListeners && isEqual(v, value)) {
 					return;
 				}
 
 				this.set(v);
 			},
 			(listener, governor) => {
-				if (!len) {
+				if (!numListeners) {
 					value = this.get();
 
 					let currentEvents = 0;
@@ -663,14 +663,14 @@ createClass(Observer, {
 				}
 
 				push(local, entry);
-				len++;
+				numListeners++;
 
 				return () => {
 					if (remove(local, entry)) {
-						len--;
+						numListeners--;
 						entry.parent_?.();
 
-						if (!len) {
+						if (!numListeners) {
 							parentListener();
 							parentListener = value = info = 0;
 						}
