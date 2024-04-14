@@ -383,3 +383,19 @@ test("handle circles", () => {
 	expect(object.next.next.two).to.equal('2');
 	expect(object.next.next.next.next.next.next.three).to.equal('3');
 });
+
+test("array in object shallow after map", () => {
+	const obj = OObject({
+		arr: OArray(),
+	});
+
+	const events = [];
+	obj.observer.path('arr').map(arr => [...arr]).shallow().watch(event => {
+		events.push(event.value);
+	});
+
+	obj.arr.push(1);
+	obj.arr.push(2);
+
+	expect(events).to.deep.equal([[1], [1, 2]]);
+});
