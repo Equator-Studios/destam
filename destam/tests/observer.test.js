@@ -558,6 +558,23 @@ test("observer map", () => {
 	expect(() => obs.set(8)).to.throw();
 });
 
+test("observer double map", () => {
+	let orig = Observer.mutable(false);
+	let obs = orig.map(x => !x).map(x => !x);
+
+	expect(obs.isImmutable()).to.equal(true);
+
+	const vals = [];
+	obs.watch(state => {
+		vals.push(obs.get());
+	});
+
+	orig.set(true);
+	orig.set(false);
+
+	expect(vals).to.deep.equal([true, false]);
+});
+
 test("observer map and memo duplicate value", () => {
 	let orig = Observer.mutable(0);
 	let obs = orig.map(x => x >> 1).memo();
