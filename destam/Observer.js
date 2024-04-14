@@ -142,12 +142,13 @@ createClass(Observer, {
 			get,
 			backward && (v => this.set(backward(v))),
 			(listener, governor) => {
-				const remove = this.register_((commit, args) => {
-					let newVal = get();
+				const registered = this.register_((commit, args) => {
+					const newVal = get();
 					if (isEqual(remove.val_, newVal)) return;
 					listener([Synthetic(remove.val_, remove.val_ = newVal)]);
 				}, governor);
 
+				const remove = () => registered();
 				remove.computed_ = 1;
 				remove.val_ = get();
 				return remove;
