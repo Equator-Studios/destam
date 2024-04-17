@@ -667,9 +667,9 @@ createClass(Observer, {
 				};
 
 				let obs;
-				if (info && (obs = value?.[observerGetter])) {
+				if (info) {
 					entry.user_ = governor(...info);
-					registerMemo(entry, obs, info);
+					registerMemo(entry, value?.[observerGetter], info);
 				}
 
 				push(local, entry);
