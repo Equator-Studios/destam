@@ -1079,3 +1079,23 @@ test("object setter events", () => {
 
 	expect(vals).to.deep.equal(['value 1', 'value 2', 'value 3']);
 });
+
+test("object events memo late watch", () => {
+	const obj = OObject();
+
+	const vals = [];
+	const memo = obj.observer.path('val').memo().shallow();
+
+	memo.watch(delta => {
+		vals.push(delta.value);
+	});
+
+	obj.val = 1;
+	obj.val = 2;
+
+	memo.watch(delta => {});
+	obj.val = OObject();
+	obj.val.hello = 'world';
+
+	expect(vals).to.deep.equal([1, 2, obj.val]);
+});
