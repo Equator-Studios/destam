@@ -1,4 +1,4 @@
-import Observer, {observerGetter} from 'destam/Observer';
+import Observer, {shallowListener, observerGetter} from 'destam/Observer';
 import React from 'react';
 
 const compareArrays = (a, b) => {
@@ -55,7 +55,7 @@ export const useObserver = (gen, deps) => {
 	}
 
 	const [, state] = React.useState(null);
-	React.useEffect(() => () => state.obs.remove(), [state]);
+	React.useEffect(() => () => state.listener(), [state]);
 
 	if (!state.setter) {
 		state.setter = (value, info) => {
@@ -70,18 +70,16 @@ export const useObserver = (gen, deps) => {
 	}
 
 	if (!state.deps || !compareArrays(deps, state.deps)) {
-		if (state.obs) state.obs.remove();
+		if (state.listener) state.listener();
 
-		const obs = gen()
-			.shallow()
- 			.watchCommit(commit => {
- 				state.value = obs.get();
- 				state({});
-			});
-
+		state.obs = gen();
+		state.value = state.obs.get();
 		state.deps = deps;
-		state.obs = obs;
-		state.value = obs.get();
+
+		state.listener = shallowListener(state.obs, () => {
+			state.value = state.obs.get();
+			state({});
+		});
 	}
 
 	return [state.value, state.setter];
