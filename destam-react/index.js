@@ -73,13 +73,14 @@ export const useObserver = (gen, deps) => {
 		if (state.listener) state.listener();
 
 		state.obs = gen();
-		state.value = state.obs.get();
 		state.deps = deps;
 
 		state.listener = shallowListener(state.obs, () => {
 			state.value = state.obs.get();
 			state({});
 		});
+
+		state.value = state.obs.get();
 	}
 
 	return [state.value, state.setter];
