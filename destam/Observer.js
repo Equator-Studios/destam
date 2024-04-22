@@ -89,11 +89,13 @@ const setPath = (obs, path, value) => {
 };
 
 const registerMemo = (entry, obs, info) => {
+	entry.parent_?.();
+	if (!obs) return;
+
 	if (!entry.user_) {
 		entry.user_ = entry.governor_(...info);
 	}
 
-	entry.parent_?.();
 	entry.parent_ = obs?.register_(entry.listener_, entry.governor_, {
 		link_: info[0], user_: entry.user_, parent_: info[2],
 	});
