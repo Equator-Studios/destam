@@ -90,7 +90,7 @@ const setPath = (obs, path, value) => {
 
 const registerMemo = (entry, obs, info) => {
 	entry.parent_?.();
-	if (!obs) return;
+	if (!obs) return entry.parent_ = obs;
 
 	if (!entry.user_) {
 		entry.user_ = entry.governor_(...info);
