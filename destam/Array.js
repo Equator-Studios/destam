@@ -247,7 +247,7 @@ const OArray = (init, id) => {
 		}
 
 		return true;
-	}, null, Array, OArray);
+	}, Array, OArray);
 };
 
 createClass(OArray);

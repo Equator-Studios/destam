@@ -23,7 +23,7 @@ export const remove = (arr, item) => {
 	return i >= 0;
 };
 
-export const createProxy = (init, reg, props, set, deleteProperty, base, cons) => {
+export const createProxy = (init, reg, props, set, base, cons, deleteProperty) => {
 	props.observer = props[observerGetter] = reg;
 
 	return reg.value = new Proxy(init, {

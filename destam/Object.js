@@ -44,7 +44,7 @@ const OObject = (init, id) => {
 			Network.callListeners(events);
 			return true;
 		},
-		(_, prop) => {
+		Object, OObject, (_, prop) => {
 			const prev = init[prop];
 			delete init[prop];
 
@@ -61,7 +61,6 @@ const OObject = (init, id) => {
 
 			return true;
 		},
-		Object, OObject
 	);
 };
 
