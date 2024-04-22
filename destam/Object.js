@@ -18,12 +18,7 @@ const OObject = (init, id) => {
 	reg.init_ = init;
 	reg.nodes_ = nodes;
 
-	const props = {
-		observer: reg,
-		[observerGetter]: reg,
-	};
-
-	return reg.value = createProxy(init, props,
+	return createProxy(init, reg, {},
 		(_, prop, value) => {
 			const prev = init[prop];
 

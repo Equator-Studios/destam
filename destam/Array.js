@@ -206,7 +206,7 @@ const OArray = (init, id) => {
 	reg.init_ = init;
 	reg.indexes_ = indexes;
 
-	const props = {
+	return createProxy(init, reg, {
 		splice: (start, len, ...val) => splice(reg, start, len, val),
 		push: (...values) => splice(reg, len(init), 0, values),
 		unshift: val => splice(reg, 0, 0, [val]),
@@ -215,47 +215,39 @@ const OArray = (init, id) => {
 		fill: val => splice(reg, 0, len(init), Array(len(init)).fill(val)),
 		sort: undefined,
 		reverse: undefined,
-		observer: reg,
 		[getRef]: ref => {
 			const index = getElement(indexes, ref);
 			if (index >= len(indexes) || indexCompare(indexes[index].query_, ref) !== 0) return [null];
 			return [init[index], val => reg.value[index] = val];
 		},
-		[observerGetter]: reg,
-	};
+	}, (obj, prop, value) => {
+		assert((() => {
+			for (let i = 0; i < prop.length; i++){
+				const code = prop.charCodeAt(i);
 
-	return reg.value = createProxy(init, props,
-		(obj, prop, value) => {
-			assert((() => {
-				for (let i = 0; i < prop.length; i++){
-					const code = prop.charCodeAt(i);
-
-					if (code < 48 || code > 57){
-						return false;
-					}
+				if (code < 48 || code > 57){
+					return false;
 				}
-				return true;
-			})(), "invalid array property: " + prop);
-
-			const num = parseInt(prop);
-			const old = init[num];
-			if (!isEqual(old, value)){
-				const link = indexes[num];
-				assert(link, "Array write outside of bounds!");
-
-				let events;
-				Network.linkApply(link, events = [], Modify, old, value, link.query_, reg.id);
-
-				Network.relink(link, value?.[observerGetter]);
-				init[num] = value;
-				Network.callListeners(events);
 			}
-
 			return true;
-		},
-		null,
-		Array, OArray,
-	);
+		})(), "invalid array property: " + prop);
+
+		const num = parseInt(prop);
+		const old = init[num];
+		if (!isEqual(old, value)){
+			const link = indexes[num];
+			assert(link, "Array write outside of bounds!");
+
+			let events;
+			Network.linkApply(link, events = [], Modify, old, value, link.query_, reg.id);
+
+			Network.relink(link, value?.[observerGetter]);
+			init[num] = value;
+			Network.callListeners(events);
+		}
+
+		return true;
+	}, null, Array, OArray);
 };
 
 createClass(OArray);

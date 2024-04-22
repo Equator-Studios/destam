@@ -1,3 +1,5 @@
+export const observerGetter = Symbol();
+
 export const isSymbol = val => typeof val == 'symbol';
 
 export const isInstance = (inst, type) => inst instanceof type;
@@ -21,8 +23,10 @@ export const remove = (arr, item) => {
 	return i >= 0;
 };
 
-export const createProxy = (init, props, set, deleteProperty, base, cons) => {
-	return new Proxy(init, {
+export const createProxy = (init, reg, props, set, deleteProperty, base, cons) => {
+	props.observer = props[observerGetter] = reg;
+
+	return reg.value = new Proxy(init, {
 		set, deleteProperty,
 		get: (init, prop) => prop in props ? props[prop] : init[prop],
 		getPrototypeOf: () => {
