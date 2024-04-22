@@ -171,17 +171,17 @@ createClass(Observer, {
 	 *  An observer
 	 */
 	unwrap () {
-		const get = () => {
+		const get = type => {
 			const val = this.get();
 			if (isInstance(val, Observer)) {
-				return val;
+				return type ? val.get() : val;
 			}
 
-			return this;
+			return type ? val : this;
 		};
 
 		return Observer(
-			() => get().get(),
+			() => get(1),
 			v => get().set(v),
 			(listener, governor) => {
 				let l;
