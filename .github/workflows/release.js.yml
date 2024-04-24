@@ -5,7 +5,7 @@ name: release
 
 on:
   release:
-    types: [created]
+    types: [published]
 
 jobs:
   publish:
@@ -24,4 +24,4 @@ jobs:
     - run: npm publish --access public
       working-directory: ./destam
       env:
-        NODE_AUTH_TOKEN: ${{secrets.NODE_AUTH_TOKEN}}
+        NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
