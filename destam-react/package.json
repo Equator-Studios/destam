@@ -1,6 +1,6 @@
 {
   "name": "destam-react",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "React bindings for destam",
   "main": "index.js",
   "scripts": {
