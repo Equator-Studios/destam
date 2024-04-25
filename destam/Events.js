@@ -26,6 +26,8 @@ const createModifier = () => {
 			const path = [];
 
 			for (let current = this.network_; current.link_; current = current.parent_) {
+				assert(current.link_.query_ != null, "This path contains an observer that cannot be queried");
+
 				path.unshift(current.link_.query_);
 			}
 
