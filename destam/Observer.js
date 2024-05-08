@@ -651,7 +651,7 @@ createClass(Observer, {
 					parentListener = this.register_(commit => {
 						if (currentEvents) call(currentEvents);
 
-						get();
+						value = this.get();
 						currentEvents = getAll().slice();
 						currentEvents.event_ = commit;
 						callListeners(currentEvents);
@@ -673,15 +673,7 @@ createClass(Observer, {
 						return 0;
 					});
 
-					const get = () => {
-						if (parentListener.computed_) {
-							value = parentListener.val_;
-						} else {
-							value = this.get();
-						}
-					};
-
-					get();
+					value = this.get();
 				}
 
 				const entry = {
