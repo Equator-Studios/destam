@@ -164,15 +164,16 @@ createClass(Observer, {
 
 				return this.register_((commit, args) => {
 					cache = get();
-					const prev = value;
-					if (computed && isEqual(prev, cache)) return;
-					hasCache = 1;
-					try {
-						value = cache;
-						computed = 1;
-						listener([Synthetic(prev, cache)]);
-					} finally {
-						cache = hasCache = 0;
+
+					if (!computed || !isEqual(value, cache)) {
+						const event = [Synthetic(value, value = cache)];
+						const clearCache = !hasCache;
+						computed = hasCache = 1;
+						try {
+							listener(event);
+						} finally {
+							if (clearCache) cache = hasCache = 0;
+						}
 					}
 				}, watchGovernor);
 			},
