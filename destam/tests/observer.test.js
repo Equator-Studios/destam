@@ -558,6 +558,25 @@ test("observer map", () => {
 	expect(() => obs.set(8)).to.throw();
 });
 
+test("observer map call frequency", () => {
+	let calls = 0;
+	let orig = Observer.mutable(1);
+	let obs = Observer(() => {
+		calls++;
+		return orig.get();
+	}, orig.set, orig.register_).map(x => x * 2);
+
+	let val;
+	obs.watch(() => {
+		val = obs.get();
+	});
+
+	orig.set(2);
+
+	expect(calls).to.equal(1);
+	expect(val).to.equal(4);
+});
+
 test("observer double map", () => {
 	let orig = Observer.mutable(false);
 	let obs = orig.map(x => !x).map(x => !x);
