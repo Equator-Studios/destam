@@ -144,21 +144,37 @@ createClass(Observer, {
 		assert(backward == null || typeof backward === 'function',
 			"Backward must be a function or undefined");
 
-		const get = () => forward(this.get());
+		let hasCache = 0;
+		let cache;
+
+		const get = () => {
+			if (hasCache) {
+				return cache;
+			} else {
+				return forward(this.get());
+			}
+		};
+
 		return Observer(
 			get,
 			backward && (v => this.set(backward(v))),
 			listener => {
-				const registered = this.register_((commit, args) => {
-					const newVal = get();
-					if (isEqual(remove.val_, newVal)) return;
-					listener([Synthetic(remove.val_, remove.val_ = newVal)]);
-				}, watchGovernor);
+				let computed = 0;
+				let value;
 
-				const remove = () => registered();
-				remove.computed_ = 1;
-				remove.val_ = get();
-				return remove;
+				return this.register_((commit, args) => {
+					cache = get();
+					const prev = value;
+					if (computed && isEqual(prev, cache)) return;
+					hasCache = 1;
+					try {
+						value = cache;
+						computed = 1;
+						listener([Synthetic(prev, cache)]);
+					} finally {
+						cache = hasCache = 0;
+					}
+				}, watchGovernor);
 			},
 		);
 	},
