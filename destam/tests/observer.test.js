@@ -821,3 +821,23 @@ test("observer watch non function", () => {
 	expect(() => obs.watch(1)).to.throw();
 	expect(() => obs.watchCommit(1)).to.throw();
 });
+
+test("observer timer in map and unwrap", async () => {
+	const activated = Observer.mutable(false);
+	const obs = activated.map(a => {
+		console.trace();
+		return a ? Observer.timer(10) : 'not-activated';
+	}).unwrap();
+
+	const states = [];
+	let remove = obs.watch(commit => {
+		console.log(commit);
+		states.push(obs.get());
+	}).call();
+
+	activated.set(true);
+	await new Promise(ok => setTimeout(ok, 25));
+	remove.remove();
+
+	expect(states).to.deep.equal(['not-activated', 0, 1, 2]);
+});
