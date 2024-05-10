@@ -396,13 +396,10 @@ import { clone } from './clone.js';
 		object.thing2 = OObject({thing: orig});
 	});
 
-	/*
-	TODO: This test does not work with the json serializer
 	test("packetize multiple references circular once", async (object, flush) => {
 		object.thing = OObject();
 		object.thing.thing = object.thing;
 	});
-	*/
 
 	test("packetize array moved out then deleted two elements", async (object, flush) => {
 		object.thing = OArray([
