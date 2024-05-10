@@ -116,6 +116,14 @@ export const watchGovernor = (child, parent) => {
 	return true;
 };
 
+const callFinally = (listener, final, ...args) => {
+	try {
+		listener(...args);
+	} finally {
+		if (final) final();
+	}
+};
+
 createClass(Observer, {
 	register_: () => noop,
 	set: immutableSetter,
@@ -166,14 +174,10 @@ createClass(Observer, {
 					cache = get();
 
 					if (!computed || !isEqual(value, cache)) {
-						const event = [Synthetic(value, value = cache)];
-						const clearCache = !hasCache;
+						const clear = !hasCache;
 						computed = hasCache = 1;
-						try {
-							listener(event);
-						} finally {
-							if (clearCache) cache = hasCache = 0;
-						}
+						callFinally(listener, clear && (x => cache = hasCache = x),
+							[Synthetic(value, value = cache)]);
 					}
 				}, watchGovernor);
 			},
@@ -195,8 +199,9 @@ createClass(Observer, {
 	 *  An observer
 	 */
 	unwrap () {
+		let cache; 
 		const get = type => {
-			const val = this.get();
+			const val = cache || this.get();
 			if (isInstance(val, Observer)) {
 				return type ? val.get() : val;
 			}
@@ -212,12 +217,16 @@ createClass(Observer, {
 				const update = () => {
 					if (l) l();
 					const listen = get();
-					l = listen !== this && listen.register_(listener, governor);
+					l = listen !== this && listen.register_((commit, args) => {
+						const clear = !cache;
+						cache = listen;
+						callFinally(listener, clear && (x => cache = x), commit, args);
+					}, governor);
 				};
 
 				const parent = this.register_((commit, args) => {
-					listener(commit, args);
 					update();
+					listener(commit, args);
 				}, governor);
 				update();
 
