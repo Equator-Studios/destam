@@ -824,14 +824,10 @@ test("observer watch non function", () => {
 
 test("observer timer in map and unwrap", async () => {
 	const activated = Observer.mutable(false);
-	const obs = activated.map(a => {
-		console.trace();
-		return a ? Observer.timer(10) : 'not-activated';
-	}).unwrap();
+	const obs = activated.map(a => a ? Observer.timer(10) : 'not-activated').unwrap();
 
 	const states = [];
 	let remove = obs.watch(commit => {
-		console.log(commit);
 		states.push(obs.get());
 	}).call();
 
