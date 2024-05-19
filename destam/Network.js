@@ -143,24 +143,22 @@ export const createReg = (constructor, id) => {
 	const reg = createInstance(Observer);
 	reg.get = () => reg.value;
 	reg.register_ = (listener_, governor_, options) => {
-		governor_ = {
-			listener_,
-			governor_,
-			add_: listener_.add_,
-			remove_: listener_.remove_,
-		};
-
-		const listenerNode = {
+		let listenerNode = {
 			user_: baseGovernorParent,
-			governor_,
+			governor_: {
+				listener_,
+				governor_,
+				add_: listener_.add_,
+				remove_: listener_.remove_,
+			},
 			...options,
 		};
 
 		addListener(reg, listenerNode);
 
 		return () => {
-			if (governor_) removeListener(reg, listenerNode);
-			governor_ = 0;
+			if (listenerNode) removeListener(reg, listenerNode);
+			listenerNode = 0;
 		};
 	};
 
