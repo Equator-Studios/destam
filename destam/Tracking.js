@@ -308,8 +308,11 @@ createClass(Tracker, {
 	 *     The mininum amount of time to wait between callback invocation.
 	 *     If undefined is passed, the digest will run in passive mode: flush()
 	 *     must be called manually to recieve a callback.
+	 *   ignore: An optional callback to ignore changes from certain sources.
+	 *     This is used to break infinite loops with events. See the args argument
+	 *     of the apply() function.
 	 */
-	digest (callback, time) {
+	digest (callback, time, ignore = () => false) {
 		let currentTimeout;
 
 		let trackedChanges = new Map();
@@ -358,14 +361,25 @@ createClass(Tracker, {
 		const listener = {
 			destroy_: destroy,
 			add_: reg => {
-				trackedChanges.set(reg, false);
+				if (!this.isExternal_ || !ignore(this.externalArg_)) {
+					trackedChanges.set(reg, false);
+				}
 			},
 			remove_: (reg, deref) => {
+				if (this.isExternal_) {
+					deref();
+				} else {
+					derefs.push(deref);
+				}
+
 				trackedChanges.set(reg, true);
-				derefs.push(deref);
 			},
 			commit_: (commit, args) => {
 				for (let delta of commit) {
+					if (ignore(args)) {
+						return;
+					}
+
 					const link = delta.network_.link_;
 					if (!trackingReg(trackedChanges, link.reg_)) {
 						continue;
@@ -427,10 +441,6 @@ createClass(Tracker, {
 							changes.set(link, delta = prev);
 						}
 					}
-
-					if (delta) {
-						delta.args = args;
-					}
 				}
 
 				if (time == null) {
@@ -486,11 +496,14 @@ createClass(Tracker, {
 			links[i] = link;
 		}
 
+		this.isExternal_ = 1;
+		this.externalArg_ = args;
 		for (let i = 0; i < len(commit); i++) {
 			const link = links[i];
 			const reg = link.reg_;
 			reg.source_.apply(reg, commit[i], link, events);
 		}
+		this.isExternal_ = 0;
 
 		Network.callListeners(events, args);
 	},
