@@ -18,7 +18,7 @@ import { clone } from './clone.js';
 			const decoded = clone(changes, {observerRefs, observerNetwork: network});
 
 			network.apply(decoded);
-		}, 0);
+		}, null);
 
 		await func(object, packetizer.flush, object2);
 		await packetizer.flush();

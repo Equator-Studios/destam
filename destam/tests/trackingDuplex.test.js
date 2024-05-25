@@ -20,13 +20,13 @@ import { clone } from './clone.js';
 			const decoded = clone(changes, {observerRefs, observerNetwork: network2});
 
 			network2.apply(decoded, network2);
-		}, 0, arg => arg === network);
+		}, null, arg => arg === network);
 
 		const packetizer2 = network2.digest((changes, observerRefs) => {
 			const decoded = clone(changes, {observerRefs, observerNetwork: network});
 
 			network.apply(decoded, network);
-		}, 0, arg => arg === network2);
+		}, null, arg => arg === network2);
 
 		await func(object, object2, packetizer.flush, packetizer2.flush);
 		await packetizer.flush();
