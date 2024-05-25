@@ -375,11 +375,11 @@ createClass(Tracker, {
 				trackedChanges.set(reg, true);
 			},
 			commit_: (commit, args) => {
-				for (let delta of commit) {
-					if (ignore(args)) {
-						return;
-					}
+				if (ignore(args)) {
+					return;
+				}
 
+				for (let delta of commit) {
 					const link = delta.network_.link_;
 					if (!trackingReg(trackedChanges, link.reg_)) {
 						continue;

@@ -60,8 +60,6 @@ import { clone } from './clone.js';
 		const packetizer3 = network.digest((changes, observerRefs) => {
 			const decoded = clone(changes, {observerRefs, observerNetwork: network3});
 
-			console.log(decoded);
-
 			network3.apply(decoded);
 		}, 0);
 
