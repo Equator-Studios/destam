@@ -32,17 +32,11 @@ OMap.verify = (reg, value) => {
 		}
 
 		return {reg_: reg, user_: element, query_: element.id};
-	} else if (isInstance(value, Modify)) {
-		const element = value.value;
-		const current = map.getElement(element.id);
-		if (!current) throw new Error("does not exist");
-
-		return current[linkGetter];
 	} else {
-		assert(isInstance(value, Delete), "unknown event type");
+		assert(isInstance(value, Delete) || isInstance(value, Modify), "unknown event type");
 
 		const current = map.getElement(value.ref);
-		if (!current) throw new Error("does not exist");
+		if (!current) throw new Error("does not exist: " + value.ref);
 
 		return current[linkGetter];
 	}
@@ -80,29 +74,22 @@ OMap.apply = (reg, value, link, events) => {
 };
 
 OObject.verify = (reg, value) => {
-	const nodes = reg.nodes_;
+	const link = reg.nodes_.get(value.ref);
 
 	if (isInstance(value, Insert)) {
-		let prop = value.ref;
-		if (typeof prop !== 'string') {
-			throw new Error("must be a string: " + prop);
+		if (link) {
+			throw new Error("already populated: " + value.ref);
 		}
 
-		let node = nodes.get(prop);
-		if (node) {
-			throw new Error("already populated: " + prop);
+		if (typeof value.ref !== 'string') {
+			throw new Error("must be a string: " + value.ref);
 		}
 
-		return {reg_: reg, query_: prop};
-	} else if (isInstance(value, Modify)) {
-		const link = nodes.get(value.ref);
-		if (!link) throw new Error("does not exist");
-		return link;
+		return {reg_: reg, query_: value.ref};
 	} else {
-		assert(isInstance(value, Delete), "unknown event type");
+		assert(isInstance(value, Delete) || isInstance(value, Modify), "unknown event type");
 
-		const link = nodes.get(value.ref);
-		if (!link) throw new Error("does not exist");
+		if (!link) throw new Error("does not exist: " + value.ref);
 		return link;
 	}
 };
@@ -143,14 +130,8 @@ OArray.verify = (reg, value) => {
 		}
 
 		return {reg_: reg, query_: ref};
-	} else if (isInstance(value, Modify)) {
-		if (!link || indexCompare(link.query_, ref) !== 0) {
-			throw new Error("does not exist: " + ref.decimal_ + ' ' + ref);
-		}
-
-		return link;
 	} else {
-		assert(isInstance(value, Delete), "unknown event type");
+		assert(isInstance(value, Delete) || isInstance(value, Modify), "unknown event type");
 
 		if (!link || indexCompare(link.query_, ref) !== 0) {
 			throw new Error("does not exist: " + ref.decimal_ + ' ' + ref);
