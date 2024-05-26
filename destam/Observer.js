@@ -158,37 +158,40 @@ createClass(Observer, {
 		assert(backward == null || typeof backward === 'function',
 			"Backward must be a function or undefined");
 
-		let hasCache = 0;
 		let cache;
-
-		const get = () => {
-			if (hasCache) {
-				return cache;
-			} else {
-				return forward(this.get());
-			}
-		};
+		let parentListener;
+		const listeners = [];
 
 		return Observer(
-			get,
+			() => {
+				if (len(listeners)) {
+					return cache;
+				} else {
+					return forward(this.get());
+				}
+			},
 			backward && (v => this.set(backward(v))),
 			listener => {
-				let value = get();
+				if (!parentListener) {
+					parentListener = this.register_((commit, args) => {
+						const value = forward(this.get());
 
-				return this.register_((commit, args) => {
-					cache = get();
-
-					if (!isEqual(value, cache)) {
-						const clear = !hasCache;
-						hasCache = 1;
-						value = cache;
-						try {
-							listener(commit, args);
-						} finally {
-							if (clear) cache = hasCache = 0;
+						if (!isEqual(value, cache)) {
+							invokeListeners(listeners, () => (cache = value, commit), args);
 						}
+					}, watchGovernor);
+					cache = forward(this.get());
+				}
+
+				listener = {listener_: listener};
+				push(listeners, listener);
+
+				return () => {
+					if (remove(listeners, listener) && !len(listeners)) {
+						parentListener();
+						cache = parentListener = 0;
 					}
-				}, watchGovernor);
+				};
 			},
 		);
 	},
@@ -208,9 +211,8 @@ createClass(Observer, {
 	 *  An observer
 	 */
 	unwrap () {
-		let cache;
 		const get = type => {
-			const val = cache || this.get();
+			const val = this.get();
 			if (isInstance(val, Observer)) {
 				return type ? val.get() : val;
 			}
@@ -226,15 +228,7 @@ createClass(Observer, {
 				const update = () => {
 					if (l) l();
 					const listen = get();
-					l = listen !== this && listen.register_((commit, args) => {
-						const clear = !cache;
-						cache = listen;
-						try {
-							listener(commit, args);
-						} finally {
-							if (clear) cache = 0;
-						}
-					}, governor);
+					l = listen !== this && listen.register_(listener, governor);
 				};
 
 				const parent = this.register_((commit, args) => {
