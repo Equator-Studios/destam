@@ -681,9 +681,12 @@ createClass(Observer, {
 				listener = {listener_: listener};
 
 				let arr = map.get(sel);
-				if (!arr) map.set(sel, arr = []);
+				if (!arr) {
+					map.set(sel, arr = [listener]);
+				} else {
+					push(arr, listener);
+				}
 
-				push(arr, listener);
 				return () => {
 					if (remove(arr, listener) && !len(arr) && map.delete(sel) && map.size === 0) {
 						selectionListener();
