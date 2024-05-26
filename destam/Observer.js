@@ -180,8 +180,9 @@ createClass(Observer, {
 					if (!isEqual(value, cache)) {
 						const clear = !hasCache;
 						hasCache = 1;
+						value = cache;
 						try {
-							listener([Synthetic(value, value = cache)]);
+							listener(commit, args);
 						} finally {
 							if (clear) cache = hasCache = 0;
 						}

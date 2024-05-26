@@ -390,8 +390,9 @@ test("array in object shallow after map", () => {
 	});
 
 	const events = [];
-	obj.observer.path('arr').map(arr => [...arr]).shallow().watch(event => {
-		events.push(event.value);
+	const obs = obj.observer.path('arr').map(arr => [...arr]).shallow();
+	obs.watch(event => {
+		events.push(obs.get());
 	});
 
 	obj.arr.push(1);
