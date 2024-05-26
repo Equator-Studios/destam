@@ -759,9 +759,7 @@ createClass(Observer, {
 						const obs = link.reg_.value?.[observerGetter];
 						for (const entry of getAll()) {
 							registerMemo(entry, obs, info);
-						};
-
-						return 0;
+						}
 					});
 
 					value = this.get();
