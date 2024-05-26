@@ -837,3 +837,179 @@ test("observer timer in map and unwrap", async () => {
 
 	expect(states).to.deep.equal(['not-activated', 0, 1, 2]);
 });
+
+test("observer selector", () => {
+	const selected = Observer.mutable(null);
+	const selector = selected.selector();
+
+	const one = selector(1);
+	const two = selector(2);
+
+	expect(one.get()).to.equal(false);
+	expect(two.get()).to.equal(false);
+	selected.set(1);
+	expect(one.get()).to.equal(true);
+	expect(two.get()).to.equal(false);
+	selected.set(2);
+	expect(one.get()).to.equal(false);
+	expect(two.get()).to.equal(true);
+	selected.set(null);
+	expect(one.get()).to.equal(false);
+	expect(two.get()).to.equal(false);
+});
+
+test("observer selector custom values", () => {
+	const selected = Observer.mutable(null);
+	const selector = selected.selector('yes', 'no');
+
+	const one = selector(1);
+	const two = selector(2);
+
+	expect(one.get()).to.equal('no');
+	expect(two.get()).to.equal('no');
+	selected.set(1);
+	expect(one.get()).to.equal('yes');
+	expect(two.get()).to.equal('no');
+	selected.set(2);
+	expect(one.get()).to.equal('no');
+	expect(two.get()).to.equal('yes');
+	selected.set(null);
+	expect(one.get()).to.equal('no');
+	expect(two.get()).to.equal('no');
+});
+
+test("observer duplicate selector", () => {
+	const selected = Observer.mutable(null);
+	const selector = selected.selector();
+
+	const one = selector(1);
+	const two = selector(1);
+
+	expect(one.get()).to.equal(false);
+	expect(two.get()).to.equal(false);
+	selected.set(1);
+	expect(one.get()).to.equal(true);
+	expect(two.get()).to.equal(true);
+	selected.set(null);
+	expect(one.get()).to.equal(false);
+	expect(two.get()).to.equal(false);
+});
+
+test("observer selector events", () => {
+	const selected = Observer.mutable(null);
+	const selector = selected.selector();
+
+	const one = selector(1);
+	const two = selector(2);
+
+	const events = [];
+	one.watch(delta => events.push(1, one.get()));
+	two.watch(delta => events.push(2, two.get()));
+
+	selected.set(1);
+	selected.set(2);
+	selected.set(null);
+
+	expect(events).to.deep.equal([1, true, 1, false, 2, true, 2, false]);
+});
+
+test("observer duplicate selector events", () => {
+	const selected = Observer.mutable(null);
+	const selector = selected.selector();
+
+	const one = selector(1);
+	const two = selector(1);
+
+	const events = [];
+	one.watch(delta => events.push(1, one.get()));
+	two.watch(delta => events.push(1, two.get()));
+
+	selected.set(1);
+	selected.set(null);
+
+	expect(events).to.deep.equal([1, true, 1, true, 1, false, 1, false]);
+});
+
+test("observer duplicate selector events multiple listeners", () => {
+	const selected = Observer.mutable(null);
+	const selector = selected.selector();
+
+	const one = selector(1);
+
+	const events = [];
+	one.watch(delta => events.push(1, one.get()));
+	one.watch(delta => events.push(1, one.get()));
+
+	selected.set(1);
+	selected.set(null);
+
+	expect(events).to.deep.equal([1, true, 1, true, 1, false, 1, false]);
+});
+
+test("observer selector cleanup", () => {
+	let registers = 0;
+	let removes = 0;
+	const selected = Observer(() => null, null, l => {
+		registers++;
+		return () => removes++;
+	});
+	const selector = selected.selector();
+
+	const one = selector(1).watch(() => {});
+	const two = selector(2).watch(() => {});
+
+	one.remove();
+	two.remove();
+
+	expect(registers).to.equal(1);
+	expect(removes).to.equal(1);
+});
+
+test("observer selector cleanup multiple listeners", () => {
+	let registers = 0;
+	let removes = 0;
+	const selected = Observer(() => null, null, l => {
+		registers++;
+		return () => removes++;
+	});
+	const selector = selected.selector();
+
+	const sel = selector(1);
+	const one = sel.watch(() => {});
+	const two = sel.watch(() => {});
+
+	one.remove();
+	two.remove();
+
+	expect(registers).to.equal(1);
+	expect(removes).to.equal(1);
+});
+
+test("observer selector initial selector", () => {
+	const selected = Observer.mutable(1);
+	const selector = selected.selector();
+
+	const one = selector(1);
+	const two = selector(2);
+
+	expect(one.get()).to.equal(true);
+	expect(two.get()).to.equal(false);
+	selected.set(null);
+	expect(one.get()).to.equal(false);
+	expect(two.get()).to.equal(false);
+});
+
+test("observer selector initial selector events", () => {
+	const selected = Observer.mutable(1);
+	const selector = selected.selector();
+
+	const one = selector(1);
+	const two = selector(2);
+
+	const events = [];
+	one.watch(delta => events.push(1, one.get()));
+	two.watch(delta => events.push(2, two.get()));
+
+	selected.set(2);
+	expect(events).to.deep.equal([1, false, 2, true]);
+});
