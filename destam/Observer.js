@@ -618,6 +618,81 @@ createClass(Observer, {
 	},
 
 	/**
+	 * This optimizes a selection pattern to be O(1) instead of O(n) where n
+	 * is the number of selectable items.
+	 *
+	 * Consider:
+	 *   You have a list of items that you want to be selectable where you have
+	 *   an observer that controls which item it currently selected. Let's assume
+	 *   that we want to have a radio button selection for your favorite animal
+	 *   A naiive approach would be to use map():
+	 *
+	 *   const selected = Observer.mutable(null);
+	 *   createRadioButton(selected.map(sel => sel === 'dog'));
+	 *   createRadioButton(selected.map(sel => sel === 'cat'));
+	 *   createRadioButton(selected.map(sel => sel === 'guinea pig'));
+	 *
+	 *   In this approach, every time we update the selection, the map function
+	 *   for all items will be invoked. This will run in O(n) time and invoke
+	 *   all three map functions. Instead, let's use selector().
+	 *
+	 *   const selector = selected.selector();
+	 *   createRadioButton(selector('dog'));
+	 *   createRadioButton(selector('cat'));
+	 *   createRadioButton(selector('guinea pig'));
+	 *
+	 *   Here, when we change the selection, selector() will only update the
+	 *   last selected item and the new item to be selected. We have reduced the
+	 *   amount of computations to at most two.
+	 *
+	 * Paramaters:
+	 *   selValue: The value to be used when the current selector is selected.
+	 *     This is optional and defaults to true.
+	 *   defValue: The value to be used when the current selector is unselected.
+	 *     This is optional and defaults to false.
+	 *
+	 * Returns:
+	 *   A function that takes the item to be compared to when deciding what
+	 *   should be selected as it's only paramater.
+	 */
+	selector (selValue = true, defValue = false) {
+		const map = new Map();
+		let prevSel = this.get();
+		let selectionListener;
+
+		return sel => Observer(
+			() => isEqual(sel, this.get()) ? selValue : defValue,
+			null,
+			listener => {
+				if (!selectionListener) selectionListener = shallowListener(this, commit => {
+					const val = this.get();
+					if (isEqual(val, prevSel)) return;
+
+					const prev = map.get(prevSel);
+					const next = map.get(val);
+					prevSel = val;
+
+					if (prev) invokeListeners(prev, () => commit);
+					if (next) invokeListeners(next, () => commit);
+				});
+
+				listener = {listener_: listener};
+
+				let arr = map.get(sel);
+				if (!arr) map.set(sel, arr = []);
+
+				push(arr, listener);
+				return () => {
+					if (remove(arr, listener) && !len(arr) && map.delete(sel) && map.size === 0) {
+						selectionListener();
+						selectionListener = 0;
+					}
+				};
+			},
+		);
+	},
+
+	/**
 	 * Creates an observer that memoizes state and collapses all listeners down
 	 * to one listener for the parent state. In the case where you may have many
 	 * similar observer queries that only differ in the end, this can be used
@@ -867,9 +942,9 @@ Observer.mutable = value => {
 		if (isEqual(value, v)) return;
 		invokeListeners(listeners, () => [Synthetic(value, value = v)]);
 	}, l => {
-		let obj = {listener_: l};
-		push(listeners, obj);
-		return () => remove(listeners, obj);
+		l = {listener_: l};
+		push(listeners, l);
+		return () => remove(listeners, l);
 	});
 };
 
