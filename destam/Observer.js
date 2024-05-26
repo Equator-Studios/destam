@@ -116,6 +116,19 @@ export const watchGovernor = (child, parent) => {
 	return true;
 };
 
+let processingListeners;
+const invokeListeners = (listeners, commit) => {
+	if (processingListeners) {
+		call(processingListeners);
+	}
+
+	processingListeners = listeners.slice();
+	processingListeners.event_ = commit();
+	callListeners(processingListeners);
+
+	processingListeners = 0;
+};
+
 createClass(Observer, {
 	register_: () => noop,
 	set: immutableSetter,
@@ -655,15 +668,11 @@ createClass(Observer, {
 			},
 			(listener, governor) => {
 				if (!numListeners) {
-					let currentEvents = 0;
 					parentListener = this.register_(commit => {
-						if (currentEvents) call(currentEvents);
-
-						value = this.get();
-						currentEvents = getAll().slice();
-						currentEvents.event_ = commit;
-						callListeners(currentEvents);
-						currentEvents = 0;
+						invokeListeners(getAll(), () => {
+							value = this.get();
+							return commit;
+						});
 					}, (link, user, parent) => {
 						if (isSymbol(user)) return info = [link, user, parent];
 
@@ -853,19 +862,14 @@ Observer.NULL = Observer(() => null);
  */
 Observer.mutable = value => {
 	const listeners = [];
-	let currentEvents = 0;
 
 	return Observer(() => value, v => {
 		if (isEqual(value, v)) return;
-
-		if (currentEvents) call(currentEvents);
-		currentEvents = listeners.map(e => ({listener_: e}));
-		currentEvents.event_ = [Synthetic(value, value = v)];
-		callListeners(currentEvents);
-		currentEvents = 0;
+		invokeListeners(listeners, () => [Synthetic(value, value = v)]);
 	}, l => {
-		push(listeners, l);
-		return () => remove(listeners, l);
+		let obj = {listener_: l};
+		push(listeners, obj);
+		return () => remove(listeners, obj);
 	});
 };
 
