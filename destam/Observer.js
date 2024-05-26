@@ -655,7 +655,7 @@ createClass(Observer, {
 	 *
 	 * Returns:
 	 *   A function that takes the item to be compared to when deciding what
-	 *   should be selected as it's only paramater.
+	 *   should be selected as its only paramater.
 	 */
 	selector (selValue = true, defValue = false) {
 		const map = new Map();
