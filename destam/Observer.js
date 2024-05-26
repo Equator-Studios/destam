@@ -664,7 +664,10 @@ createClass(Observer, {
 
 		return sel => Observer(
 			() => isEqual(sel, this.get()) ? selValue : defValue,
-			null,
+			val => {
+				assert(val === selValue);
+				this.set(sel);
+			},
 			listener => {
 				if (!selectionListener) selectionListener = shallowListener(this, (commit, args) => {
 					const val = this.get();
