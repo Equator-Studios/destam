@@ -156,4 +156,35 @@ import { clone } from './clone.js';
 		orig.prop = "prop";
 		two.obj = orig;
 	});
+
+	test('increment number', async (one, two, flush, flush2) => {
+		one.num = 0;
+
+		for (let i = 0; i < 5; i++) {
+			one.num++;
+			await flush();
+
+			two.num++;
+			await flush2();
+		}
+
+		expect(two.num).to.equal(10);
+	});
+
+	test('object replacement', async (one, two, flush, flush2) => {
+		two.observer.watch(delta => {
+			if (delta.value.value) return;
+
+			two[delta.path()[0]] = OObject({value: delta.value});
+		});
+
+		one.one = 1;
+		one.two = 2;
+		one.three = 3;
+
+		await flush();
+		await flush2();
+
+		one.one.prop = "prop";
+	});
 });
