@@ -117,12 +117,13 @@ export const watchGovernor = (child, parent) => {
 };
 
 let processingListeners;
-const invokeListeners = (listeners, commit) => {
+const invokeListeners = (listeners, commit, args) => {
 	if (processingListeners) {
 		call(processingListeners);
 	}
 
 	processingListeners = listeners.slice();
+	processingListeners.args_ = args;
 	processingListeners.event_ = commit();
 	callListeners(processingListeners);
 
@@ -665,7 +666,7 @@ createClass(Observer, {
 			() => isEqual(sel, this.get()) ? selValue : defValue,
 			null,
 			listener => {
-				if (!selectionListener) selectionListener = shallowListener(this, commit => {
+				if (!selectionListener) selectionListener = shallowListener(this, (commit, args) => {
 					const val = this.get();
 					if (isEqual(val, prevSel)) return;
 
@@ -673,8 +674,8 @@ createClass(Observer, {
 					const next = map.get(val);
 					prevSel = val;
 
-					if (prev) invokeListeners(prev, () => commit);
-					if (next) invokeListeners(next, () => commit);
+					if (prev) invokeListeners(prev, () => commit, args);
+					if (next) invokeListeners(next, () => commit, args);
 				});
 
 				listener = {listener_: listener};
@@ -744,11 +745,11 @@ createClass(Observer, {
 			},
 			(listener, governor) => {
 				if (!numListeners) {
-					parentListener = this.register_(commit => {
+					parentListener = this.register_((commit, args) => {
 						invokeListeners(getAll(), () => {
 							value = this.get();
 							return commit;
-						});
+						}, args);
 					}, (link, user, parent) => {
 						if (isSymbol(user)) return info = [link, user, parent];
 
