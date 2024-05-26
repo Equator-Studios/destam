@@ -665,13 +665,7 @@ createClass(Observer, {
 						callListeners(currentEvents);
 						currentEvents = 0;
 					}, (link, user, parent) => {
-						if (isSymbol(user)) {
-							for (const entry of getAll()) {
-								entry.user_ = entry.governor_(link, user, parent);
-							}
-
-							return info = [link, user, parent];
-						}
+						if (isSymbol(user)) return info = [link, user, parent];
 
 						const obs = link.reg_.value?.[observerGetter];
 						for (const entry of getAll()) {
