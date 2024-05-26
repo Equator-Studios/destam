@@ -673,12 +673,9 @@ createClass(Observer, {
 					const val = this.get();
 					if (isEqual(val, prevSel)) return;
 
-					const prev = map.get(prevSel);
-					const next = map.get(val);
-					prevSel = val;
-
-					if (prev) invokeListeners(prev, () => commit, args);
-					if (next) invokeListeners(next, () => commit, args);
+					invokeListeners(
+						(map.get(prevSel) || []).concat(map.get(val) || []),
+						() => (prevSel = val, commit), args);
 				});
 
 				listener = {listener_: listener};
