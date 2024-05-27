@@ -641,7 +641,7 @@ createClass(Observer, {
 	 *   last selected item and the new item to be selected. We have reduced the
 	 *   amount of computations to at most two.
 	 *
-	 * Paramaters:
+	 * Params:
 	 *   selValue: The value to be used when the current selector is selected.
 	 *     This is optional and defaults to true.
 	 *   defValue: The value to be used when the current selector is unselected.
@@ -649,7 +649,7 @@ createClass(Observer, {
 	 *
 	 * Returns:
 	 *   A function that takes the item to be compared to when deciding what
-	 *   should be selected as its only paramater.
+	 *   should be selected as its only parameter.
 	 */
 	selector (selValue = true, defValue = false) {
 		const map = new Map();
