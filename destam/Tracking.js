@@ -126,7 +126,7 @@ OArray.verify = (reg, value) => {
 
 	if (isInstance(value, Insert)) {
 		if (link && indexCompare(link.query_, ref) === 0) {
-			throw new Error("already exists: " + ref.decimal_ + ' ' + ref);
+			throw new Error("already exists: " + ref);
 		}
 
 		return {reg_: reg, query_: ref};
@@ -134,7 +134,7 @@ OArray.verify = (reg, value) => {
 		assert(isInstance(value, Delete) || isInstance(value, Modify), "unknown event type");
 
 		if (!link || indexCompare(link.query_, ref) !== 0) {
-			throw new Error("does not exist: " + ref.decimal_ + ' ' + ref);
+			throw new Error("does not exist: " + ref);
 		}
 
 		return link;
