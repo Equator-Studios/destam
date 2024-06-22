@@ -679,7 +679,10 @@ createClass(Observer, {
 				}
 
 				return () => {
-					if (remove(arr, listener) && !len(arr) && map.delete(sel) && map.size === 0) {
+					if ((
+								(len(arr) === 1 && arr[0] === listener) ||
+								(remove(arr, listener) && !len(arr))
+							) && map.delete(sel) && map.size === 0) {
 						selectionListener();
 						selectionListener = 0;
 					}
