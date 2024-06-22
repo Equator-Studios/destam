@@ -54,7 +54,7 @@ export const call = events => {
 		const cur = events[events.index_++];
 
 		try {
-			cur.listener_(events.event_ || cur.current_, events.args_);
+			(cur.listener_ || cur)(events.event_ || cur.current_, events.args_);
 		} catch (e) {
 			events.error_ = e;
 			events.hasError_ = 1;

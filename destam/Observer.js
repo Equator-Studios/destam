@@ -183,7 +183,6 @@ createClass(Observer, {
 					cache = forward(this.get());
 				}
 
-				listener = {listener_: listener};
 				push(listeners, listener);
 
 				return () => {
@@ -672,8 +671,6 @@ createClass(Observer, {
 						() => (prevSel = val, commit), args);
 				});
 
-				listener = {listener_: listener};
-
 				let arr = map.get(sel);
 				if (!arr) {
 					map.set(sel, arr = [listener]);
@@ -939,7 +936,6 @@ Observer.mutable = value => {
 		if (isEqual(value, v)) return;
 		invokeListeners(listeners, () => [Synthetic(value, value = v)]);
 	}, l => {
-		l = {listener_: l};
 		push(listeners, l);
 		return () => remove(listeners, l);
 	});
