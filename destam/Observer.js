@@ -30,11 +30,11 @@ export const fromPath = Symbol();
 export const fromIgnore = Symbol();
 export const getRef = Symbol();
 
-const chainGov = (prev, next) => (child, info, entry) => {
+const chainGov = (prev, next) => (info, child, entry) => {
 	if (isSymbol(info)) info = [prev, info];
 	let [gov, curInfo] = info;
 
-	curInfo = gov(child, curInfo, entry);
+	curInfo = gov(curInfo, child, entry);
 	if (!curInfo) {
 		return 0;
 	}
@@ -42,7 +42,7 @@ const chainGov = (prev, next) => (child, info, entry) => {
 	if (gov === prev && isSymbol(curInfo)) {
 		gov = next;
 
-		curInfo = gov(child, curInfo, entry);
+		curInfo = gov(curInfo, child, entry);
 		if (!curInfo) {
 			return 0;
 		}
@@ -51,7 +51,7 @@ const chainGov = (prev, next) => (child, info, entry) => {
 	return [gov, curInfo];
 };
 
-const pathGov = path => (child, info) => {
+const pathGov = path => (info, child) => {
 	if (info === fromPath || info === fromIgnore) return 1;
 	if (isSymbol(info)) info = 1;
 
@@ -98,17 +98,17 @@ const registerMemo = (entry, obs, info) => {
 	}
 
 	entry.parent_ = obs?.register_(entry.listener_, entry.governor_, {
-		link_: info[0], user_: entry.user_, parent_: info[2],
+		link_: info[1], user_: entry.user_, parent_: info[2],
 	});
 };
 
 export const shallowListener = (obs, listener) => {
-	return obs.register_(listener, (child, info) => isSymbol(info));
+	return obs.register_(listener, isSymbol);
 };
 
-export const watchGovernor = (child, parent) => {
+export const watchGovernor = (info, child) => {
 	// don't mask if we are inheriting frem a path
-	if (parent !== fromPath) {
+	if (info !== fromPath) {
 		let str = child.query_;
 		return typeof str !== 'string' || str[0] !== '_';
 	}
@@ -336,11 +336,11 @@ createClass(Observer, {
 		return Observer(
 			this.get,
 			this.set,
-			(listener, governor) => this.register_(listener, (child, info, entry) => {
+			(listener, governor) => this.register_(listener, (info, child, entry) => {
 				if (isSymbol(info)) info = [0, info];
 				if (info[0] > level) return 0;
 
-				const currentVal = governor(child, info[1], entry);
+				const currentVal = governor(info[1], child, entry);
 				if (!currentVal) return 0;
 
 				return [info[0] + 1, currentVal];
@@ -371,7 +371,7 @@ createClass(Observer, {
 		return Observer(
 			this.get,
 			this.set,
-			(listener, governor) => this.register_(listener, chainGov((child, info) => {
+			(listener, governor) => this.register_(listener, chainGov(info => {
 				if (info === fromPath || info === fromIgnore) return 1;
 				if (isSymbol(info)) info = 1;
 
@@ -419,7 +419,7 @@ createClass(Observer, {
 		return Observer(
 			this.get,
 			this.set,
-			(listener, governor) => this.register_(listener, chainGov((child, info) => {
+			(listener, governor) => this.register_(listener, chainGov((info, child) => {
 				if (info === fromPath || info === fromIgnore) return 1;
 				if (isSymbol(info)) info = 1;
 
@@ -472,14 +472,14 @@ createClass(Observer, {
 					setPath(this, paths[i], value[i]);
 				}
 			},
-			(listener, governor) => this.register_(listener, (child, info, entry) => {
+			(listener, governor) => this.register_(listener, (info, child, entry) => {
 				if (isSymbol(info)) {
 					info = paths.map(path => [chainGov(pathGov(path), governor), info]);
 				}
 
 				let ret = false;
 				for (const [gov, childInfo] of info) {
-					const value = gov(child, childInfo, entry);
+					const value = gov(childInfo, child, entry);
 					if (value) {
 						ret = ret || [];
 						push(ret, [gov, value]);
@@ -552,7 +552,7 @@ createClass(Observer, {
 		return Observer(
 			this.get,
 			this.set,
-			(listener, governor) => this.register_(listener, chainGov((child, info) => {
+			(listener, governor) => this.register_(listener, chainGov((info, child) => {
 				if (info === fromPath || info === fromIgnore) return 1;
 				if (isSymbol(info)) info = 1;
 
@@ -747,8 +747,8 @@ createClass(Observer, {
 							value = this.get();
 							return commit;
 						}, args);
-					}, (link, user, parent) => {
-						if (isSymbol(user)) return info = [link, user, parent];
+					}, (user, link, parent) => {
+						if (isSymbol(user)) return info = [user, link, parent];
 
 						const obs = link.reg_.value?.[observerGetter];
 						for (const entry of getAll()) {

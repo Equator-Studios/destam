@@ -236,9 +236,9 @@ const Tracker = observer => {
 					user_: [parent.user_, 1],
 					governor_: {
 						listener_: listener,
-						governor_: (child, info) => {
+						governor_: (info, child) => {
 							if (!info[1]) return 0;
-							let childInfo = parent.governor_.governor_(child, info[0]);
+							let childInfo = parent.governor_.governor_(info[0], child);
 							if (!childInfo) return 0;
 							return [childInfo, info[0] - 1];
 						},

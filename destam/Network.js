@@ -43,7 +43,7 @@ const addListener = (reg, parent) => {
 	parent.regPrev_ = reg;
 
 	for (let link = reg.linkNext_; link !== reg; link = link.linkNext_) {
-		const user = governor.governor_(link, parent.user_, parent);
+		const user = governor.governor_(parent.user_, link, parent);
 		if (user) {
 			const child = createLinkEntry(link, parent, governor, user);
 			if (child) addListener(link.observer_, child);
@@ -86,7 +86,7 @@ export const link = (link, observer, insert) => {
 	link.next_ = link.prev_ = link;
 
 	for (let reg = link.reg_.regNext_; reg !== link.reg_; reg = reg.regNext_) {
-		const user = reg.governor_.governor_(link, reg.user_, reg);
+		const user = reg.governor_.governor_(reg.user_, link, reg);
 		if (user) {
 			const child = createLinkEntry(link, reg, reg.governor_, user);
 			if (child) addListener(observer, child);
