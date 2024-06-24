@@ -139,7 +139,7 @@ export const setIDConstructor = (cons) => {
 	createID = cons;
 };
 
-export const createReg = (constructor, id) => {
+export const createReg = (constructor, id = createID?.()) => {
 	const reg = createInstance(Observer);
 	reg.get = () => reg.value;
 	reg.register_ = (listener_, governor_, options) => {
@@ -162,7 +162,7 @@ export const createReg = (constructor, id) => {
 		};
 	};
 
-	reg.id = id || createID?.();
+	reg.id = id;
 	reg.source_ = constructor;
 
 	reg.regNext_ = reg.regPrev_ = reg;
