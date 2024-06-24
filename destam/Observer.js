@@ -915,7 +915,7 @@ const WatchedObserver = createClass((get, set, register, listener, remove) => {
 /**
  * Immutable observer that always resolves to null.
  */
-Observer.NULL = Observer(() => null);
+Observer.NULL = Observer(noop);
 
 /**
  * Creates an observer wrapping the given value. Given an initial value,

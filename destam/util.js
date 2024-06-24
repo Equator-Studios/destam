@@ -48,7 +48,7 @@ export const assert = (condition, error) => {
 	}
 };
 
-export const noop = () => {};
+export const noop = () => null;
 
 export const call = events => {
 	for (events.index_ ||= 0; events.index_ < len(events);) {
