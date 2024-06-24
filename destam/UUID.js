@@ -8,8 +8,7 @@ let random = bytes => {
 };
 
 const hex = '0123456789ABCDEF';
-
-const UUID = (size = 4) => {
+const UUID = createClass((size = 4) => {
 	let buffer;
 
 	if (typeof size === 'number') {
@@ -55,9 +54,7 @@ const UUID = (size = 4) => {
 	const uuid = createInstance(UUID);
 	uuid.buffer = buffer;
 	return uuid;
-};
-
-createClass(UUID, {
+}, {
 	rawHex () {
 		let s = '';
 

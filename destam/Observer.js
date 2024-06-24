@@ -7,24 +7,6 @@ const immutableSetter = () => {
 	assert(false, "Cannot set an immutable observer");
 };
 
-/**
- * Constructor for observer objects. See Observer.mutable for a full
- * implementation.
- *
- * Params:
- *   get: The getter for the observer
- *   set: The setter for the observer
- *   register: A callback to register a listener for the observer
- */
-const Observer = (get, set, register) => {
-	let obj = createInstance(Observer);
-	obj.get = get;
-	if (set) obj.set = set;
-	if (register) obj.register_ = register;
-
-	return obj;
-};
-
 export const baseGovernorParent = Symbol();
 export const fromPath = Symbol();
 export const fromIgnore = Symbol();
@@ -130,7 +112,23 @@ const invokeListeners = (listeners, commit, args) => {
 	processingListeners = 0;
 };
 
-createClass(Observer, {
+/**
+ * Constructor for observer objects. See Observer.mutable for a full
+ * implementation.
+ *
+ * Params:
+ *   get: The getter for the observer
+ *   set: The setter for the observer
+ *   register: A callback to register a listener for the observer
+ */
+const Observer = createClass((get, set, register) => {
+	let obj = createInstance(Observer);
+	obj.get = get;
+	if (set) obj.set = set;
+	if (register) obj.register_ = register;
+
+	return obj;
+}, {
 	register_: () => noop,
 	set: immutableSetter,
 
@@ -874,7 +872,7 @@ createClass(Observer, {
 	}
 });
 
-const WatchedObserver = (get, set, register, listener, remove) => {
+const WatchedObserver = createClass((get, set, register, listener, remove) => {
 	const o = createInstance(WatchedObserver);
 	o.get = get;
 	o.set = set;
@@ -882,9 +880,7 @@ const WatchedObserver = (get, set, register, listener, remove) => {
 	o.listener_ = listener;
 	o.remove = remove;
 	return o;
-};
-
-createClass(WatchedObserver, {
+}, {
 	/**
 	 * Defines a callback for when this watcher is about to be removed.
 	 * Subequent calls to remove will not trigger a duplicate call to the

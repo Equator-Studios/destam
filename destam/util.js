@@ -7,6 +7,7 @@ export const isInstance = (inst, type) => inst instanceof type;
 export const createClass = (constructor, addon = {}, extend) => {
 	addon.constructor = constructor;
 	constructor.prototype = extend ? Object.assign(extend, addon) : addon;
+	return constructor;
 };
 
 export const createInstance = (constructor, props) => Object.create(constructor.prototype, props);

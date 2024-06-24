@@ -3,7 +3,7 @@ import {observerGetter} from './Observer.js';
 import {isSymbol, isEqual, createProxy, createClass} from './util.js';
 import * as Network from './Network.js';
 
-const OObject = (init, id) => {
+const OObject = createClass((init, id) => {
 	const nodes = new Map();
 	const reg = Network.createReg(OObject, id);
 
@@ -62,7 +62,6 @@ const OObject = (init, id) => {
 			return true;
 		},
 	);
-};
+});
 
-createClass(OObject);
 export default OObject;

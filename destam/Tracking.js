@@ -167,7 +167,7 @@ OArray.apply = (reg, value, link, events) => {
  * Creates a map of observable nodes inside the network. This is used for
  * generating and applying deltas.
  */
-const Tracker = observer => {
+const Tracker = createClass(observer => {
 	assert(isInstance(observer, Observer), "Paramater must be an observer");
 
 	const network = createInstance(Tracker);
@@ -272,10 +272,7 @@ const Tracker = observer => {
 	network.listener = observer.register_(listener, watchGovernor);
 
 	return network;
-};
-
-
-createClass(Tracker, {
+}, {
 	/**
 	 * Combines events over a time period into a commit.
 	 *
