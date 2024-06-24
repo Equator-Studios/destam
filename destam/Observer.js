@@ -820,10 +820,10 @@ const Observer = createClass((get, set, register) => {
 					timer = setInterval(() => {
 						if (waiting) {
 							listener(waiting);
-							waiting = 0;
+							return waiting = 0;
 						} else {
 							clearInterval(timer);
-							timer = 0;
+							return timer = 0;
 						}
 					}, ms);
 				}, governor);
@@ -834,7 +834,7 @@ const Observer = createClass((get, set, register) => {
 						listener(waiting);
 					}
 
-					remove();
+					return remove();
 				};
 			}
 		);
@@ -1038,9 +1038,7 @@ Observer.timer = (time) => {
 			listener([Synthetic(i, ++i)]);
 		}, time);
 
-		return () => {
-			clearInterval(interval);
-		};
+		return () => clearInterval(interval);
 	});
 };
 
