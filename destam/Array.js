@@ -116,13 +116,11 @@ export const positionIndex = (array, pos) => {
 	return indexes[pos]?.query_;
 };
 
-const splice = (reg, start = 0, count, arr) => {
+const splice = (reg, start, count, arr) => {
 	const init = reg.init_;
 	const indexes = reg.indexes_;
 	const addCount = len(arr);
 	const events = [];
-
-	count = Math.min(count ?? len(init), len(init) - start);
 
 	assert(!isNaN(start) && !isNaN(count), 'expected integers');
 	assert(start >= 0 && start <= len(init), 'start out of bounds: ' + start);
@@ -206,7 +204,7 @@ const OArray = createClass((init, id) => {
 	reg.indexes_ = indexes;
 
 	return createProxy(init, reg, {
-		splice: (start, len, ...val) => splice(reg, start, len, val),
+		splice: (start = 0, l = len(init), ...val) => splice(reg, start, Math.min(l, len(init) - start), val),
 		push: (...values) => splice(reg, len(init), 0, values),
 		unshift: val => splice(reg, 0, 0, [val]),
 		shift: () => splice(reg, 0, 1, [])[0],
