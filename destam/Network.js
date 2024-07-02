@@ -140,9 +140,7 @@ export const setIDConstructor = (cons) => {
 };
 
 export const createReg = (constructor, id = createID?.()) => {
-	const reg = createInstance(Observer);
-	reg.get = () => reg.value;
-	reg.register_ = (listener_, governor_, options) => {
+	const reg = Observer(() => reg.value, null, (listener_, governor_, options) => {
 		let listenerNode = {
 			user_: baseGovernorParent,
 			governor_: {
@@ -160,7 +158,7 @@ export const createReg = (constructor, id = createID?.()) => {
 			if (listenerNode) removeListener(reg, listenerNode);
 			listenerNode = 0;
 		};
-	};
+	});
 
 	reg.id = id;
 	reg.source_ = constructor;
