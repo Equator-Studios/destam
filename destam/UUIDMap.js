@@ -103,6 +103,21 @@ OMap.prototype = Object.assign(createInstance(UUID.Map), {
 
 		return !!elem;
 	},
+	clear () {
+		const reg = this[observerGetter];
+
+		let events = [];
+		for (const elem of reg.user_.elements()) {
+			const link = elem[linkGetter];
+
+			Network.linkApply(link, events, Delete, elem, undefined, elem.id, reg.id);
+			Network.unlink(link);
+		}
+
+		Network.callListeners(events);
+
+		reg.user_.clear();
+	},
 });
 
 export default OMap;
