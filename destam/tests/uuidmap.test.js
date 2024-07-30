@@ -139,3 +139,16 @@ test("omap delete noexist with values", () => {
 	expect(map.delete(UUID())).to.equal(false);
 });
 
+test("omap clear delta consistentcy", () => {
+	const map = OMap();
+	const id = UUID();
+
+	map.set(id, {});
+
+	map.observer.watch(delta => {
+		expect(map.has(id)).to.equal(false);
+	});
+
+	map.clear();
+});
+
