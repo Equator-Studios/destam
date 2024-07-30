@@ -203,6 +203,14 @@ import { stringify, parse, clone } from './clone.js';
 		map.set(id, true);
 		map.delete(id);
 	});
+
+	test("network omap clear", object => {
+		const map = object.map = OMap();
+
+		let id = UUID();
+		map.set(id, true);
+		map.clear();
+	});
 });
 
 test("network basic tracking", () => {
