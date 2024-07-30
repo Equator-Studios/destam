@@ -87,8 +87,11 @@ OMap.prototype = Object.assign(createInstance(UUID.Map), {
 		if (!comp) comp = elem => UUID.compare(elem.id, id);
 
 		const reg = this[observerGetter];
+
+		let ret;
 		const elem = reg.user_.delete(id, (elem, id) => {
-			return comp(elem, id) && elem;
+			ret = comp(elem, id);
+			return ret && elem;
 		});
 
 		if (elem) {
@@ -99,9 +102,11 @@ OMap.prototype = Object.assign(createInstance(UUID.Map), {
 			Network.linkApply(link, events = [], Delete, elem, undefined, id, reg.id);
 			Network.unlink(link);
 			Network.callListeners(events);
+
+			return ret;
 		}
 
-		return !!elem;
+		return false;
 	},
 	clear () {
 		const reg = this[observerGetter];
