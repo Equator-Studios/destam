@@ -42,12 +42,15 @@ const OMap = (map, id) => {
 		},
 		arr_: {
 			get: () => map.arr_,
+			enumerable: true,
 		},
 		mask_: {
 			get: () => map.mask_,
+			enumerable: true,
 		},
 		size: {
 			get: () => map.size,
+			enumerable: true,
 		},
 	});
 };
