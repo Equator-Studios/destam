@@ -114,9 +114,8 @@ OMap.prototype = Object.assign(createInstance(UUID.Map), {
 			Network.unlink(link);
 		}
 
-		Network.callListeners(events);
-
 		reg.user_.clear();
+		Network.callListeners(events);
 	},
 });
 
