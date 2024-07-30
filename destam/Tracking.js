@@ -367,10 +367,10 @@ const Tracker = createClass(observer => {
 					if (!prev) {
 						const map = deleted.get(link.reg_);
 						if (map) {
-							let relink = map.get(delta.ref);
+							let relink = map.get(delta.ref.toString());
 
 							if (relink) {
-								map.delete(delta.ref);
+								map.delete(delta.ref.toString());
 								prev = changes.get(relink);
 								changes.delete(relink);
 							}
@@ -383,7 +383,7 @@ const Tracker = createClass(observer => {
 							deleted.set(link.reg_, map = new Map());
 						}
 
-						map.set(delta.ref, link);
+						map.set(delta.ref.toString(), link);
 					}
 
 					if (!prev) {
