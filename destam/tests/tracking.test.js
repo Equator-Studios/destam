@@ -161,6 +161,45 @@ import { clone } from './clone.js';
 		obj1.thing.set(id, 'hello');
 	});
 
+	test ('omap delete and set', async (obj1, flush) => {
+		obj1.thing = OMap();
+
+		let id = UUID();
+		obj1.thing.set(id, 'hello');
+
+		await flush();
+
+		obj1.thing.delete(id);
+		obj1.thing.set(id, true);
+	});
+
+	test ('omap replace', async (obj1, flush, obj2) => {
+		obj1.thing = OMap();
+
+		let elem = OObject({id: UUID()});
+		obj1.thing.setElement(elem);
+
+		for (let i = 0; i < 3; i++) {
+			await flush();
+
+			obj1.thing.deleteElement(elem);
+			elem.id = UUID();
+			obj1.thing.setElement(elem);
+		}
+	});
+
+	test ('omap delete and set different id', async (obj1, flush) => {
+		obj1.thing = OMap();
+
+		let id = UUID();
+		obj1.thing.set(id, 'hello');
+
+		await flush();
+
+		obj1.thing.delete(id);
+		obj1.thing.set(UUID(), true);
+	});
+
 	test ('packetize omap modify', async (obj1, flush) => {
 		obj1.thing = OMap();
 
