@@ -188,6 +188,21 @@ import { clone } from './clone.js';
 		}
 	});
 
+	test ('omap replace at once', async (obj1, flush, obj2) => {
+		obj1.thing = OMap();
+
+		let elem = OObject({id: UUID()});
+		obj1.thing.setElement(elem);
+
+		await flush();
+
+		for (let i = 0; i < 3; i++) {
+			obj1.thing.deleteElement(elem);
+			elem.id = UUID();
+			obj1.thing.setElement(elem);
+		}
+	});
+
 	test ('omap delete and set different id', async (obj1, flush) => {
 		obj1.thing = OMap();
 
