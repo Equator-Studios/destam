@@ -179,7 +179,7 @@ export const linkApply = (link, events, deltaConstructor, ...args) => {
 		const downstream = deltaConstructor(...args);
 		const gov = entry.governor_;
 		downstream.network_ = entry;
-		downstream.time = events.time_ ?? (events.time_ = new Date());
+		downstream.time = downstream.time ?? events.time_ ?? (events.time_ = new Date());
 
 		if (gov.events_ !== events) {
 			if (gov.events_) {
