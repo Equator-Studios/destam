@@ -294,6 +294,42 @@ const Observer = createClass((get, set, register) => {
 	},
 
 	/**
+	 * Listens on the observer for to do side effects. This function is a helper
+	 * on top of watchCommit to provide an API that is easier to work with for
+	 * side effects that need a cleanup handler. The provided listener is called
+	 * immediately with the current value of observer, as well as the listener
+	 * being updated for any further mutations to the observer. The listener
+	 * may return a callback that will be invoked when the effects handler
+	 * has resources to clean up.
+	 *
+	 * Params:
+	 *   listener: Called when the listener should setup its effects. The listener
+	 *   can then return a callback that will be invoked upon cleanup.
+	 *
+	 * Returns: WatchedObserver
+	 */
+	effect (listener) {
+		assert(typeof listener === 'function', 'effect must be called with a function');
+
+		const get = this.get;
+		const reg = this.register_(commit => {
+			if (listenerContext) listenerContext();
+			listenerContext = listener(get(), commit);
+			assert(listenerContext == null || typeof listenerContext === 'function',
+				'Effect listener must return a nullish value or a function');
+		}, watchGovernor);
+
+		let listenerContext = listener(get());
+		assert(listenerContext == null || typeof listenerContext === 'function',
+			'Effect listener must return a nullish value or a function');
+
+		return WatchedObserver(get, this.set, this.register_, listener, () => {
+			reg();
+			if (listenerContext) listenerContext();
+		});
+	},
+
+	/**
 	 * Returns a promise that resolves when the observer mutates into a value
 	 * that satisfies the given callback.
 	 *
