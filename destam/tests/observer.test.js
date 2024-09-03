@@ -1013,3 +1013,58 @@ test("observer selector initial selector events", () => {
 	selected.set(2);
 	expect(events).to.deep.equal([1, false, 2, true]);
 });
+
+test("observer effect", () => {
+	const selected = Observer.mutable(1);
+
+	const vals = [];
+	const effect = selected.effect(val => {
+		vals.push(val);
+	});
+
+	selected.set(2);
+	selected.set(3);
+
+	effect.remove();
+
+	expect(vals).to.deep.equal([1, 2, 3]);
+});
+
+test("observer effect cleanup", () => {
+	const selected = Observer.mutable(1);
+
+	const vals = [];
+	const effect = selected.effect(val => {
+		vals.push(val);
+
+		return () => {
+			let i = vals.indexOf(val);
+			vals.splice(i, 1);
+		};
+	});
+
+	selected.set(2);
+	selected.set(3);
+
+	effect.remove();
+
+	expect(vals).to.deep.equal([]);
+});
+
+test("observer effect cleanup once", () => {
+	const selected = Observer.mutable(1);
+
+	const vals = [];
+	const effect = selected.effect(val => {
+		vals.push(val);
+
+		return () => {
+			let i = vals.indexOf(val);
+			vals.splice(i, 1);
+		};
+	});
+
+	effect.remove();
+
+	expect(vals).to.deep.equal([]);
+});
