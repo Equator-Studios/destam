@@ -70,7 +70,8 @@ OMap.apply = (reg, value, link, events) => {
 		Network.linkApply(link, events, cloneEvent, value, current);
 		Network.unlink(link);
 
-		map.deleteElement(current);
+		const found = map.deleteElement(current);
+		assert(found, "Tracking went into a bad state");
 	}
 };
 
