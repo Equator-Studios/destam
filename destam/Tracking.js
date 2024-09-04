@@ -60,6 +60,7 @@ OMap.apply = (reg, value, link, events) => {
 		Network.linkApply(link, events, cloneEvent, value, current);
 
 		map.setElement(element);
+		link.user_ = element;
 		Network.relink(link, element[observerGetter]);
 		registerElement(element, link);
 	} else {
