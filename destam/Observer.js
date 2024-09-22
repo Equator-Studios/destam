@@ -98,18 +98,21 @@ export const watchGovernor = (info, child) => {
 	return true;
 };
 
-let processingListeners;
-const invokeListeners = (listeners, commit, args) => {
-	if (processingListeners) {
-		call(processingListeners);
-	}
+const listenerContext = () => {
+	let processingListeners;
 
-	processingListeners = listeners.slice();
-	processingListeners.args_ = args;
-	processingListeners.event_ = commit();
-	callListeners(processingListeners);
+	return (listeners, commit, args) => {
+		if (processingListeners) {
+			call(processingListeners);
+		}
 
-	processingListeners = 0;
+		processingListeners = listeners.slice();
+		processingListeners.args_ = args;
+		processingListeners.event_ = commit();
+		callListeners(processingListeners);
+
+		processingListeners = 0;
+	};
 };
 
 /**
@@ -159,6 +162,7 @@ const Observer = createClass((get, set, register) => {
 		let cache;
 		let parentListener;
 		const listeners = [];
+		const invokeListeners = listenerContext();
 
 		return Observer(
 			() => {
@@ -688,6 +692,7 @@ const Observer = createClass((get, set, register) => {
 		const map = new Map();
 		let prevSel = this.get();
 		let selectionListener;
+		const invokeListeners = listenerContext();
 
 		return sel => Observer(
 			() => isEqual(sel, this.get()) ? selValue : defValue,
@@ -757,6 +762,7 @@ const Observer = createClass((get, set, register) => {
 		let parentListener;
 		let value;
 		let info;
+		const invokeListeners = listenerContext();
 
 		let numListeners = 0;
 		const create = (local, getAll) => Observer(
@@ -966,6 +972,7 @@ Observer.NULL = Observer(noop);
  */
 Observer.mutable = value => {
 	const listeners = [];
+	const invokeListeners = listenerContext();
 
 	return Observer(() => value, v => {
 		if (isEqual(value, v)) return;
