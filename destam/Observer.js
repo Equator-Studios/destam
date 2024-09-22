@@ -1020,36 +1020,52 @@ Observer.immutable = (value) => {
  *   deps: An array of observers or an observer that resolves to an array of observers
  */
 Observer.all = deps => {
-	deps = Observer.immutable(deps);
+	if (isInstance(deps, Observer)) {
 
-	return Observer(
-		() => deps.get().map(obs => obs.get()),
-		v => {
-			const d = deps.get();
-			assert(len(v) === len(d), "Observer all set array length mismatch");
+		return Observer(
+			() => deps.get().map(obs => obs.get()),
+			v => {
+				const d = deps.get();
+				assert(len(v) === len(d), "Observer all set array length mismatch");
 
-			for (let i = 0; i < len(d); i++) {
-				d[i].set(v[i]);
-			}
-		},
-		(listener, governor) => {
-			let listeners = [];
-			const refresh = () => {
-				callAll(listeners);
-				listeners = deps.get().map(obs => obs.register_(listener, governor));
-			};
+				for (let i = 0; i < len(d); i++) {
+					d[i].set(v[i]);
+				}
+			},
+			(listener, governor) => {
+				let listeners = [];
+				const refresh = () => {
+					callAll(listeners);
+					listeners = deps.get().map(obs => obs.register_(listener, governor));
+				};
 
-			const parent = shallowListener(deps, (commit, args) => {
+				const parent = shallowListener(deps, (commit, args) => {
+					refresh();
+					listener(commit, args);
+				});
 				refresh();
-				listener(commit, args);
-			});
-			refresh();
-			return () => {
-				parent();
-				callAll(listeners);
-			};
-		}
-	);
+				return () => {
+					parent();
+					callAll(listeners);
+				};
+			}
+		);
+	} else {
+		return Observer(
+			() => deps.map(obs => obs.get()),
+			v => {
+				assert(len(v) === len(deps), "Observer all set array length mismatch");
+
+				for (let i = 0; i < len(deps); i++) {
+					deps[i].set(v[i]);
+				}
+			},
+			(listener, governor) => {
+				const listeners = deps.map(obs => obs.register_(listener, governor));
+				return () => callAll(listeners);
+			}
+		);
+	}
 };
 
 // Creates an observer that updates when an event listener fires.
