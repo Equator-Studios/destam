@@ -1,12 +1,12 @@
-import {observerGetter} from '../Observer.js';
-import OObject from '../Object.js';
-import OArray from '../Array.js';
-import OMap from '../UUIDMap.js';
-import UUID from '../UUID.js';
-import * as Network from '../Network.js';
-import {Insert, Modify, Delete} from '../Events.js';
-import {registerElement} from '../UUIDMap.js';
-import {assert} from '../util.js';
+import {observerGetter} from './Observer.js';
+import OObject from './Object.js';
+import OArray from './Array.js';
+import OMap from './UUIDMap.js';
+import UUID from './UUID.js';
+import * as Network from './Network.js';
+import {Insert, Modify, Delete} from './Events.js';
+import {registerElement} from './UUIDMap.js';
+import {assert} from './util.js';
 
 const wrap = (type, props) => {
 	return {

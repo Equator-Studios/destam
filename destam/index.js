@@ -6,3 +6,4 @@ export {default as OMap} from './UUIDMap.js';
 export {default as UUID} from './UUID.js';
 export * from './Events.js';
 export {default as createNetwork} from './Tracking.js';
+export * from './clone.js';
