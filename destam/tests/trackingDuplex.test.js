@@ -1,12 +1,9 @@
 import {expect} from 'chai';
 import test from 'node:test';
 import OObject from '../Object.js';
-import OArray from '../Array.js';
-import OMap from '../UUIDMap.js';
-import UUID from '../UUID.js';
 import createNetwork from '../Tracking.js';
 
-import { clone } from './clone.js';
+import { clone } from '../clone.js';
 
 [
 	(name, func) => test('tracking duplex: ' + name, async () => {

@@ -6,7 +6,7 @@ import UUID from '../UUID.js';
 import OMap from '../UUIDMap.js';
 import createNetwork from '../Tracking.js';
 
-import { stringify, parse, clone } from './clone.js';
+import { stringify, parse, clone } from '../clone.js';
 
 [
 	(name, callback) => test("forward " + name, () => {
