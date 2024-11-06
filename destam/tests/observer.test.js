@@ -1139,3 +1139,27 @@ test("Observer lifetimes multiple", () => {
 	expect(count).to.equal(2);
 	expect(removeCount).to.equal(2);
 });
+
+test("observer lifetimes reentrant", () => {
+	let obs = Observer.mutable(0);
+	let mirror = Observer.mutable();
+
+	let removed;
+	obs = obs.lifetime(() => () => removed = true);
+
+	obs = obs.lifetime(() => {
+		return obs.effect(val => mirror.set(val));
+	});
+
+	const states = [];
+	const remove = obs.effect(val => (states.push(val), null));
+
+	obs.set(1);
+	obs.set(2);
+	obs.set(3);
+
+	remove();
+
+	expect(states).to.deep.equal([0, 1, 2, 3]);
+	expect(removed).to.equal(true);
+});
