@@ -264,7 +264,9 @@ const Observer = createClass((get, set, register) => {
 	 * once all watchers are subsequently removed.
 	 *
 	 * Params:
-	 *   cb: Callback that will be invoked upon the first listener attachment
+	 *   cb: Callback that will be invoked upon the first listener attachment. If
+	 *   the callback attaches listeners, those listeners will be ignored for ref
+	 *   counting.
 	 *
 	 * Returns:
 	 *   An observer that should be functionally identicle to the current one.
@@ -272,15 +274,26 @@ const Observer = createClass((get, set, register) => {
 	lifetime (cb) {
 		let cbRemove;
 		let count = 0;
+		let reentrant = 0;
 
 		return Observer(this.get, this.set, (...args) => {
+			if (reentrant) {
+				return this.register_(...args);
+				return remove;
+			}
+
 			if (count === 0) {
-				cbRemove = cb();
+				reentrant = 1;
+				try {
+					cbRemove = cb();
+				} finally {
+					reentrant = 0;
+				}
 				assert(cbRemove == null || typeof cbRemove === 'function',
 					'Lifetime listener must return a nullish value or a function');
 			}
-			count++;
 
+			count++;
 			const remove = this.register_(...args);
 			return () => {
 				count--;
