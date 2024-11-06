@@ -1068,3 +1068,9 @@ test("observer effect cleanup once", () => {
 
 	expect(vals).to.deep.equal([]);
 });
+
+test("observer empty path", () => {
+	const obs = Observer.mutable();
+
+	expect(obs).to.deep.equal(obs.path([]));
+});
