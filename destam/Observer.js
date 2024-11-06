@@ -352,9 +352,9 @@ const Observer = createClass((get, set, register) => {
 	effect (listener) {
 		assert(typeof listener === 'function', 'effect must be called with a function');
 
-		const reg = this.register_(commit => {
+		const reg = this.register_((commit, meta) => {
 			if (listenerContext) listenerContext();
-			listenerContext = listener(this.get(), commit);
+			listenerContext = listener(this.get(), commit, meta);
 			assert(listenerContext == null || typeof listenerContext === 'function',
 				'Effect listener must return a nullish value or a function');
 		}, watchGovernor);
