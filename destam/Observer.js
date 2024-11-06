@@ -556,7 +556,10 @@ const Observer = createClass((get, set, register) => {
 	 */
 	path (path) {
 		if (!isInstance(path, Array)) path = [path];
-		assert(len(path), "Observer path must have at least one path");
+
+		if (!len(path)) {
+			return this;
+		}
 
 		return Observer(
 			() => getPath(this, path, 0),
