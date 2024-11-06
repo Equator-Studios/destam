@@ -310,7 +310,7 @@ const Observer = createClass((get, set, register) => {
 	watchCommit (listener) {
 		assert(typeof listener === 'function', 'watchCommit must be called with a function');
 
-		return WatchedObserver(this, listener, this.register_(listener, watchGovernor));
+		return WatchedObserver(this, this.register_(listener, watchGovernor));
 	},
 
 	/**
@@ -363,7 +363,7 @@ const Observer = createClass((get, set, register) => {
 		assert(listenerContext == null || typeof listenerContext === 'function',
 			'Effect listener must return a nullish value or a function');
 
-		return WatchedObserver(this, listener, () => {
+		return WatchedObserver(this, () => {
 			reg();
 			if (listenerContext) listenerContext();
 		});
@@ -953,12 +953,11 @@ const Observer = createClass((get, set, register) => {
 	}
 });
 
-const WatchedObserver = createClass((obs, listener, remove) => {
+const WatchedObserver = createClass((obs, remove) => {
 	const o = createInstance(WatchedObserver);
 	o.get = obs.get;
 	o.set = obs.set;
 	o.register_ = obs.register_;
-	o.listener_ = listener;
 	o.remove = remove;
 	return o;
 }, {}, createInstance(Observer));
