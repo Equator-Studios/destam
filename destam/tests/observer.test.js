@@ -218,9 +218,7 @@ test ("observer def", () => {
 	let observer = obj.observer.path("hello").def("default");
 
 	const states = [];
-	const watcher = observer.watch(() => {
-		states.push(observer.get());
-	}).call();
+	const watcher = observer.effect(val => (states.push(val), null));
 
 	obj.hello = '1';
 	obj.hello = '2';
@@ -239,9 +237,7 @@ test ("observer def mutable", () => {
 	let observer = obj.observer.path("hello").def(def);
 
 	const states = [];
-	const watcher = observer.watch(() => {
-		states.push(observer.get());
-	}).call();
+	const watcher = observer.effect(val => (states.push(val), null));
 
 	obj.hello = '1';
 	def.set("second");
@@ -261,9 +257,7 @@ test ("default observable value", () => {
 	let observer = obj.observer.path("hello").def(def);
 
 	const states = [];
-	const watcher = observer.watch(() => {
-		states.push(observer.get());
-	}).call();
+	const watcher = observer.effect(val => (states.push(val), null));
 
 	def.set("other default");
 
@@ -285,9 +279,7 @@ test("observer all", () => {
 
 	const observer = Observer.all([object.observer.path('value'), object2.observer.path('value')])
 	const values = [];
-	const watcher = observer.watch(state => {
-		values.push(observer.get());
-	});
+	const watcher = observer.effect(val => (values.push(val), null));
 
 	object.value = 10;
 	object2.value = 100;
@@ -299,7 +291,7 @@ test("observer all", () => {
 
 	watcher.remove();
 
-	expect(values).to.deep.equal([[10, 0], [10, 100], [100, 100], ["hello", 100], ["hello", "world"]]);
+	expect(values).to.deep.equal([[0, 0], [10, 0], [10, 100], [100, 100], ["hello", 100], ["hello", "world"]]);
 });
 
 test("observer all with map", () => {
@@ -827,9 +819,7 @@ test("observer timer in map and unwrap", async () => {
 	const obs = activated.map(a => a ? Observer.timer(10) : 'not-activated').unwrap();
 
 	const states = [];
-	let remove = obs.watch(commit => {
-		states.push(obs.get());
-	}).call();
+	let remove = obs.effect(val => (states.push(val), null));
 
 	activated.set(true);
 	await new Promise(ok => setTimeout(ok, 25));

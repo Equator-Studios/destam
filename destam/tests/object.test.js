@@ -491,18 +491,6 @@ test("path to hidden with shallow", () => {
 	expect(paths).to.deep.equal([['_hidden']]);
 });
 
-test("parent of synthetic modify", () => {
-	let object = OObject({
-		value: 'value'
-	});
-
-	expect (() => {
-		object.observer.path('value').watch(event => {
-			event.getParent();
-		}).call();
-	}).to.throw();
-});
-
 test("object relinking", () => {
 	let object = OObject();
 
@@ -546,17 +534,6 @@ test("parent for deleted objects", () => {
 	delete object.value;
 
 	expect(events).to.have.ordered.members([object, object]);
-});
-
-test("pathing for called event", () => {
-	let object = OObject();
-
-	expect(() => {
-		let events = [];
-		object.observer.watch(event => {
-			events.push(event.path());
-		}).call();
-	}).to.throw();
 });
 
 test("chained path", () => {
