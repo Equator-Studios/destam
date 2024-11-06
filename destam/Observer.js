@@ -965,28 +965,6 @@ const WatchedObserver = createClass((get, set, register, listener, remove) => {
 	return o;
 }, {
 	/**
-	 * Defines a callback for when this watcher is about to be removed.
-	 * Subequent calls to remove will not trigger a duplicate call to the
-	 * given callback.
-	 *
-	 * Params:
-	 *   callback: A callback to be invoked when this watcher is removed.
-	 */
-	cleanup (callback) {
-		let removed = 0;
-		return WatchedObserver(
-			this.get, this.set, this.register_, this.listener_,
-			() => {
-				if (removed) return;
-				removed = 1;
-
-				this.remove();
-				callback();
-			}
-		);
-	},
-
-	/**
 	 * Synthetically generates a modify event to the listener for this watcher.
 	 */
 	call () {

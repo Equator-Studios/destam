@@ -963,52 +963,6 @@ test ("usable observer after watch", () => {
 	expect(events).to.deep.equal(['one', 'two', 'three']);
 });
 
-test ("event cleanup manager", () => {
-	const obj = OObject();
-
-	const watcher = obj.observer.watch(event => {
-	}).cleanup(() => {
-		delete obj.thing;
-	});
-
-	obj.thing = 'hello';
-	watcher.remove();
-
-	expect(Object.keys(obj)).to.deep.equal([]);
-});
-
-test ("event cleanup manager unregister event", () => {
-	const obj = OObject();
-
-	const events = [];
-	const watcher = obj.observer.watch(event => {
-		events.push(event.path());
-	}).cleanup(() => {
-		delete obj.thing;
-	});
-
-	obj.thing = 'hello';
-	watcher.remove();
-
-	obj.thing2 = 'thing2';
-
-	expect(events).to.deep.equal([['thing']]);
-});
-
-test ("event cleanup remove multiple times", () => {
-	const obj = OObject();
-
-	let cleanups = 0;
-	const watcher = obj.observer.watch(event => {}).cleanup(() => {
-		cleanups++;
-	});
-
-	watcher.remove();
-	watcher.remove();
-
-	expect(cleanups).to.equal(1);
-});
-
 test("object delete check during listener", () => {
 	const obj = OObject();
 

@@ -1089,7 +1089,6 @@ test("Observer lifetimes null remove", () => {
 	expect(count).to.equal(1);
 });
 
-
 test("Observer lifetimes", () => {
 	let obs = Observer.mutable();
 
