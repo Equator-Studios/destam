@@ -961,15 +961,7 @@ const WatchedObserver = createClass((obs, listener, remove) => {
 	o.listener_ = listener;
 	o.remove = remove;
 	return o;
-}, {
-	/**
-	 * Synthetically generates a modify event to the listener for this watcher.
-	 */
-	call () {
-		this.listener_([Synthetic(undefined, this.get())]);
-		return this;
-	},
-}, createInstance(Observer));
+}, {}, createInstance(Observer));
 
 /**
  * Immutable observer that always resolves to null.
