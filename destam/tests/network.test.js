@@ -143,7 +143,7 @@ import { stringify, parse, clone } from './clone.js';
 		nested.hello = 'edited';
 		delete nested.hello;
 
-		watcher.remove();
+		watcher();
 
 		expect(paths).to.deep.equal([[0], [1], [2], [3], [4], [2], [2, 'hello'], [2, 'hello'], [2, 'hello']]);
 	});

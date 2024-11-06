@@ -60,7 +60,7 @@ test("Observer.mutable event nested remove", () => {
 
 	value.watch(event => {
 		events.push(1);
-		watcher.remove();
+		watcher();
 	});
 
 	value.watch(event => {
@@ -78,7 +78,7 @@ test("Observer.mutable event nested remove", () => {
 	const events = [];
 	value.watch(event => {
 		events.push(0);
-		watcher.remove();
+		watcher();
 	});
 
 	const watcher = value.watch(event => {
@@ -225,7 +225,7 @@ test ("observer def", () => {
 	obj.hello = undefined;
 	obj.hello = '3';
 
-	watcher.remove();
+	watcher();
 
 	expect(states).to.deep.equal(['default', '1', '2', 'default', '3']);
 });
@@ -245,7 +245,7 @@ test ("observer def mutable", () => {
 	obj.hello = undefined;
 	def.set("third");
 
-	watcher.remove();
+	watcher();
 
 	expect(states).to.deep.equal(['default', '1', '2', 'second', 'third']);
 });
@@ -268,7 +268,7 @@ test ("default observable value", () => {
 
 	def.set('what is up');
 
-	watcher.remove();
+	watcher();
 
 	expect(states).to.deep.equal(['default', 'other default', '1', '2', 'other default', '3']);
 });
@@ -289,7 +289,7 @@ test("observer all", () => {
 	expect(observer.get()).to.deep.equal(["hello", "world"]);
 	expect(() => observer.set([1, 2, 3])).to.throw();
 
-	watcher.remove();
+	watcher();
 
 	expect(values).to.deep.equal([[0, 0], [10, 0], [10, 100], [100, 100], ["hello", 100], ["hello", "world"]]);
 });
@@ -308,7 +308,7 @@ test("observer all with map", () => {
 	object2.value = 100;
 	object.value = 100;
 
-	watcher.remove();
+	watcher();
 
 	expect(values).to.deep.equal([10, 110, 200]);
 });
@@ -353,14 +353,14 @@ test("observer memo", () => {
 		vals2.push(delta.value);
 	});
 
-	watcher2.remove();
-	watcher2.remove();
+	watcher2();
+	watcher2();
 
 	obs.set("dude");
 	memo.set("hello");
 	memo.set("hello");
 
-	watcher.remove();
+	watcher();
 
 	expect(vals).to.deep.equal(["dude", "hello"]);
 	expect(vals2).to.deep.equal([]);
@@ -453,7 +453,7 @@ test("observer event", () => {
 	callback('hello');
 	callback('world');
 
-	watcher.remove();
+	watcher();
 
 	expect(events).to.have.ordered.members(["event", options, "event", options]);
 	expect(vals).to.have.ordered.members(["hello", "world"]);
@@ -523,7 +523,7 @@ test("observer unwrap events", () => {
 	orig.set("reset");
 	second.set("after");
 
-	watcher.remove();
+	watcher();
 	expect(second.get()).to.equal("after");
 	expect(vals).to.deep.equal(["second", "hello", third, "reset"]);
 });
@@ -535,7 +535,7 @@ test("observer unwrap watcher remove", () => {
 	orig.set(Observer.mutable());
 
 	const watcher = obs.watch(() => {});
-	watcher.remove();
+	watcher();
 });
 
 test("observer map", () => {
@@ -625,8 +625,8 @@ test("observer mutable map and memo", () => {
 	obs.set(2);
 	orig.set(1);
 
-	watcher.remove();
-	watcher2.remove();
+	watcher();
+	watcher2();
 
 	expect(vals).to.deep.equal([0, 2, 4, 8, 4, 2]);
 	expect(vals2).to.deep.equal([0, 2, 4, 8, 4, 2]);
@@ -658,7 +658,7 @@ test("observer skip", () => {
 	tree.nested.nested.hello = "dude";
 	tree.nested.nested.world = "dude";
 
-	watcher.remove();
+	watcher();
 
 	expect(vals).to.deep.equal(["hello", "world", "hello 2", "hello 3"]);
 });
@@ -689,7 +689,7 @@ test("observer skip multiple", () => {
 	tree.nested.nested.hello = "hello 4";
 	tree.nested.nested.world = "world 4";
 
-	watcher.remove();
+	watcher();
 
 	expect(vals).to.deep.equal(["hello", "world", "hello 2", "world 2", "hello 3", "world 3", "hello 4"]);
 });
@@ -710,7 +710,7 @@ test("observer anyPath", () => {
 	tree.three = "three";
 	tree.four = "four";
 
-	watcher.remove();
+	watcher();
 
 	expect(vals).to.deep.equal(["one", "two", "three"]);
 
@@ -738,7 +738,7 @@ test("observer throttle", async () => {
 	await new Promise(ok => setTimeout(ok, 0));
 	await new Promise(ok => setTimeout(ok, 0));
 
-	watcher.remove();
+	watcher();
 
 	expect(vals).to.deep.equal([1, 3, 6]);
 });
@@ -753,7 +753,7 @@ test("observer throttle remove while watching", async () => {
 
 	obs.set(1);
 	obs.set(2);
-	watcher.remove();
+	watcher();
 
 	expect(vals).to.deep.equal([1, 2]);
 });
@@ -779,7 +779,7 @@ test("observer wait", async () => {
 	obs.set(6);
 	await new Promise(ok => setTimeout(ok, 10));
 	obs.set(7);
-	watcher.remove();
+	watcher();
 
 	expect(vals).to.deep.equal([4, 6, 7]);
 });
@@ -788,7 +788,7 @@ test("observer wait immediate remove", async () => {
 	let obs = Observer.mutable(0);
 
 	const watcher = obs.wait(5).watch(() => {});
-	watcher.remove();
+	watcher();
 });
 
 test("observer timer", async () => {
@@ -801,7 +801,7 @@ test("observer timer", async () => {
 	});
 
 	await new Promise(ok => setTimeout(ok, 25));
-	watcher.remove();
+	watcher();
 
 	expect(vals).to.deep.equal([1, 2]);
 	expect(timer.get()).to.equal(2);
@@ -823,7 +823,7 @@ test("observer timer in map and unwrap", async () => {
 
 	activated.set(true);
 	await new Promise(ok => setTimeout(ok, 25));
-	remove.remove();
+	remove();
 
 	expect(states).to.deep.equal(['not-activated', 0, 1, 2]);
 });
@@ -948,8 +948,8 @@ test("observer selector cleanup", () => {
 	const one = selector(1).watch(() => {});
 	const two = selector(2).watch(() => {});
 
-	one.remove();
-	two.remove();
+	one();
+	two();
 
 	expect(registers).to.equal(1);
 	expect(removes).to.equal(1);
@@ -968,8 +968,8 @@ test("observer selector cleanup multiple listeners", () => {
 	const one = sel.watch(() => {});
 	const two = sel.watch(() => {});
 
-	one.remove();
-	two.remove();
+	one();
+	two();
 
 	expect(registers).to.equal(1);
 	expect(removes).to.equal(1);
@@ -1015,7 +1015,7 @@ test("observer effect", () => {
 	selected.set(2);
 	selected.set(3);
 
-	effect.remove();
+	effect();
 
 	expect(vals).to.deep.equal([1, 2, 3]);
 });
@@ -1036,7 +1036,7 @@ test("observer effect cleanup", () => {
 	selected.set(2);
 	selected.set(3);
 
-	effect.remove();
+	effect();
 
 	expect(vals).to.deep.equal([]);
 });
@@ -1054,7 +1054,7 @@ test("observer effect cleanup once", () => {
 		};
 	});
 
-	effect.remove();
+	effect();
 
 	expect(vals).to.deep.equal([]);
 });
@@ -1094,8 +1094,8 @@ test("Observer lifetimes", () => {
 	let one = obs.watch(() => {});
 	let two = obs.watch(() => {});
 
-	one.remove();
-	two.remove();
+	one();
+	two();
 
 	expect(count).to.equal(0);
 });
@@ -1109,10 +1109,10 @@ test("Observer lifetimes multiple null remove", () => {
 	});
 
 	let one = obs.watch(() => {});
-	one.remove();
+	one();
 
 	let two = obs.watch(() => {});
-	two.remove();
+	two();
 
 	expect(count).to.equal(2);
 });
@@ -1131,10 +1131,10 @@ test("Observer lifetimes multiple", () => {
 	});
 
 	let one = obs.watch(() => {});
-	one.remove();
+	one();
 
 	let two = obs.watch(() => {});
-	two.remove();
+	two();
 
 	expect(count).to.equal(2);
 	expect(removeCount).to.equal(2);

@@ -305,12 +305,12 @@ const Observer = createClass((get, set, register) => {
 	 * Params:
 	 *   listener: Called when this observer mutates.
 	 *
-	 * Returns: WatchedObserver
+	 * Returns: Removal callback. Call to remove the watch.
 	 */
 	watchCommit (listener) {
 		assert(typeof listener === 'function', 'watchCommit must be called with a function');
 
-		return WatchedObserver(this, this.register_(listener, watchGovernor));
+		return this.register_(listener, watchGovernor);
 	},
 
 	/**
@@ -324,7 +324,7 @@ const Observer = createClass((get, set, register) => {
 	 * Params:
 	 *   listener: Called when this observer mutates.
 	 *
-	 * Returns: WatchedObserver
+	 * Returns: Removal callback. Call to remove the watch.
 	 */
 	watch (listener) {
 		assert(typeof listener === 'function', 'watch must be called with a function');
@@ -347,7 +347,7 @@ const Observer = createClass((get, set, register) => {
 	 *   listener: Called when the listener should setup its effects. The listener
 	 *   can then return a callback that will be invoked upon cleanup.
 	 *
-	 * Returns: WatchedObserver
+	 * Returns: Removal callback. Call to remove the watch.
 	 */
 	effect (listener) {
 		assert(typeof listener === 'function', 'effect must be called with a function');
@@ -363,10 +363,10 @@ const Observer = createClass((get, set, register) => {
 		assert(listenerContext == null || typeof listenerContext === 'function',
 			'Effect listener must return a nullish value or a function');
 
-		return WatchedObserver(this, () => {
+		return () => {
 			reg();
 			if (listenerContext) listenerContext();
-		});
+		};
 	},
 
 	/**

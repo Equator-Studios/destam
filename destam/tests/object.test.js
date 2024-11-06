@@ -139,7 +139,7 @@ test("remove event before setting values", () => {
 		events.push(event.value);
 	});
 
-	event.remove();
+	event();
 
 	object.one = '1';
 	object.two = '2';
@@ -167,9 +167,9 @@ test("remove after unlink", () => {
 	});
 
 	nested.one = 1;
-	event.remove();
+	event();
 	nested.two = 2;
-	nestedEvent.remove();
+	nestedEvent();
 	nested.three = 3;
 
 	expect (events).to.have.ordered.members([nested, 1, 1, 2]);
@@ -186,7 +186,7 @@ test("remove event after setting values", () => {
 	object.two = '2';
 	object.three = '3';
 
-	event.remove();
+	event();
 
 	object.one = '4';
 	object.two = '5';
@@ -723,7 +723,7 @@ test("event masking pre", () => {
 	let object = OObject();
 
 	let watcher = object.observer.watch(event => {
-		watcher.remove();
+		watcher();
 	});
 
 	let events = [];
@@ -745,7 +745,7 @@ test("event masking post", () => {
 	});
 
 	let watcher = object.observer.watch(event => {
-		watcher.remove();
+		watcher();
 	});
 
 	object.thing = OObject();
@@ -918,28 +918,6 @@ test ("multi path get and set", () => {
 	expect(observer.get()).to.deep.equal([4, 2, 3]);
 });
 
-test ("usable observer after watch", () => {
-	const obj = OObject();
-
-	let observer = obj.observer.watch(() => {
-
-	});
-
-	expect(() => observer.set("whatever")).to.throw();
-	expect(observer.get()).to.equal(obj);
-
-	const events = [];
-	observer.watch(event => {
-		events.push(event.value);
-	});
-
-	obj.one = 'one';
-	obj.two = 'two';
-	obj.three = 'three';
-
-	expect(events).to.deep.equal(['one', 'two', 'three']);
-});
-
 test("object delete check during listener", () => {
 	const obj = OObject();
 
@@ -969,14 +947,14 @@ test("object observer memo", () => {
 	obj.whatever = 'whatever';
 
 	obj.nested.hello = 'hello';
-	w.remove();
+	w();
 	obj.nested.hello = 'world';
 
 	obj.nested = OObject();
 
 	expect(obs.get()).to.equal(obj.nested);
 
-	w2.remove();
+	w2();
 
 	obj.nested.hello = "shouldn't see thins";
 
