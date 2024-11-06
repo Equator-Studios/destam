@@ -1074,3 +1074,39 @@ test("observer empty path", () => {
 
 	expect(obs).to.deep.equal(obs.path([]));
 });
+
+test("Observer lifetimes null remove", () => {
+	let obs = Observer.mutable();
+
+	let count = 0;
+	obs = obs.lifetime(() => {
+		count++;
+	});
+
+	obs.watch(() => {});
+	obs.watch(() => {});
+
+	expect(count).to.equal(1);
+});
+
+
+test("Observer lifetimes", () => {
+	let obs = Observer.mutable();
+
+	let count = 0;
+	obs = obs.lifetime(() => {
+		count++;
+
+		return () => {
+			count--;
+		};
+	});
+
+	let one = obs.watch(() => {});
+	let two = obs.watch(() => {});
+
+	one.remove();
+	two.remove();
+
+	expect(count).to.equal(0);
+});
