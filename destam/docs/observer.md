@@ -98,11 +98,6 @@ We can chain these events like so:
  - `observer.path('hello').shallow()`
    Will respond to `object.hello.foo = "bar"` but not `object.hello.nestedEvenMore.foo = "bar"`
 
-`.watch` does have a return value with two properties that are important to know about:
- - `.remove()` - this will remove the listener, you should make sure to do this
-to prevent memory leaks
- - `.call()` - this will forcefully call the `.watch` listener so that any logic implemented can respond to the current state, and not wait for the next time that state to change.
-
 Note that multiple watchers can be added to the same observer and in this case,
 the order in which these watchers will be called when a relevent change is made
 is undefined. The watcher is guaranteed to be called at the time of the mutation
