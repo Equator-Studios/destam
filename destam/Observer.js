@@ -258,6 +258,44 @@ const Observer = createClass((get, set, register) => {
 	},
 
 	/**
+	 * Attaches a listener to this observer for lifetime events. When the first
+	 * listener is attached to the observer (with .watch or .watchCommit) the
+	 * callback will be invoked. The returned callback (if given) will be invoked
+	 * once all watchers are subsequently removed.
+	 *
+	 * Params:
+	 *   cb: Callback that will be invoked upon the first listener attachment
+	 *
+	 * Returns:
+	 *   An observer that should be functionally identicle to the current one.
+	 */
+	lifetime (cb) {
+		let cbRemove;
+		let count = 0;
+
+		return Observer(this.get, this.set, (...args) => {
+			if (count === 0) {
+				cbRemove = cb();
+				assert(cbRemove == null || typeof cbRemove === 'function',
+					'Lifetime listener must return a nullish value or a function');
+			}
+			count++;
+
+			const remove = this.register_(...args);
+			return () => {
+				count--;
+				assert(count >= 0);
+				remove();
+
+				if (cbRemove && count === 0) {
+					cbRemove();
+					cbRemove = 0;
+				}
+			};
+		});
+	},
+
+	/**
 	 * Watches the observer for mutations. Will ignore any observer paths that
 	 * contain a name prefixed with an underscore (_). The order of deltas
 	 * provided within a commit is undefined. Commit listeners are called in
