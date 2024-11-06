@@ -45,11 +45,7 @@ export const useObserver = (gen, deps) => {
 		}
 
 		const path = !deps ? [] : Array.isArray(deps) ? deps : [deps];
-		if (path.length) {
-			gen = () => obs.path(path);
-		} else {
-			gen = () => obs;
-		}
+		gen = () => obs.path(path);
 
 		deps = [obs, ...path];
 	}
