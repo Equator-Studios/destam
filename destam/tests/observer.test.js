@@ -1110,3 +1110,43 @@ test("Observer lifetimes", () => {
 
 	expect(count).to.equal(0);
 });
+
+test("Observer lifetimes multiple null remove", () => {
+	let obs = Observer.mutable();
+
+	let count = 0;
+	obs = obs.lifetime(() => {
+		count++;
+	});
+
+	let one = obs.watch(() => {});
+	one.remove();
+
+	let two = obs.watch(() => {});
+	two.remove();
+
+	expect(count).to.equal(2);
+});
+
+test("Observer lifetimes multiple", () => {
+	let obs = Observer.mutable();
+
+	let count = 0;
+	let removeCount = 0;
+	obs = obs.lifetime(() => {
+		count++;
+
+		return () => {
+			removeCount++;
+		};
+	});
+
+	let one = obs.watch(() => {});
+	one.remove();
+
+	let two = obs.watch(() => {});
+	two.remove();
+
+	expect(count).to.equal(2);
+	expect(removeCount).to.equal(2);
+});
