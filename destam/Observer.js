@@ -279,7 +279,6 @@ const Observer = createClass((get, set, register) => {
 		return Observer(this.get, this.set, (...args) => {
 			if (reentrant) {
 				return this.register_(...args);
-				return remove;
 			}
 
 			if (count === 0) {
