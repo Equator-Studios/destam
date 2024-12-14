@@ -848,6 +848,23 @@ test("observer selector", () => {
 	expect(two.get()).to.equal(false);
 });
 
+test("observer selector set selected", () => {
+	const selected = Observer.mutable(null);
+	const selector = selected.selector();
+
+	const one = selector(1);
+	const two = selector(2);
+
+	expect(one.get()).to.equal(false);
+	expect(two.get()).to.equal(false);
+	one.set(1);
+	expect(one.get()).to.equal(true);
+	expect(two.get()).to.equal(false);
+	two.set(2);
+	expect(one.get()).to.equal(false);
+	expect(two.get()).to.equal(true);
+});
+
 test("observer selector custom values", () => {
 	const selected = Observer.mutable(null);
 	const selector = selected.selector('yes', 'no');
