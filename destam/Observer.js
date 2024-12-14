@@ -748,7 +748,7 @@ const Observer = createClass((get, set, register) => {
 		return sel => Observer(
 			() => isEqual(sel, this.get()) ? selValue : defValue,
 			val => {
-				assert(val === selValue);
+				assert(val === sel);
 				this.set(sel);
 			},
 			listener => {
