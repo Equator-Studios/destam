@@ -965,15 +965,6 @@ const Observer = createClass((get, set, register) => {
 	}
 });
 
-const WatchedObserver = createClass((obs, remove) => {
-	const o = createInstance(WatchedObserver);
-	o.get = obs.get;
-	o.set = obs.set;
-	o.register_ = obs.register_;
-	o.remove = remove;
-	return o;
-}, {}, createInstance(Observer));
-
 /**
  * Immutable observer that always resolves to null.
  */
