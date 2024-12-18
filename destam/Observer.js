@@ -341,9 +341,9 @@ const Observer = createClass((get, set, register) => {
 	watch (listener) {
 		assert(typeof listener === 'function', 'watch must be called with a function');
 
-		return this.watchCommit((commit, network, args) => {
+		return this.register_((commit, network, args) => {
 			for (let i = 0; i < len(commit); i++) listener(commit[i], network, args);
-		});
+		}, watchGovernor);
 	},
 
 	/**
