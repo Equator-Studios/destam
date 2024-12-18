@@ -556,7 +556,7 @@ test("observer map call frequency", () => {
 	let obs = Observer(() => {
 		calls++;
 		return orig.get();
-	}, orig.set, orig.register_).map(x => x * 2);
+	}, orig.set.bind(orig), orig.register_.bind(orig)).map(x => x * 2);
 
 	let val;
 	obs.watch(() => {

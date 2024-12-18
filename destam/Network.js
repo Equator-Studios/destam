@@ -1,5 +1,5 @@
 import Observer, {baseGovernorParent} from './Observer.js';
-import {createInstance, push, call, callListeners} from './util.js';
+import {createInstance, push, call, callListeners, createClass} from './util.js';
 
 const createLinkEntry = (link, parent, governor_, user) => {
 	let child = {
@@ -139,8 +139,18 @@ export const setIDConstructor = (cons) => {
 	createID = cons;
 };
 
-export const createReg = (constructor, id = createID?.()) => {
-	const reg = Observer(() => reg.value, null, (listener_, governor_, options) => {
+export const createReg = createClass((constructor, id = createID?.()) => {
+	const reg = createInstance(createReg);
+	reg.id = id;
+	reg.source_ = constructor;
+
+	reg.regNext_ = reg.regPrev_ = reg;
+	reg.linkNext_ = reg.linkPrev_ = reg;
+
+	return reg;
+}, {
+	get () { return this.value },
+	register_ (listener_, governor_, options) {
 		let listenerNode = {
 			user_: baseGovernorParent,
 			governor_: {
@@ -152,22 +162,14 @@ export const createReg = (constructor, id = createID?.()) => {
 			...options,
 		};
 
-		addListener(reg, listenerNode);
+		addListener(this, listenerNode);
 
 		return () => {
-			if (listenerNode) removeListener(reg, listenerNode);
+			if (listenerNode) removeListener(this, listenerNode);
 			listenerNode = 0;
 		};
-	});
-
-	reg.id = id;
-	reg.source_ = constructor;
-
-	reg.regNext_ = reg.regPrev_ = reg;
-	reg.linkNext_ = reg.linkPrev_ = reg;
-
-	return reg;
-};
+	}
+}, createInstance(Observer));
 
 export {call, callListeners};
 

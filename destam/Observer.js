@@ -98,20 +98,37 @@ export const watchGovernor = (info, child) => {
 	return true;
 };
 
-const listenerContext = () => {
-	let processingListeners;
+const runListeners = (context, listeners, commit, args) => {
+	let proc = context.processingListeners_;
+	if (proc) call(proc);
 
-	return (listeners, commit, args) => {
-		if (processingListeners) {
-			call(processingListeners);
-		}
+	proc = listeners.slice();
+	proc.args_ = args;
+	proc.event_ = commit();
+	callListeners(context.processingListeners_ = proc);
+	context.processingListeners_ = 0;
+};
 
-		processingListeners = listeners.slice();
-		processingListeners.args_ = args;
-		processingListeners.event_ = commit();
-		callListeners(processingListeners);
+const defGet = (self) => self.parent_.get();
+const defSet = (self, v) => self.parent_.set(v);
+const defRegister = (self, listener, governor) => self.parent_.register_(listener, governor);
 
-		processingListeners = 0;
+const createImpl = (construct, get, set, register) => {
+	const proto = createInstance(Observer);
+	proto.get = function () {
+		return get(this);
+	};
+	if (set) proto.set = function (val) {
+		return set(this, val);
+	};
+	proto.register_ = function (listener, governor, options) {
+		return register(this, listener, governor, options);
+	};
+
+	return function (...stuff) {
+		const instance = Object.create(proto);
+		instance.parent_ = this;
+		return construct?.(instance, ...stuff) || instance;
 	};
 };
 
@@ -131,7 +148,10 @@ const Observer = createClass((get, set, register) => {
 	if (register) obj.register_ = register;
 
 	return obj;
-}, {
+});
+
+Object.assign(Observer.prototype, {
+	constructor: Observer,
 	register_: () => noop,
 	set: immutableSetter,
 
@@ -154,48 +174,53 @@ const Observer = createClass((get, set, register) => {
 	 *   forward: Transform used to get values from the newly created observer.
 	 *   backward: Transform used to set values from the newly created observer.
 	 */
-	map (forward, backward) {
-		assert(typeof forward === 'function', "Forward must be a function");
-		assert(backward == null || typeof backward === 'function',
-			"Backward must be a function or undefined");
+	map: createImpl(
+		(self, forward, backward) => {
+			assert(typeof forward === 'function', "Forward must be a function");
+			assert(backward == null || typeof backward === 'function',
+				"Backward must be a function or undefined");
 
-		let cache;
-		let parentListener;
-		const listeners = [];
-		const invokeListeners = listenerContext();
+			self.listeners_ = [];
+			self.forward_ = forward;
 
-		return Observer(
-			() => {
-				if (len(listeners)) {
-					return cache;
-				} else {
-					return forward(this.get());
-				}
-			},
-			backward && (v => this.set(backward(v))),
-			listener => {
-				if (!parentListener) {
-					parentListener = this.register_((commit, args) => {
-						const value = forward(this.get());
+			if (backward) {
+				self.backward_ = backward;
+			} else {
+				self.set = immutableSetter;
+			}
+		},
+		(self) => {
+			if (len(self.listeners_)) {
+				return self.cache_;
+			} else {
+				return self.forward_(self.parent_.get());
+			}
+		},
+		(self, v) => {
+			self.parent_.set(self.backward_(v));
+		},
+		(self, listener) => {
+			if (!self.parentListener_) {
+				self.parentListener_ = self.parent_.register_((commit, args) => {
+					const value = self.forward_(self.parent_.get());
 
-						if (!isEqual(value, cache)) {
-							invokeListeners(listeners, () => (cache = value, commit), args);
-						}
-					}, watchGovernor);
-					cache = forward(this.get());
-				}
-
-				push(listeners, listener);
-
-				return () => {
-					if (remove(listeners, listener) && !len(listeners)) {
-						parentListener();
-						cache = parentListener = 0;
+					if (!isEqual(value, self.cache_)) {
+						runListeners(self, self.listeners_, () => (self.cache_ = value, commit), args);
 					}
-				};
-			},
-		);
-	},
+				}, watchGovernor);
+				self.cache_ = self.forward_(self.parent_.get());
+			}
+
+			push(self.listeners_, listener);
+
+			return () => {
+				if (remove(self.listeners_, listener) && !len(self.listeners_)) {
+					self.parentListener_();
+					self.cache_ = self.parentListener_ = 0;
+				}
+			};
+		}
+	),
 
 	/**
 	 * Creates an observer that will resolve to value a nested observer might have.
@@ -211,40 +236,45 @@ const Observer = createClass((get, set, register) => {
 	 * Returns:
 	 *  An observer
 	 */
-	unwrap () {
-		const get = type => {
-			const val = this.get();
+	unwrap: createImpl(null,
+		self => {
+			const val = self.parent_.get();
 			if (isInstance(val, Observer)) {
-				return type ? val.get() : val;
+				return val.get();
 			}
 
-			return type ? val : this;
-		};
+			return val;
+		},
+		(self, v) => {
+			const val = self.parent_.get();
+			if (isInstance(val, Observer)) {
+				val.set(v);
+			} else {
+				self.parent_.set(v);
+			}
+		},
+		(self, listener, governor) => {
+			let l;
+			const update = () => {
+				if (l) l();
+				const val = self.parent_.get();
+				if (l = isInstance(val, Observer)) {
+					l = val.register_(listener, governor);
+				}
+			};
 
-		return Observer(
-			() => get(1),
-			v => get().set(v),
-			(listener, governor) => {
-				let l;
-				const update = () => {
-					if (l) l();
-					const listen = get();
-					l = listen !== this && listen.register_(listener, governor);
-				};
-
-				const parent = this.register_((commit, args) => {
-					update();
-					listener(commit, args);
-				}, governor);
+			const parent = self.parent_.register_((commit, args) => {
 				update();
+				listener(commit, args);
+			}, governor);
+			update();
 
-				return () => {
-					parent();
-					if (l) l();
-				};
-			},
-		);
-	},
+			return () => {
+				parent();
+				if (l) l();
+			};
+		}
+	),
 
 	/**
 	 * Defines access control. Essentially proxies mutations into the given
@@ -253,9 +283,15 @@ const Observer = createClass((get, set, register) => {
 	 * Params:
 	 *   setter: Callback to process mutation request.
 	 */
-	setter (setter) {
-		return Observer(this.get, value => setter(value, this.set), this.register_);
-	},
+	setter: createImpl(
+		(self, setter) => {
+			assert(typeof setter === 'function', "Setter must be a function");
+			self.setter_ = setter;
+		},
+		defGet,
+		(self, value) => self.setter_(value, self.parent_.set.bind(self.parent_)),
+		defRegister,
+	),
 
 	/**
 	 * Attaches a listener to this observer for lifetime events. When the first
@@ -271,41 +307,604 @@ const Observer = createClass((get, set, register) => {
 	 * Returns:
 	 *   An observer that should be functionally identicle to the current one.
 	 */
-	lifetime (cb) {
-		let cbRemove;
-		let count = 0;
-		let reentrant = 0;
-
-		return Observer(this.get, this.set, (...args) => {
-			if (reentrant) {
-				return this.register_(...args);
+	lifetime: createImpl(
+		(self, cb) => {
+			self.count_ = 0;
+			self.forward_ = cb;
+		},
+		defGet, defSet,
+		(self, listener, governor) => {
+			if (self.reentrant_) {
+				return self.parent_.register_(listener, governor);
 			}
 
-			if (count === 0) {
-				reentrant = 1;
+			if (self.count_ === 0) {
+				self.reentrant_ = 1;
 				try {
-					cbRemove = cb();
+					self.remove_ = self.forward_();
 				} finally {
-					reentrant = 0;
+					self.reentrant_ = 0;
 				}
-				assert(cbRemove == null || typeof cbRemove === 'function',
+				assert(self.remove_ == null || typeof self.remove_ === 'function',
 					'Lifetime listener must return a nullish value or a function');
 			}
 
-			count++;
-			const remove = this.register_(...args);
+			self.count_++;
+			const remove = self.parent_.register_(listener, governor);
 			return () => {
-				count--;
-				assert(count >= 0);
+				self.count_--;
+				assert(self.count_ >= 0);
 				remove();
 
-				if (cbRemove && count === 0) {
-					cbRemove();
-					cbRemove = 0;
+				if (self.remove_ && self.count_ === 0) {
+					self.remove_();
+					self.remove_ = 0;
 				}
 			};
-		});
-	},
+		}
+	),
+
+	/**
+	 * Defines a depth to how far listeners should listen for in a state tree.
+	 * If a depth of 0 is chosen, this observer will not notify watchers for when
+	 * nested values change.
+	 *
+	 * Params:
+	 *  level: Depth to search. 0 is the default.
+	 */
+	shallow: createImpl(
+		(self, level = 0) => {
+			self.level_ = level;
+		},
+		defGet, defSet,
+		(self, listener, governor) => self.parent_.register_(listener, (info, child, entry) => {
+			if (isSymbol(info)) info = [0, info];
+			if (info[0] > self.level_) return 0;
+
+			const currentVal = governor(info[1], child, entry);
+			if (!currentVal) return 0;
+
+			return [info[0] + 1, currentVal];
+		})
+	),
+
+	/**
+	 * Defines how many levels of nesting notify watchers will invoke for before
+	 * additional checks are imposed. This can be useful for looking at a
+	 * piece of state from an entire array.
+	 *
+	 * Suppose we have this state tree:
+	 * OArray([
+	 *   OObject({state: "state-1"}),
+	 *   OObject({state: "state-2"})
+	 * ])
+	 *
+	 * Example:
+	 *   state_tree.observer.skip().path('state')
+	 *
+	 * Returns:
+	 *   An observer.
+	 */
+	skip: createImpl(
+		(self, level = 1) => {
+			self.level_ = level;
+		},
+		defGet, defSet,
+		(self, listener, governor) => self.parent_.register_(listener, chainGov(info => {
+			if (info === fromPath || info === fromIgnore) return 1;
+			if (isSymbol(info)) info = 1;
+
+			if (info < self.level_){
+				return info + 1;
+			}
+
+			return fromPath;
+		}, governor))
+	),
+
+	/**
+	 * Defines a tree like structure to follow for notify watchers. This can be
+	 * used to watch state within an unbound number of nested states.
+	 *
+	 * Suppose we have this state tree:
+	 * OObject({
+	 *   state: "state-1",
+	 *   children: OArray([
+	 *     OObject({
+	 *       state: "state-2",
+	 *     }),
+	 *     OObject({
+	 *     	 state: "state-3",
+	 *     	 children: OArray([
+	 *     	   OObject({
+	 *     	     state: "state-4"
+	 *     	   })
+	 *     	 ])
+	 *     })
+	 *   ])
+	 * })
+	 *
+	 * Example:
+	 *   state_tree.observer.tree('children').path('state')
+	 *
+	 * Params:
+	 *   name: The name of the property that ends up with unbound nesting
+	 *
+	 * Returns:
+	 *   An observer.
+	 */
+	tree: createImpl(
+		(self, name) => {
+			self.name_ = name;
+		},
+		defGet, defSet,
+		(self, listener, governor) => self.parent_.register_(listener, chainGov((info, child) => {
+			if (info === fromPath || info === fromIgnore) return 1;
+			if (isSymbol(info)) info = 1;
+
+			if (info !== 1) {
+				return 1;
+			}
+
+			if (child.query_ !== self.name_) {
+				return baseGovernorParent;
+			}
+
+			return 2;
+		}, governor))
+	),
+
+	/**
+	 * Defines a series of paths that notify watchers will be called for.
+	 *
+	 * See Observer.prototype.path
+	 *
+	 * Examples:
+	 *   object.observer.anyPath('num1', 'num2').map(nums => Math.max(...nums))
+	 *   object.observer.anyPath(['nested', 'path'], ['a-different', 'nested-path'])
+	 *
+	 * Params:
+	 *   ...paths: A list of paths to listen for events.
+	 *
+	 * Returns:
+	 *   An observer
+	 */
+	anyPath: createImpl(
+		(self, ...paths) => {
+			self.path_ = paths.map(path => {
+				if (!isInstance(path, Array)) {
+					path = [path];
+				}
+
+				assert(len(path), "No path of an anyPath observer can be 0 length");
+
+				return path;
+			});
+		},
+		(self) => self.path_.map(path => getPath(self.parent_, path, 0)),
+		(self, value) => {
+			assert(len(value) === len(self.path_), "value and path lengths mismatch");
+
+			for (let i = 0; i < len(self.path_); i++) {
+				setPath(self.parent_, self.path_[i], value[i]);
+			}
+		},
+		(self, listener, governor) => self.parent_.register_(listener, (info, child, entry) => {
+			if (isSymbol(info)) {
+				info = self.path_.map(path => [chainGov(pathGov(path), governor), info]);
+			}
+
+			let ret = false;
+			for (const [gov, childInfo] of info) {
+				const value = gov(childInfo, child, entry);
+				if (value) {
+					ret = ret || [];
+					push(ret, [gov, value]);
+				}
+			}
+
+			return ret;
+		}),
+	),
+
+	/**
+	 * Defines a path that notify watchers will be called for.
+	 *
+	 * See Observer.prototype.anyPath to listen to multiple paths simultaneously.
+	 *
+	 * Suppose we have this state tree:
+	 * OObject({
+	 *   state: "state-1"
+	 * 	 nested: OObject({
+	 * 	   state: "state-2",
+	 * 	 })
+	 * })
+	 *
+	 * Examples:
+	 *   object.observer.path('state')
+	 *   object.observer.path(['state'])
+	 *   object.observer.path(['nested', 'state'])
+	 *
+	 * Params:
+	 *   path: the path to listen on. If the path is not an array, it will be
+	 *     not inspect nested objects.
+	 *
+	 * Returns:
+	 *   An observer that will only fire for events that happen through the given
+	 *     path
+	 */
+	path: createImpl(
+		(self, path) => {
+			if (!isInstance(path, Array)) path = [path];
+
+			if (!len(path)) {
+				return self.parent_;
+			}
+
+			self.path_ = path;
+		},
+		(self) => getPath(self.parent_, self.path_, 0),
+		(self, value) => setPath(self.parent_, self.path_, value),
+		(self, listener, governor) => self.parent_.register_(listener, chainGov(pathGov(self.path_), governor)),
+	),
+
+	/**
+	 * Ignores mutation events that come from the given path. If a mutation event
+	 * comes it through the ignored path, that mutation event will be ignored.
+	 *
+	 * Examples:
+	 *   object.observer.path('not-my-problem')
+	 *   object.observer.path(['not-my-problem'])
+	 *   object.observer.path(['nested', 'not-my-problem'])
+	 *
+	 * Params:
+	 *   path: the path to ignore events on. If not an array, the path will
+	 *     be interpreted as a property to ignore
+	 *
+	 * Returns:
+	 *   An observer that will only fire for events that happen through any
+	 *     path but the given path
+	 */
+	ignore: createImpl(
+		(self, path) => {
+			if (!isInstance(path, Array)) path = [path];
+			assert(len(path), "Observer ignore must have at least one path");
+			self.path_ = path;
+		},
+		defGet, defSet,
+		(self, listener, governor) => self.parent_.register_(listener, chainGov((info, child) => {
+			if (info === fromPath || info === fromIgnore) return 1;
+			if (isSymbol(info)) info = 1;
+
+			if (child.query_ !== self.path_[info - 1]) {
+				return fromIgnore;
+			}
+
+			if (info >= len(self.path_)) {
+				return 0;
+			}
+
+			return info + 1;
+		}, governor))
+	),
+
+	/**
+	 * Defines a default value for if the observer resolves to undefined or null.
+	 *
+	 * Examples:
+	 *   observer.def(10)
+	 *   observer.def(Observer.mutable(10))
+	 *
+	 * Params:
+	 *   def: The value to default to. This can be an observer so that the default
+	 *     can mutate after the fact.
+	 *
+	 * Returns:
+	 *   An observer which will default to the given value
+	 */
+	def: createImpl(
+		(self, def) => {
+			self.def_ = def;
+			self.dyn_ = isInstance(def, Observer);
+		},
+		(self) => self.parent_.get() ?? (self.dyn_ ? self.def_.get() : self.def_),
+		defSet,
+		(self, listener, governor) => {
+			const remove = self.parent_.register_(listener, governor);
+			if (!self.dyn_) return remove;
+
+			let defListener = 0;
+			const listen = () => {
+				if (defListener) defListener();
+				defListener =
+					self.parent_.get() == null &&
+					self.def_.register_(listener, governor);
+			};
+
+			shallowListener(self.parent_, listen);
+			listen();
+
+			return () => {
+				remove();
+				if (defListener) defListener();
+			};
+		}
+	),
+
+	/**
+	 * This optimizes a selection pattern to be O(1) instead of O(n) where n
+	 * is the number of selectable items.
+	 *
+	 * Consider:
+	 *   You have a list of items that you want to be selectable where you have
+	 *   an observer that controls which item it currently selected. Let's assume
+	 *   that we want to have a radio button selection for your favorite animal
+	 *   A naiive approach would be to use map():
+	 *
+	 *   const selected = Observer.mutable(null);
+	 *   createRadioButton(selected.map(sel => sel === 'dog'));
+	 *   createRadioButton(selected.map(sel => sel === 'cat'));
+	 *   createRadioButton(selected.map(sel => sel === 'guinea pig'));
+	 *
+	 *   In this approach, every time we update the selection, the map function
+	 *   for all items will be invoked. This will run in O(n) time and invoke
+	 *   all three map functions. Instead, let's use selector().
+	 *
+	 *   const selector = selected.selector();
+	 *   createRadioButton(selector('dog'));
+	 *   createRadioButton(selector('cat'));
+	 *   createRadioButton(selector('guinea pig'));
+	 *
+	 *   Here, when we change the selection, selector() will only update the
+	 *   last selected item and the new item to be selected. We have reduced the
+	 *   amount of computations to at most two.
+	 *
+	 * Params:
+	 *   selValue: The value to be used when the current selector is selected.
+	 *     This is optional and defaults to true.
+	 *   defValue: The value to be used when the current selector is unselected.
+	 *     This is optional and defaults to false.
+	 *
+	 * Returns:
+	 *   A function that takes the item to be compared to when deciding what
+	 *   should be selected as its only parameter.
+	 */
+	selector: createImpl(
+		(self, selValue = true, defValue = false) => {
+			self.selValue_ = selValue;
+			self.defValue_ = defValue;
+			self.map_ = new Map();
+			self.map_.prev_ = self.parent_.get();
+
+			return sel => {
+				let ret = Object.create(self);
+				ret.sel_ = sel;
+				return ret;
+			};
+		},
+		(self) => isEqual(self.sel_, self.parent_.get()) ? self.selValue_ : self.defValue_,
+		(self, val) => {
+			assert(val === self.sel_);
+			self.parent_.set(val);
+		},
+		(self, listener) => {
+			const map = self.map_;
+			const sel = self.sel_;
+
+			if (!map.selectionListener_) map.selectionListener_ = shallowListener(self.parent_, (commit, args) => {
+				const val = self.parent_.get();
+				if (isEqual(val, map.prev_)) return;
+
+				runListeners(map,
+					(map.get(map.prev_) || []).concat(map.get(val) || []),
+					() => (map.prev_ = val, commit), args);
+			});
+
+			let arr = map.get(sel);
+			if (!arr) {
+				map.set(sel, arr = [listener]);
+			} else {
+				push(arr, listener);
+			}
+
+			return () => {
+				if ((
+							(len(arr) === 1 && arr[0] === listener) ||
+							(remove(arr, listener) && !len(arr))
+						) && map.delete(sel) && map.size === 0) {
+					map.selectionListener_();
+					map.selectionListener_ = 0;
+				}
+			};
+		},
+	),
+
+	/**
+	 * Creates an observer that memoizes state and collapses all listeners down
+	 * to one listener for the parent state. In the case where you may have many
+	 * similar observer queries that only differ in the end, this can be used
+	 * to reduce overhead of walking the tree everytime a new listener is
+	 * attached.
+	 *
+	 * Additionally, a count can be passed to have the memo create a list of
+	 * observers that all have a event order guarantee. If 2 is passed, an
+	 * array of two observers will be generated where the first observer
+	 * in the array will always have its listeners called before any listeners
+	 * defined in the second observer in the array.
+	 *
+	 * Note that events will not be forwarded if the value that the observer
+	 * resolves to the same value.
+	 *
+	 * Params:
+	 *   count: The number of observers to create to create observers have
+	 *     have an event order guarantee among them. If a falsy value is provided
+	 *     (or none at all) then a single observer is returned.
+	 *
+	 * Returns:
+	 *   An observer that has the same behavior when memo was not used at all,
+	 *     but serves as a transparent performance optimization.
+	 */
+	memo: createImpl(
+		(self, count) => {
+			assert(count == null || typeof count === 'number',
+				"Count must be a number or undefined");
+
+			self.numListeners_ = 0;
+			self.base_ = self;
+			const create = local => {
+				const ret = Object.create(self);
+				ret.local_ = local;
+				return ret;
+			};
+
+			const listeners = self.listeners_ = [];
+			self.flat_ = !count;
+			if (!count) {
+				return create(listeners);
+			}
+
+			return Array.from(Array(count), () => {
+				const local = [];
+				push(listeners, local);
+				return create(local);
+			});
+		},
+		(self) => {
+			if (self.base_.numListeners_) {
+				return self.base_.value_;
+			}
+
+			return self.parent_.get();
+		},
+		(self, v) => {
+			if (self.base_.numListeners_ && isEqual(v, self.base_.value_)) {
+				return;
+			}
+
+			self.parent_.set(v);
+		},
+		(self, listener, governor) => {
+			const base = self.base_;
+
+			if (!base.numListeners_) {
+				base.parentListener_ = self.parent_.register_((commit, args) => {
+					runListeners(base, self.flat_ ? self.listeners_ : self.listeners_.flat(), () => {
+						base.value_ = self.parent_.get();
+						return commit;
+					}, args);
+				}, (user, link, parent) => {
+					if (isSymbol(user)) return base.info_ = [user, link, parent];
+
+					const obs = link.reg_.value?.[observerGetter];
+					for (const entry of self.flat_ ? self.listeners_ : self.listeners_.flat()) {
+						registerMemo(entry, obs, base.info_);
+					}
+				});
+
+				base.value_ = self.parent_.get();
+			}
+
+			const entry = {
+				listener_: listener,
+				governor_: governor,
+			};
+
+			if (base.info_) {
+				registerMemo(entry, base.value_?.[observerGetter], base.info_);
+			}
+
+			push(self.local_, entry);
+			base.numListeners_++;
+
+			return () => {
+				if (remove(self.local_, entry)) {
+					base.numListeners_--;
+					entry.parent_?.();
+
+					if (!base.numListeners_) {
+						base.parentListener_();
+						base.parentListener_ = base.value_ = base.info_ = 0;
+					}
+				}
+			};
+		},
+	),
+
+	// Creates an observer that will only call listeners once during a given
+	// time period. Only the latest commit will be passed to listeners.
+	//
+	// If there are any commits pending when the listener is removed, the listener
+	// will be invoked with the pending commit right before removal.
+	//
+	// Params:
+	//   ms - Milliseconds to wait before notifying listeners about another event
+	throttle: createImpl(
+		(self, ms) => {
+			self.ms_ = ms;
+		},
+		defGet, defSet,
+		(self, listener, governor) => {
+			let timer, waiting;
+
+			const remove = self.parent_.register_(commit => {
+				if (timer) {
+					waiting = commit;
+					return;
+				}
+
+				listener(commit);
+				timer = setInterval(() => {
+					if (waiting) {
+						listener(waiting);
+						return waiting = 0;
+					} else {
+						clearInterval(timer);
+						return timer = 0;
+					}
+				}, self.ms_);
+			}, governor);
+
+			return () => {
+				clearInterval(timer);
+				if (waiting) {
+					listener(waiting);
+				}
+
+				return remove();
+			};
+		}
+	),
+
+	// Wait will only let data through if there were no changes to that data within a wait period
+	wait: createImpl(
+		(self, ms) => {
+			self.ms_ = ms;
+		},
+		defGet, defSet,
+		(self, listener, governor) => {
+			let timer, waiting;
+
+			const remove = self.parent_.register_(commit => {
+				waiting = commit;
+
+				if (timer) {
+					clearTimeout(timer);
+				}
+
+				timer = setTimeout(() => {
+					listener(waiting);
+					waiting = timer = 0;
+				}, self.ms_);
+			}, governor);
+
+			return () => {
+				if (timer) clearTimeout(timer);
+				if (waiting) listener(waiting);
+
+				remove();
+			};
+		}
+	),
 
 	/**
 	 * Watches the observer for mutations. Will ignore any observer paths that
@@ -408,561 +1007,6 @@ const Observer = createClass((get, set, register) => {
 			});
 		});
 	},
-
-	/**
-	 * Defines a depth to how far listeners should listen for in a state tree.
-	 * If a depth of 0 is chosen, this observer will not notify watchers for when
-	 * nested values change.
-	 *
-	 * Params:
-	 *  level: Depth to search. 0 is the default.
-	 */
-	shallow (level = 0) {
-		return Observer(
-			this.get,
-			this.set,
-			(listener, governor) => this.register_(listener, (info, child, entry) => {
-				if (isSymbol(info)) info = [0, info];
-				if (info[0] > level) return 0;
-
-				const currentVal = governor(info[1], child, entry);
-				if (!currentVal) return 0;
-
-				return [info[0] + 1, currentVal];
-			})
-		);
-	},
-
-	/**
-	 * Defines how many levels of nesting notify watchers will invoke for before
-	 * additional checks are imposed. This can be useful for looking at a
-	 * piece of state from an entire array.
-	 *
-	 * Suppose we have this state tree:
-	 * OArray([
-	 *   OObject({state: "state-1"}),
-	 *   OObject({state: "state-2"})
-	 * ])
-	 *
-	 * Example:
-	 *   state_tree.observer.skip().path('state')
-	 *
-	 * Returns:
-	 *   An observer.
-	 */
-	skip (level = 1) {
-		assert(typeof level === 'number', "Level must be a number");
-
-		return Observer(
-			this.get,
-			this.set,
-			(listener, governor) => this.register_(listener, chainGov(info => {
-				if (info === fromPath || info === fromIgnore) return 1;
-				if (isSymbol(info)) info = 1;
-
-				if (info < level){
-					return info + 1;
-				}
-
-				return fromPath;
-			}, governor))
-		);
-	},
-
-	/**
-	 * Defines a tree like structure to follow for notify watchers. This can be
-	 * used to watch state within an unbound number of nested states.
-	 *
-	 * Suppose we have this state tree:
-	 * OObject({
-	 *   state: "state-1",
-	 *   children: OArray([
-	 *     OObject({
-	 *       state: "state-2",
-	 *     }),
-	 *     OObject({
-	 *     	 state: "state-3",
-	 *     	 children: OArray([
-	 *     	   OObject({
-	 *     	     state: "state-4"
-	 *     	   })
-	 *     	 ])
-	 *     })
-	 *   ])
-	 * })
-	 *
-	 * Example:
-	 *   state_tree.observer.tree('children').path('state')
-	 *
-	 * Params:
-	 *   name: The name of the property that ends up with unbound nesting
-	 *
-	 * Returns:
-	 *   An observer.
-	 */
-	tree (name) {
-		return Observer(
-			this.get,
-			this.set,
-			(listener, governor) => this.register_(listener, chainGov((info, child) => {
-				if (info === fromPath || info === fromIgnore) return 1;
-				if (isSymbol(info)) info = 1;
-
-				if (info !== 1) {
-					return 1;
-				}
-
-				if (child.query_ !== name) {
-					return baseGovernorParent;
-				}
-
-				return 2;
-			}, governor))
-		);
-	},
-
-	/**
-	 * Defines a series of paths that notify watchers will be called for.
-	 *
-	 * See Observer.prototype.path
-	 *
-	 * Examples:
-	 *   object.observer.anyPath('num1', 'num2').map(nums => Math.max(...nums))
-	 *   object.observer.anyPath(['nested', 'path'], ['a-different', 'nested-path'])
-	 *
-	 * Params:
-	 *   ...paths: A list of paths to listen for events.
-	 *
-	 * Returns:
-	 *   An observer
-	 */
-	anyPath (...paths) {
-		assert(len(paths), "Observer anyPath must have at least one path");
-		paths = paths.map(path => {
-			if (!isInstance(path, Array)) {
-				path = [path];
-			}
-
-			assert(len(path), "No path of an anyPath observer can be 0 length");
-
-			return path;
-		});
-
-		return Observer(
-			() => paths.map(path => getPath(this, path, 0)),
-			value => {
-				assert(len(value) === len(paths), "value and path lengths mismatch");
-
-				for (let i = 0; i < len(paths); i++) {
-					setPath(this, paths[i], value[i]);
-				}
-			},
-			(listener, governor) => this.register_(listener, (info, child, entry) => {
-				if (isSymbol(info)) {
-					info = paths.map(path => [chainGov(pathGov(path), governor), info]);
-				}
-
-				let ret = false;
-				for (const [gov, childInfo] of info) {
-					const value = gov(childInfo, child, entry);
-					if (value) {
-						ret = ret || [];
-						push(ret, [gov, value]);
-					}
-				}
-
-				return ret;
-			}),
-		);
-	},
-
-	/**
-	 * Defines a path that notify watchers will be called for.
-	 *
-	 * See Observer.prototype.anyPath to listen to multiple paths simultaneously.
-	 *
-	 * Suppose we have this state tree:
-	 * OObject({
-	 *   state: "state-1"
-	 * 	 nested: OObject({
-	 * 	   state: "state-2",
-	 * 	 })
-	 * })
-	 *
-	 * Examples:
-	 *   object.observer.path('state')
-	 *   object.observer.path(['state'])
-	 *   object.observer.path(['nested', 'state'])
-	 *
-	 * Params:
-	 *   path: the path to listen on. If the path is not an array, it will be
-	 *     not inspect nested objects.
-	 *
-	 * Returns:
-	 *   An observer that will only fire for events that happen through the given
-	 *     path
-	 */
-	path (path) {
-		if (!isInstance(path, Array)) path = [path];
-
-		if (!len(path)) {
-			return this;
-		}
-
-		return Observer(
-			() => getPath(this, path, 0),
-			value => setPath(this, path, value),
-			(listener, governor) => this.register_(listener, chainGov(pathGov(path), governor)),
-		);
-	},
-
-	/**
-	 * Ignores mutation events that come from the given path. If a mutation event
-	 * comes it through the ignored path, that mutation event will be ignored.
-	 *
-	 * Examples:
-	 *   object.observer.path('not-my-problem')
-	 *   object.observer.path(['not-my-problem'])
-	 *   object.observer.path(['nested', 'not-my-problem'])
-	 *
-	 * Params:
-	 *   path: the path to ignore events on. If not an array, the path will
-	 *     be interpreted as a property to ignore
-	 *
-	 * Returns:
-	 *   An observer that will only fire for events that happen through any
-	 *     path but the given path
-	 */
-	ignore (path) {
-		if (!isInstance(path, Array)) path = [path];
-		assert(len(path), "Observer ignore must have at least one path");
-
-		return Observer(
-			this.get,
-			this.set,
-			(listener, governor) => this.register_(listener, chainGov((info, child) => {
-				if (info === fromPath || info === fromIgnore) return 1;
-				if (isSymbol(info)) info = 1;
-
-				if (child.query_ !== path[info - 1]) {
-					return fromIgnore;
-				}
-
-				if (info >= len(path)) {
-					return 0;
-				}
-
-				return info + 1;
-			}, governor))
-		);
-	},
-
-	/**
-	 * Defines a default value for if the observer resolves to undefined or null.
-	 *
-	 * Examples:
-	 *   observer.def(10)
-	 *   observer.def(Observer.mutable(10))
-	 *
-	 * Params:
-	 *   def: The value to default to. This can be an observer so that the default
-	 *     can mutate after the fact.
-	 *
-	 * Returns:
-	 *   An observer which will default to the given value
-	 */
-	def (def) {
-		if (!isInstance(def, Observer)) {
-			return Observer(() => {
-				return this.get() ?? def;
-			}, this.set, this.register_);
-		}
-
-		return Observer(
-			() => this.get() ?? def.get(),
-			this.set,
-			(listener, governor) => {
-				const remove = this.register_(listener, governor);
-
-				let defListener = 0;
-				const listen = () => {
-					if (defListener) defListener();
-					defListener = this.get() == null && def.register_(listener, governor);
-				};
-
-				shallowListener(this, listen);
-				listen();
-
-				return () => {
-					remove();
-					if (defListener) defListener();
-				};
-			}
-		);
-	},
-
-	/**
-	 * This optimizes a selection pattern to be O(1) instead of O(n) where n
-	 * is the number of selectable items.
-	 *
-	 * Consider:
-	 *   You have a list of items that you want to be selectable where you have
-	 *   an observer that controls which item it currently selected. Let's assume
-	 *   that we want to have a radio button selection for your favorite animal
-	 *   A naiive approach would be to use map():
-	 *
-	 *   const selected = Observer.mutable(null);
-	 *   createRadioButton(selected.map(sel => sel === 'dog'));
-	 *   createRadioButton(selected.map(sel => sel === 'cat'));
-	 *   createRadioButton(selected.map(sel => sel === 'guinea pig'));
-	 *
-	 *   In this approach, every time we update the selection, the map function
-	 *   for all items will be invoked. This will run in O(n) time and invoke
-	 *   all three map functions. Instead, let's use selector().
-	 *
-	 *   const selector = selected.selector();
-	 *   createRadioButton(selector('dog'));
-	 *   createRadioButton(selector('cat'));
-	 *   createRadioButton(selector('guinea pig'));
-	 *
-	 *   Here, when we change the selection, selector() will only update the
-	 *   last selected item and the new item to be selected. We have reduced the
-	 *   amount of computations to at most two.
-	 *
-	 * Params:
-	 *   selValue: The value to be used when the current selector is selected.
-	 *     This is optional and defaults to true.
-	 *   defValue: The value to be used when the current selector is unselected.
-	 *     This is optional and defaults to false.
-	 *
-	 * Returns:
-	 *   A function that takes the item to be compared to when deciding what
-	 *   should be selected as its only parameter.
-	 */
-	selector (selValue = true, defValue = false) {
-		const map = new Map();
-		let prevSel = this.get();
-		let selectionListener;
-		const invokeListeners = listenerContext();
-
-		return sel => Observer(
-			() => isEqual(sel, this.get()) ? selValue : defValue,
-			val => {
-				assert(val === sel);
-				this.set(sel);
-			},
-			listener => {
-				if (!selectionListener) selectionListener = shallowListener(this, (commit, args) => {
-					const val = this.get();
-					if (isEqual(val, prevSel)) return;
-
-					invokeListeners(
-						(map.get(prevSel) || []).concat(map.get(val) || []),
-						() => (prevSel = val, commit), args);
-				});
-
-				let arr = map.get(sel);
-				if (!arr) {
-					map.set(sel, arr = [listener]);
-				} else {
-					push(arr, listener);
-				}
-
-				return () => {
-					if ((
-								(len(arr) === 1 && arr[0] === listener) ||
-								(remove(arr, listener) && !len(arr))
-							) && map.delete(sel) && map.size === 0) {
-						selectionListener();
-						selectionListener = 0;
-					}
-				};
-			},
-		);
-	},
-
-	/**
-	 * Creates an observer that memoizes state and collapses all listeners down
-	 * to one listener for the parent state. In the case where you may have many
-	 * similar observer queries that only differ in the end, this can be used
-	 * to reduce overhead of walking the tree everytime a new listener is
-	 * attached.
-	 *
-	 * Additionally, a count can be passed to have the memo create a list of
-	 * observers that all have a event order guarantee. If 2 is passed, an
-	 * array of two observers will be generated where the first observer
-	 * in the array will always have its listeners called before any listeners
-	 * defined in the second observer in the array.
-	 *
-	 * Note that events will not be forwarded if the value that the observer
-	 * resolves to the same value.
-	 *
-	 * Params:
-	 *   count: The number of observers to create to create observers have
-	 *     have an event order guarantee among them. If a falsy value is provided
-	 *     (or none at all) then a single observer is returned.
-	 *
-	 * Returns:
-	 *   An observer that has the same behavior when memo was not used at all,
-	 *     but serves as a transparent performance optimization.
-	 */
-	memo (count) {
-		assert(count == null || typeof count === 'number',
-			"Count must be a number or undefined");
-
-		let parentListener;
-		let value;
-		let info;
-		const invokeListeners = listenerContext();
-
-		let numListeners = 0;
-		const create = (local, getAll) => Observer(
-			() => {
-				if (numListeners) {
-					return value;
-				}
-
-				return this.get();
-			},
-			v => {
-				if (numListeners && isEqual(v, value)) {
-					return;
-				}
-
-				this.set(v);
-			},
-			(listener, governor) => {
-				if (!numListeners) {
-					parentListener = this.register_((commit, args) => {
-						invokeListeners(getAll(), () => {
-							value = this.get();
-							return commit;
-						}, args);
-					}, (user, link, parent) => {
-						if (isSymbol(user)) return info = [user, link, parent];
-
-						const obs = link.reg_.value?.[observerGetter];
-						for (const entry of getAll()) {
-							registerMemo(entry, obs, info);
-						}
-					});
-
-					value = this.get();
-				}
-
-				const entry = {
-					listener_: listener,
-					governor_: governor,
-				};
-
-				if (info) {
-					registerMemo(entry, value?.[observerGetter], info);
-				}
-
-				push(local, entry);
-				numListeners++;
-
-				return () => {
-					if (remove(local, entry)) {
-						numListeners--;
-						entry.parent_?.();
-
-						if (!numListeners) {
-							parentListener();
-							parentListener = value = info = 0;
-						}
-					}
-				};
-			},
-		);
-
-		const listeners = [];
-		if (!count) {
-			return create(listeners, () => listeners);
-		}
-
-		return Array.from(Array(count), () => {
-			const local = [];
-			push(listeners, local);
-			return create(local, () => listeners.flat());
-		});
-	},
-
-	// Creates an observer that will only call listeners once during a given
-	// time period. Only the latest commit will be passed to listeners.
-	//
-	// If there are any commits pending when the listener is removed, the listener
-	// will be invoked with the pending commit right before removal.
-	//
-	// Params:
-	//   ms - Milliseconds to wait before notifying listeners about another event
-	throttle (ms) {
-		return Observer(
-			this.get,
-			this.set,
-			(listener, governor) => {
-				let timer, waiting;
-
-				const remove = this.register_(commit => {
-					if (timer) {
-						waiting = commit;
-						return;
-					}
-
-					listener(commit);
-					timer = setInterval(() => {
-						if (waiting) {
-							listener(waiting);
-							return waiting = 0;
-						} else {
-							clearInterval(timer);
-							return timer = 0;
-						}
-					}, ms);
-				}, governor);
-
-				return () => {
-					clearInterval(timer);
-					if (waiting) {
-						listener(waiting);
-					}
-
-					return remove();
-				};
-			}
-		);
-	},
-
-	// Wait will only let data through if there were no changes to that data within a wait period
-	wait (ms) {
-		return Observer(
-			this.get,
-			this.set,
-			(listener, governor) => {
-				let timer, waiting;
-
-				const remove = this.register_(commit => {
-					waiting = commit;
-
-					if (timer) {
-						clearTimeout(timer);
-					}
-
-					timer = setTimeout(() => {
-						listener(waiting);
-						waiting = timer = 0;
-					}, ms);
-				}, governor);
-
-				return () => {
-					if (timer) clearTimeout(timer);
-					if (waiting) listener(waiting);
-
-					remove();
-				};
-			}
-		);
-	}
 });
 
 /**
@@ -981,18 +1025,21 @@ Observer.NULL = Observer(noop);
  *   initial value, that observer is returned and no additional observer is
  *   constructed.
  */
-Observer.mutable = value => {
-	const listeners = [];
-	const invokeListeners = listenerContext();
-
-	return Observer(() => value, v => {
-		if (isEqual(value, v)) return;
-		invokeListeners(listeners, () => [Synthetic(value, value = v)]);
-	}, l => {
-		push(listeners, l);
-		return () => remove(listeners, l);
-	});
-};
+Observer.mutable = createImpl(
+	(self, value) => {
+		self.value_ = value;
+		self.listeners_ = [];
+	},
+	(self) => self.value_,
+	(self, v) => {
+		if (isEqual(self.value_, v)) return;
+		runListeners(self, self.listeners_, () => [Synthetic(self.value_, self.value_ = v)]);
+	},
+	(self, l) => {
+		push(self.listeners_, l);
+		return () => remove(self.listeners_, l);
+	}
+);
 
 /**
  * Creates an immutable observer given the initial value. Calls to
@@ -1005,13 +1052,62 @@ Observer.mutable = value => {
  *   initial value, then the immutable will inherit any value and mutations
  *   of the given observer, but itself will not be able to mutate it.
  */
-Observer.immutable = (value) => {
-	if (isInstance(value, Observer)){
-		return Observer(value.get, null, value.register_);
-	} else {
-		return Observer(() => value);
+Observer.immutable = createImpl(
+	(self, value) => {
+		if (isInstance(value, Observer)){
+			self.parent_ = value;
+		} else {
+			return Observer(() => value);
+		}
+	},
+	defGet,
+	0,
+	defRegister
+);
+
+const allMutDeps = createImpl(null,
+	self => self.deps_.get().map(obs => obs.get()),
+	(self, v) => {
+		const d = self.deps_.get();
+		assert(len(v) === len(d), "Observer all set array length mismatch");
+
+		for (let i = 0; i < len(d); i++) {
+			d[i].set(v[i]);
+		}
+	},
+	(self, listener, governor) => {
+		let listeners = [];
+		const refresh = () => {
+			callAll(listeners);
+			listeners = self.deps_.get().map(obs => obs.register_(listener, governor));
+		};
+
+		const parent = shallowListener(self.deps_, (commit, args) => {
+			refresh();
+			listener(commit, args);
+		});
+		refresh();
+		return () => {
+			parent();
+			callAll(listeners);
+		};
 	}
-};
+);
+
+const allImmDeps = createImpl(null,
+	(self) => self.deps_.map(obs => obs.get()),
+	(self, v) => {
+		assert(len(v) === len(self.deps_), "Observer all set array length mismatch");
+
+		for (let i = 0; i < len(self.deps_); i++) {
+			self.deps_[i].set(v[i]);
+		}
+	},
+	(self, listener, governor) => {
+		const listeners = self.deps_.map(obs => obs.register_(listener, governor));
+		return () => callAll(listeners);
+	}
+);
 
 /**
  * Creates an observer that combines all given observers. This is useful when you
@@ -1031,52 +1127,9 @@ Observer.immutable = (value) => {
  *   deps: An array of observers or an observer that resolves to an array of observers
  */
 Observer.all = deps => {
-	if (isInstance(deps, Observer)) {
-
-		return Observer(
-			() => deps.get().map(obs => obs.get()),
-			v => {
-				const d = deps.get();
-				assert(len(v) === len(d), "Observer all set array length mismatch");
-
-				for (let i = 0; i < len(d); i++) {
-					d[i].set(v[i]);
-				}
-			},
-			(listener, governor) => {
-				let listeners = [];
-				const refresh = () => {
-					callAll(listeners);
-					listeners = deps.get().map(obs => obs.register_(listener, governor));
-				};
-
-				const parent = shallowListener(deps, (commit, args) => {
-					refresh();
-					listener(commit, args);
-				});
-				refresh();
-				return () => {
-					parent();
-					callAll(listeners);
-				};
-			}
-		);
-	} else {
-		return Observer(
-			() => deps.map(obs => obs.get()),
-			v => {
-				assert(len(v) === len(deps), "Observer all set array length mismatch");
-
-				for (let i = 0; i < len(deps); i++) {
-					deps[i].set(v[i]);
-				}
-			},
-			(listener, governor) => {
-				const listeners = deps.map(obs => obs.register_(listener, governor));
-				return () => callAll(listeners);
-			}
-		);
-	}
+	const out = isInstance(deps, Observer) ? allMutDeps() : allImmDeps();
+	out.deps_ = deps;
+	return out;
 };
 
 // Creates an observer that updates when an event listener fires.
@@ -1084,32 +1137,43 @@ Observer.all = deps => {
 // Returns:
 //   An observer that will keep up to date with latest events from an
 //   event listener
-Observer.event = (element, type, options) => {
-	let value = null;
-	return Observer(() => value, 0, (listener, governor) => {
+Observer.event = createImpl(
+	(self, element, type, options) => {
+		self.elem_ = element;
+		self.type_ = type;
+		self.options_ = options;
+	},
+	self => self.value_,
+	0,
+	(self, listener, governor) => {
 		const cb = e => {
-			listener([Synthetic(value, value = e)]);
+			listener([Synthetic(self.value_, self.value_ = e)]);
 		};
 
-		element.addEventListener(type, cb, options);
-		return () => element.removeEventListener(type, cb, options);
-	});
-};
+		self.elem_.addEventListener(self.type_, cb, self.options_);
+		return () => self.elem_.removeEventListener(self.type_, cb, self.options_);
+	}
+);
 
 // Creates an observer that updates on a timer. The timer will increment a
 // integer every time it is triggered. If mulitiple things are listening to
 // the timer, the timer will be registered multiple times and the integer
 // will increment at arbitrary times. If this is not desirable, use
 // Observer.prototype.memo
-Observer.timer = (time) => {
-	let i = 0;
-	return Observer(() => i, 0, (listener, governor) => {
+Observer.timer = createImpl(
+	(self, ms) => {
+		self.ms_ = ms;
+		self.value_ = 0;
+	},
+	self => self.value_,
+	0,
+	(self, listener, governor) => {
 		const interval = setInterval(() => {
-			listener([Synthetic(i, ++i)]);
-		}, time);
+			listener([Synthetic(self.value_, ++self.value_)]);
+		}, self.ms_);
 
 		return () => clearInterval(interval);
-	});
-};
+	}
+);
 
 export default Observer;
