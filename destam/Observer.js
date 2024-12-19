@@ -132,6 +132,31 @@ const createImpl = (construct, get, set, register) => {
 	};
 };
 
+const selectorRemove = (map, sel, listener) => {
+	let cur = map.get(sel);
+	if (!cur) return;
+
+	if (cur === listener) {
+		if (cur.next_) {
+			map.set(sel, cur.next_);
+		} else {
+			map.delete(sel);
+
+			if (map.size === 0) {
+				map.selectionListener_();
+				map.selectionListener_ = 0;
+			}
+		}
+	} else while (cur.next_) {
+		if (cur.next_ === listener) {
+			cur.next_ = cur.next_.next_;
+			break;
+		}
+
+		cur = cur.next_;
+	}
+};
+
 /**
  * Constructor for observer objects. See Observer.mutable for a full
  * implementation.
@@ -695,27 +720,29 @@ Object.assign(Observer.prototype, {
 				const val = self.parent_.get();
 				if (isEqual(val, map.prev_)) return;
 
-				runListeners(map,
-					(map.get(map.prev_) || []).concat(map.get(val) || []),
-					() => (map.prev_ = val, commit), args);
+				const listeners = [];
+				let cur = map.get(map.prev_);
+				while (cur) {
+					push(listeners, cur.listener_);
+					cur = cur.next_;
+				}
+
+				cur = map.get(val);
+				while (cur) {
+					push(listeners, cur.listener_);
+					cur = cur.next_;
+				}
+
+				runListeners(map, listeners, () => (map.prev_ = val, commit), args);
 			});
 
-			let arr = map.get(sel);
-			if (!arr) {
-				map.set(sel, arr = [listener]);
-			} else {
-				push(arr, listener);
-			}
-
-			return () => {
-				if ((
-							(len(arr) === 1 && arr[0] === listener) ||
-							(remove(arr, listener) && !len(arr))
-						) && map.delete(sel) && map.size === 0) {
-					map.selectionListener_();
-					map.selectionListener_ = 0;
-				}
+			listener = {
+				next_: map.get(sel),
+				listener_: listener,
 			};
+			map.set(sel, listener);
+
+			return selectorRemove.bind(null, map, sel, listener);
 		},
 	),
 
