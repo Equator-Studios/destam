@@ -112,7 +112,7 @@ state tree can live in the same javascript context or it can live be across the
 internet if the events are serialized.
 
 In order to apply events to a state tree, we need to create an index of all
-ids that are relevation to a transaction. We can't replay events if we're having
+ids that are relevant to a transaction. We can't replay events if we're having
 trouble finding the things to mutate after all. `createNetwork` allows us to
 construct this index.
 
