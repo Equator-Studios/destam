@@ -1058,6 +1058,16 @@ test("observer effect cleanup", () => {
 	expect(vals).to.deep.equal([]);
 });
 
+test("observer effect self modify", () => {
+	const selected = Observer.mutable(false);
+
+	selected.effect(val => {
+		if (!val) selected.set(true);
+	});
+
+	selected.set(false);
+});
+
 test("observer effect cleanup once", () => {
 	const selected = Observer.mutable(1);
 
