@@ -990,6 +990,7 @@ Object.assign(Observer.prototype, {
 	effect (listener) {
 		assert(typeof listener === 'function', 'effect must be called with a function');
 
+		let listenerContext;
 		const reg = this.register_((commit, meta) => {
 			if (listenerContext) listenerContext();
 			listenerContext = listener(this.get(), commit, meta);
@@ -997,7 +998,7 @@ Object.assign(Observer.prototype, {
 				'Effect listener must return a nullish value or a function');
 		}, watchGovernor);
 
-		let listenerContext = listener(this.get());
+		listenerContext = listener(this.get());
 		assert(listenerContext == null || typeof listenerContext === 'function',
 			'Effect listener must return a nullish value or a function');
 
