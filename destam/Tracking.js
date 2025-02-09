@@ -332,14 +332,13 @@ const Tracker = createClass(observer => {
 			return sync();
 		};
 
-		const destroy = () => {
-			if (remove(this.eventListeners_, listener)) {
-				flush();
-			}
-		};
-
 		const listener = {
-			destroy_: destroy,
+			network: this,
+			remove: () => {
+				if (remove(this.eventListeners_, listener)) {
+					flush();
+				}
+			},
 			add_: reg => {
 				if (!this.isExternal_ || !ignore(this.externalArg_)) {
 					trackedChanges.set(reg, false);
@@ -435,12 +434,7 @@ const Tracker = createClass(observer => {
 		};
 
 		this.eventListeners_.push(listener);
-
-		return {
-			network: this,
-			remove: destroy,
-			flush: flush,
-		};
+		return listener;
 	},
 
 	/**
@@ -497,7 +491,7 @@ const Tracker = createClass(observer => {
 	 * automatically cleaned up as well.
 	 */
 	remove () {
-		for (const l of this.eventListeners_.slice()) l.destroy_();
+		for (const l of this.eventListeners_.slice()) l.remove();
 		this.listener();
 
 		assert(this.size === 0);
