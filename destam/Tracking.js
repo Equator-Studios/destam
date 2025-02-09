@@ -334,6 +334,7 @@ const Tracker = createClass(observer => {
 
 		const listener = {
 			network: this,
+			flush,
 			remove: () => {
 				if (remove(this.eventListeners_, listener)) {
 					flush();
@@ -495,6 +496,13 @@ const Tracker = createClass(observer => {
 		this.listener();
 
 		assert(this.size === 0);
+	},
+
+	/**
+	 * Shorthand to flush all digest listeners associated with this network.
+	 */
+	flush () {
+		return Promise.all(this.eventListeners_.map(l => l.flush()));
 	},
 }, createInstance(UUID.Map));
 
