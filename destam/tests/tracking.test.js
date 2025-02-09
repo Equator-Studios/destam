@@ -729,3 +729,69 @@ test("tracking remove network with digest", async () => {
 
 	expect(events).to.equal(1);
 });
+
+test("tracking remove network with multiple digest", async () => {
+	const obj = OObject();
+	const network = createNetwork(obj.observer);
+
+	let events = 0;
+	const digest = network.digest(() => {
+		events++;
+	});
+
+	const digest2 = network.digest(() => {
+		events++;
+	});
+
+	obj.thing = 'thing';
+	await digest.flush();
+	await digest2.flush();
+
+	network.remove();
+
+	obj.thing2 = 'thing';
+	await digest.flush();
+	await digest2.flush();
+
+	expect(events).to.equal(2);
+});
+
+test("tracking flush network with digest", async () => {
+	const obj = OObject();
+	const network = createNetwork(obj.observer);
+
+	let events = 0;
+	const digest = network.digest(() => {
+		events++;
+	});
+
+	obj.thing = 'thing';
+	await network.flush();
+
+	obj.thing2 = 'thing';
+	await network.flush();
+
+	expect(events).to.equal(2);
+});
+
+test("tracking flush network with multiple digest", async () => {
+	const obj = OObject();
+	const network = createNetwork(obj.observer);
+
+	let events = 0;
+	network.digest(() => {
+		events++;
+	});
+
+	network.digest(() => {
+		events++;
+	});
+
+	obj.thing = 'thing';
+	await network.flush();
+
+	obj.thing2 = 'thing';
+	await network.flush();
+
+	expect(events).to.equal(4);
+});
