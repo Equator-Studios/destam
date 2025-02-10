@@ -795,3 +795,31 @@ test("tracking flush network with multiple digest", async () => {
 
 	expect(events).to.equal(4);
 });
+
+test("tracking pass flush result back", async () => {
+	const obj = OObject();
+	const network = createNetwork(obj.observer);
+
+	const value = {};
+
+	const digest = network.digest(() => {
+		return value;
+	});
+
+	obj.thing = 'thing';
+	expect(await digest.flush()).to.equal(value);
+});
+
+test("tracking pass flush result back from network", async () => {
+	const obj = OObject();
+	const network = createNetwork(obj.observer);
+
+	const value = {};
+
+	const digest = network.digest(() => {
+		return value;
+	});
+
+	obj.thing = 'thing';
+	expect((await network.flush())[0]).to.equal(value);
+});
