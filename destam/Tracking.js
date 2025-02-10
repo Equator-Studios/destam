@@ -319,11 +319,13 @@ const Tracker = createClass(observer => {
 			derefs.length = 0;
 
 			if (len(deltas)) return callback(deltas, regFunc);
-		}).then(() => {
+		}).then(val => {
 			currentTimeout = 0;
 			if (time != null && changes.size) {
 				currentTimeout = setTimeout(sync, time);
 			}
+
+			return val;
 		});
 
 		const flush = () => {
