@@ -6,6 +6,7 @@ import OMap from '../UUIDMap.js';
 import UUID from '../UUID.js';
 import createNetwork from '../Tracking.js';
 
+import {Insert, Modify, Delete} from '../Events.js';
 import { clone } from './clone.js';
 
 [
@@ -822,4 +823,146 @@ test("tracking pass flush result back from network", async () => {
 
 	obj.thing = 'thing';
 	expect((await network.flush())[0]).to.equal(value);
+});
+
+test("tracking oobject ref not a string", () => {
+	const obj = OObject();
+
+	expect(() => {
+		OObject.verify(obj.observer, Insert(null, null, 0));
+	}).to.throw();
+});
+
+test("tracking oobject already exists", () => {
+	const obj = OObject();
+	obj.thing = 10;
+
+	expect(() => {
+		OObject.verify(obj.observer, Insert(null, 11, 'thing'));
+	}).to.throw();
+});
+
+test("tracking oobject no exist modify", () => {
+	const obj = OObject();
+
+	expect(() => {
+		OObject.verify(obj.observer, Modify(null, 11, 'thing'));
+	}).to.throw();
+});
+
+test("tracking oobject no exist delete", () => {
+	const obj = OObject();
+
+	expect(() => {
+		OObject.verify(obj.observer, Delete(null, 11, 'thing'));
+	}).to.throw();
+});
+
+test("tracking omap already exists", () => {
+	const obj = OMap();
+	const id = UUID();
+	obj.set(id, true);
+
+	expect(() => {
+		OMap.verify(obj.observer, Insert(null, OObject({
+			id,
+			value: false,
+		}), id));
+	}).to.throw();
+});
+
+test("tracking oarray already exists", () => {
+	const obj = OArray();
+	obj.push(1);
+
+	expect(() => {
+		OArray.verify(obj.observer, Insert(null, 2, obj.observer.indexes_[0]));
+	}).to.throw();
+});
+
+test("tracking oarray no exist exists modify", () => {
+	const obj = OArray();
+	obj.push(1);
+	const index = obj.observer.indexes_[0]; // steal the index
+	obj.pop();
+
+	expect(() => {
+		OArray.verify(obj.observer, Modify(null, 2, index));
+	}).to.throw();
+});
+
+test("tracking oarray no exist exists delete", () => {
+	const obj = OArray();
+	obj.push(1);
+	const index = obj.observer.indexes_[0]; // steal the index
+	obj.pop();
+
+	expect(() => {
+		OArray.verify(obj.observer, Delete(null, 2, index));
+	}).to.throw();
+});
+
+test("tracking duplicates", () => {
+	const id = UUID();
+	const obj = OObject({});
+	const network = createNetwork(obj.observer);
+
+	expect(network.has(id)).to.equal(false);
+	obj.thing = OObject({}, id);
+	expect(network.has(id)).to.equal(true);
+	obj.thing2 = OObject({}, id);
+	expect(network.has(id)).to.equal(true);
+	obj.thing = null;
+	expect(network.has(id)).to.equal(true);
+	obj.thing2 = null;
+	expect(network.has(id)).to.equal(false);
+});
+
+test("tracking duplicates 2", () => {
+	const id = UUID();
+	const obj = OObject({});
+	const network = createNetwork(obj.observer);
+
+	expect(network.has(id)).to.equal(false);
+	obj.thing = OObject({}, id);
+	expect(network.has(id)).to.equal(true);
+	obj.thing2 = OObject({}, id);
+	expect(network.has(id)).to.equal(true);
+	obj.thing2 = null;
+	expect(network.has(id)).to.equal(true);
+	obj.thing = null;
+	expect(network.has(id)).to.equal(false);
+});
+
+test("tracking duplicates 3", () => {
+	const id = UUID();
+	const obj = OObject({}, id);
+	const network = createNetwork(obj.observer);
+
+	expect(network.has(id)).to.equal(true);
+	obj.thing = OObject({}, id);
+	expect(network.has(id)).to.equal(true);
+	obj.thing2 = OObject({}, id);
+	expect(network.has(id)).to.equal(true);
+	obj.thing2 = null;
+	expect(network.has(id)).to.equal(true);
+	obj.thing = null;
+	expect(network.has(id)).to.equal(true);
+});
+
+test("tracking network duplicates", () => {
+	const id = UUID();
+	const obj = OObject({}, id);
+	const network = createNetwork(obj.observer);
+
+	network.apply([
+		Insert(null, true, 'thing', id),
+	]);
+
+	expect(() => {
+		network.apply([
+			Modify(true, false, 'thing', id),
+			Modify(false, true, 'thing', id),
+		]);
+	}).to.throw();
 });
