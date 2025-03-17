@@ -13,7 +13,7 @@ const UUID = createClass((size = 4) => {
 
 	if (typeof size === 'number') {
 		buffer = new Int32Array(size);
-		buffer[size - 1] = Math.max(Date.now() | 0, 1);
+		buffer[size - 1] = Math.max(Date.now(), 1);
 
 		random(new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength - 4));
 	} else if (typeof size === 'string') {
