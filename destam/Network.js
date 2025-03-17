@@ -50,9 +50,7 @@ const addListener = (reg, parent) => {
 		}
 	}
 
-	if (governor.add_) {
-		governor.add_(reg, parent);
-	}
+	governor.add_?.(reg, parent);
 };
 
 const removeListener = (reg, parent) => {
@@ -69,8 +67,8 @@ const removeListener = (reg, parent) => {
 	}
 
 	const governor = parent.governor_;
-	if (parent.regPrev_ !== parent && governor.remove_) {
-		governor.remove_(reg, parent);
+	if (parent.regPrev_ !== parent) {
+		governor.remove_?.(reg, parent);
 	}
 };
 
