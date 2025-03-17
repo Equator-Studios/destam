@@ -57,7 +57,7 @@ const removeListener = (reg, parent) => {
 	parent.regPrev_.regNext_ = parent.regNext_;
 	parent.regNext_.regPrev_ = parent.regPrev_;
 
-	for (let entry = parent.children_; entry; entry = entry.childNext_ ) {
+	for (let entry = parent.children_; entry; entry = entry.childNext_) {
 		entry.prev_.next_ = entry.next_;
 		entry.next_.prev_ = entry.prev_;
 
@@ -97,18 +97,17 @@ export const link = (link, observer, insert) => {
 export const relink = (link, newObserver) => {
 	const oldObserver = link.observer_;
 	link.observer_ = newObserver;
+	if (oldObserver === newObserver) return;
 
-	if (oldObserver !== newObserver) {
-		for (let entry = link.next_; entry !== link; entry = entry.next_) {
-			if (oldObserver) {
-				removeListener(oldObserver, entry);
-			}
+	for (let entry = link.next_; entry !== link; entry = entry.next_) {
+		if (oldObserver) {
+			removeListener(oldObserver, entry);
+		}
 
-			entry.children_ = null;
+		entry.children_ = null;
 
-			if (newObserver) {
-				addListener(newObserver, entry);
-			}
+		if (newObserver) {
+			addListener(newObserver, entry);
 		}
 	}
 };
@@ -124,7 +123,6 @@ export const unlink = (link) => {
 			entry.parent_.children_ = entry.childNext_;
 		}
 		if (entry.childNext_) entry.childNext_.childPrev_ = entry.childPrev_;
-
 
 		if (link.observer_) {
 			removeListener(link.observer_, entry);
