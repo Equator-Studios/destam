@@ -531,13 +531,14 @@ test("observer event", () => {
 	const vals = [];
 	const watcher = obs.watch(val => {
 		vals.push(val.value);
-	})
+	});
 
 	callback('hello');
 	callback('world');
 
 	watcher();
 
+	expect(obs.get()).to.equal('world');
 	expect(events).to.have.ordered.members(["event", options, "event", options]);
 	expect(vals).to.have.ordered.members(["hello", "world"]);
 });
@@ -1373,4 +1374,15 @@ test("observer lifetimes reentrant", () => {
 
 	expect(states).to.deep.equal([0, 1, 2, 3]);
 	expect(removed).to.equal(true);
+});
+
+test("observer NULL", () => {
+	const nil = Observer.NULL;
+	expect(nil.get()).to.equal(null);
+});
+
+test("observer NULL register listener", () => {
+	const nil = Observer.NULL;
+	const listener = nil.watch(() => {});
+	listener();
 });

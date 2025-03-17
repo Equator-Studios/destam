@@ -3,9 +3,7 @@ import test from 'node:test';
 import UUID, {setRandom} from '../UUID.js';
 import crypto from 'crypto';
 
-setRandom(bytes => {
-	crypto.randomFillSync(bytes);
-});
+setRandom(crypto.randomFillSync);
 
 test ("uuid instanceof", () => {
 	expect(UUID() instanceof UUID).to.equal(true);
