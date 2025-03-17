@@ -474,6 +474,13 @@ test("observer immutable", () => {
 	expect(() => obs.set("new value")).to.throw();
 });
 
+test("observer immutable assign and remove listener", () => {
+	const obs = Observer.immutable('hello');
+
+	const listener = obs.watch(() => {});
+	listener();
+});
+
 test("observer immutable of other observer", () => {
 	const obs = Observer.mutable("hello");
 	const imm = Observer.immutable(obs);

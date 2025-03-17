@@ -1,6 +1,11 @@
 import {expect} from 'chai';
 import test from 'node:test';
-import UUID from '../UUID.js';
+import UUID, {setRandom} from '../UUID.js';
+import crypto from 'crypto';
+
+setRandom(bytes => {
+	crypto.randomFillSync(bytes);
+});
 
 test ("uuid instanceof", () => {
 	expect(UUID() instanceof UUID).to.equal(true);

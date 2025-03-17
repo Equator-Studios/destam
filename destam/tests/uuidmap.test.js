@@ -152,3 +152,12 @@ test("omap clear delta consistentcy", () => {
 	map.clear();
 });
 
+test("omap set element from observer", () => {
+	const map = OMap();
+
+	const id = UUID();
+	map.observer.path(id).set(OObject({
+		id
+	}));
+	expect(map.has(id)).to.equal(true);
+});
