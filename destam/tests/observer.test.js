@@ -1004,6 +1004,21 @@ test("observer selector events", () => {
 	expect(events).to.deep.equal([1, true, 1, false, 2, true, 2, false]);
 });
 
+test("observer selector events double remove", () => {
+	const selected = Observer.mutable(null);
+	const selector = selected.selector();
+
+	const one = selector(1);
+
+	const events = [];
+	const watcher = one.watch(delta => events.push(1, one.get()));
+
+	watcher();
+	watcher();
+
+	expect(events).to.deep.equal([]);
+});
+
 test("observer duplicate selector events", () => {
 	const selected = Observer.mutable(null);
 	const selector = selected.selector();

@@ -134,8 +134,6 @@ const createImpl = (construct, get, set, register) => {
 
 const selectorRemove = (map, sel, listener) => {
 	let cur = map.get(sel);
-	if (!cur) return;
-
 	if (cur === listener) {
 		if (cur.next_) {
 			map.set(sel, cur.next_);
@@ -147,7 +145,7 @@ const selectorRemove = (map, sel, listener) => {
 				map.selectionListener_ = 0;
 			}
 		}
-	} else while (cur.next_) {
+	} else while (cur?.next_) {
 		if (cur.next_ === listener) {
 			cur.next_ = cur.next_.next_;
 			break;
