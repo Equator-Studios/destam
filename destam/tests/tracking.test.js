@@ -78,7 +78,7 @@ import { clone } from './clone.js';
 		delete obj1.object;
 	});
 
-	test("delete and modify in tree then add back", async (obj1, flush) => {
+	test("modify, delete and add back", async (obj1, flush) => {
 		obj1.object = OObject({
 			object2: OObject({
 				hello: 'world'
@@ -90,6 +90,56 @@ import { clone } from './clone.js';
 		obj1.object.object2.dude = 'null';
 		let orig = obj1.object;
 		delete obj1.object;
+		obj1.object = orig;
+	});
+
+	test("delete, modify and add back", async (obj1, flush) => {
+		obj1.object = OObject({
+			object2: OObject({
+				hello: 'world'
+			})
+		});
+
+		await flush();
+
+		let orig = obj1.object;
+		delete obj1.object;
+		orig.object2.dude = 'null';
+		obj1.object = orig;
+	});
+
+	test("delete, modify and add back nested", async (obj1, flush) => {
+		obj1.object = OObject({
+			object2: OObject({
+				hello: 'world'
+			})
+		});
+
+		await flush();
+
+		let orig = obj1.object;
+		delete obj1.object;
+		orig.object2.dude = 'null';
+		orig.nested = OObject();
+		orig.nested.state = 'state';
+		obj1.object = orig;
+	});
+
+	test("delete, modify and add back nested twice", async (obj1, flush) => {
+		obj1.object = OObject({
+			object2: OObject({
+				hello: 'world'
+			})
+		});
+
+		await flush();
+
+		let orig = obj1.object;
+		delete obj1.object;
+		orig.object2.dude = 'null';
+		orig.nested = OObject();
+		orig.nested.state = OObject();
+		orig.nested.state.state = 'state';
 		obj1.object = orig;
 	});
 
@@ -871,6 +921,30 @@ test("tracking omap already exists", () => {
 	}).to.throw();
 });
 
+test("tracking omap no exist modify", () => {
+	const obj = OMap();
+	const id = UUID();
+
+	expect(() => {
+		OMap.verify(obj.observer, Modify(null, OObject({
+			id,
+			value: false,
+		}), id));
+	}).to.throw();
+});
+
+test("tracking omap no exist delete", () => {
+	const obj = OMap();
+	const id = UUID();
+
+	expect(() => {
+		OMap.verify(obj.observer, Delete(null, OObject({
+			id,
+			value: false,
+		}), id));
+	}).to.throw();
+});
+
 test("tracking oarray already exists", () => {
 	const obj = OArray();
 	obj.push(1);
@@ -965,4 +1039,68 @@ test("tracking network duplicates", () => {
 			Modify(false, true, 'thing', id),
 		]);
 	}).to.throw();
+});
+
+test("tracking flush mutations during digest", () => new Promise((ok, err) => {
+	const obj = OObject();
+	const network = createNetwork(obj.observer);
+
+	const stuff = [];
+	network.digest((changes) => {
+		stuff.push(changes[0].path());
+
+		if (stuff.length === 1) {
+			obj.value2 = 1;
+		} else {
+			try {
+				expect(stuff).to.deep.equal([['value'], ['value2']]);
+				ok();
+			} catch (e) {
+				err(e);
+			}
+		}
+	}, 0);
+
+	obj.value = 1;
+}));
+
+test("tracking constraint network", async () => {
+	const obj = OObject();
+	const network = createNetwork(obj.observer.shallow());
+
+	const stuff = [];
+	const digest = network.digest(changes => {
+		stuff.push(changes.map(delta => delta.path()));
+	});
+
+	obj.thing = OObject();
+	await digest.flush();
+
+	obj.thing.thing = 'thing';
+	await digest.flush();
+
+	expect(stuff).to.deep.equal([[['thing']]]);
+});
+
+test("tracking constraint network with dummy", async () => {
+	const obj = OObject();
+	const network = createNetwork(obj.observer.shallow());
+
+	const stuff = [];
+	const digest = network.digest(changes => {
+		stuff.push(changes.map(delta => delta.path()));
+	});
+
+	obj.thing = OObject();
+	await digest.flush();
+
+	let rem = obj.thing;
+	delete obj.thing;
+
+	rem.thing = 'thing';
+	obj.thing = rem;
+
+	await digest.flush();
+
+	expect(stuff).to.deep.equal([[['thing']]]);
 });
