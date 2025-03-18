@@ -165,6 +165,14 @@ OArray.apply = (reg, value, link, events) => {
 	}
 };
 
+const unrefDummy = (dummy) => {
+	dummy.refs_--;
+	if (!dummy.refs_) {
+		dummy.regPrev_.regNext_ = dummy.regNext_;
+		dummy.regNext_.regPrev_ = dummy.regPrev_;
+	}
+};
+
 /**
  * Creates a map of observable nodes inside the network. This is used for
  * generating and applying deltas.
@@ -233,40 +241,33 @@ const Tracker = createClass(observer => {
 		} else {
 			network.deleteElement(net);
 
-			if (len(network.eventListeners_)){
+			const refs = len(network.eventListeners_);
+			if (refs){
 				const dummy = {
-					user_: [parent.user_, 1],
+					user_: 2,
 					governor_: {
 						listener_: listener,
 						governor_: (info, child) => {
-							if (!info[1]) return 0;
-							let childInfo = parent.governor_.governor_(info[0], child);
+							if (!(info - 1)) return 0;
+
+							const childInfo = parent.governor_.governor_(parent.user_, child);
 							if (!childInfo) return 0;
-							return [childInfo, info[0] - 1];
+
+							return 1;
 						},
 					},
+
+					refs_: refs,
+					regNext_: reg.regNext_,
+					regPrev_: reg,
 				};
 
-				dummy.regNext_ = reg.regNext_;
 				reg.regNext_.regPrev_ = dummy;
 				reg.regNext_ = dummy;
-				dummy.regPrev_ = reg;
-
-				let refs = len(network.eventListeners_);
-				const deref = () => {
-					refs--;
-
-					if (refs === 0) {
-						dummy.regPrev_.regNext_ = dummy.regNext_;
-						dummy.regNext_.regPrev_ = dummy.regPrev_;
-					}
-				};
 
 				for (const l of network.eventListeners_) {
-					l.remove_(reg, deref);
+					l.remove_(reg, dummy);
 				}
-
-				return;
 			}
 		}
 	};
@@ -298,7 +299,7 @@ const Tracker = createClass(observer => {
 		let trackedChanges = new Map();
 		const changes = new Map();
 		const deleted = new Map();
-		const derefs = [];
+		const dummies = [];
 
 		// sync is not reentrant: Track previous invocations
 		let syncPromise = Promise.resolve();
@@ -315,8 +316,8 @@ const Tracker = createClass(observer => {
 			const regFunc = trackingReg.bind(undefined, trackedChanges);
 			trackedChanges = new Map();
 
-			callAll(derefs);
-			derefs.length = 0;
+			for (const dummy of dummies) unrefDummy(dummy);
+			dummies.length = 0;
 
 			if (len(deltas)) return callback(deltas, regFunc);
 		}).then(val => {
@@ -347,11 +348,11 @@ const Tracker = createClass(observer => {
 					trackedChanges.set(reg, false);
 				}
 			},
-			remove_: (reg, deref) => {
+			remove_: (reg, dummy) => {
 				if (this.isExternal_) {
-					deref();
+					unrefDummy(dummy);
 				} else {
-					derefs.push(deref);
+					dummies.push(dummy);
 				}
 
 				trackedChanges.set(reg, true);
