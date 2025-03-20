@@ -1393,7 +1393,7 @@ test("observer lifetimes reentrant", () => {
 
 test("observer NULL", () => {
 	const nil = Observer.NULL;
-	expect(nil.get()).to.equal(null);
+	expect(nil.get()).to.equal(undefined);
 });
 
 test("observer NULL register listener", () => {
