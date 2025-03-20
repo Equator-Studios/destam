@@ -1063,7 +1063,9 @@ Observer.mutable = createImpl(
 	},
 	(self, l) => {
 		push(self.listeners_, l);
-		return () => remove(self.listeners_, l);
+		return () => {
+			remove(self.listeners_, l);
+		};
 	}
 );
 
