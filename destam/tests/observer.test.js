@@ -90,6 +90,13 @@ test("Observer.mutable event nested remove", () => {
 	expect(events).to.deep.equal([0, 1]);
 });
 
+test("Observer.mutable event remove value", () => {
+	const value = Observer.mutable();
+	const watcher = value.watch(event => {});
+
+	expect(watcher()).to.equal(undefined);
+});
+
 test("Observer.mutable event opposite order", () => {
 	const value = Observer.mutable();
 
