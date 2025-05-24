@@ -61,16 +61,6 @@ const getPath = (obs, path, off) => {
 	return current;
 };
 
-const setPath = (obs, path, value) => {
-	const val = getPath(obs, path, 1);
-	const getter = val[getRef];
-	if (getter) {
-		getter(path[len(path) - 1])[1](value);
-	} else {
-		val[path[len(path) - 1]] = value;
-	}
-};
-
 const registerMemo = (entry, obs, info) => {
 	entry.parent_?.();
 	if (!obs) return entry.parent_ = obs;
@@ -536,8 +526,18 @@ Object.assign(Observer.prototype, {
 			self.path_ = path;
 		},
 		(self) => getPath(self.parent_, self.path_, 0),
-		(self, value) => setPath(self.parent_, self.path_, value),
-		(self, listener, governor) => self.parent_.register_(listener, chainGov(pathGov(self.path_), governor)),
+		(self, value) => {
+			const val = getPath(self.parent_, self.path_, 1);
+			const getter = val[getRef];
+			const last = self.path_[len(self.path_) - 1];
+			if (getter) {
+				getter(last)[1](value);
+			} else {
+				val[last] = value;
+			}
+		},
+		(self, listener, governor) => self.parent_.register_
+			(listener, chainGov(pathGov(self.path_), governor)),
 	),
 
 	/**
