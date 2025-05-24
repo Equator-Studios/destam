@@ -472,7 +472,7 @@ Object.assign(Observer.prototype, {
 	 *
 	 * See Observer.prototype.path
 	 *
-	 * DEPRECIATED: Observer.all should be used in a conjuction with multiple
+	 * DEPRECATED: Observer.all should be used in a conjuction with multiple
 	 * calls to Observer.prototype.path
 	 *
 	 * Examples:
