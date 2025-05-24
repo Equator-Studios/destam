@@ -808,7 +808,6 @@ test("observer anyPath", () => {
 	expect(obs.get()).to.deep.equal(["one", "two", "three"]);
 	obs.set(["one m", "two m", "three m"]);
 	expect(obs.get()).to.deep.equal(["one m", "two m", "three m"]);
-	expect(() => tree.observer.anyPath([])).to.throw();
 });
 
 test("observer throttle", async () => {

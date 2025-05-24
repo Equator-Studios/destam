@@ -482,6 +482,9 @@ Object.assign(Observer.prototype, {
 	 *
 	 * See Observer.prototype.path
 	 *
+	 * DEPRECIATED: Observer.all should be used in a conjuction with multiple
+	 * calls to Observer.prototype.path
+	 *
 	 * Examples:
 	 *   object.observer.anyPath('num1', 'num2').map(nums => Math.max(...nums))
 	 *   object.observer.anyPath(['nested', 'path'], ['a-different', 'nested-path'])
@@ -492,43 +495,9 @@ Object.assign(Observer.prototype, {
 	 * Returns:
 	 *   An observer
 	 */
-	anyPath: createImpl(
-		(self, ...paths) => {
-			self.path_ = paths.map(path => {
-				if (!isInstance(path, Array)) {
-					path = [path];
-				}
-
-				assert(len(path), "No path of an anyPath observer can be 0 length");
-
-				return path;
-			});
-		},
-		(self) => self.path_.map(path => getPath(self.parent_, path, 0)),
-		(self, value) => {
-			assert(len(value) === len(self.path_), "value and path lengths mismatch");
-
-			for (let i = 0; i < len(self.path_); i++) {
-				setPath(self.parent_, self.path_[i], value[i]);
-			}
-		},
-		(self, listener, governor) => self.parent_.register_(listener, (info, child, entry) => {
-			if (isSymbol(info)) {
-				info = self.path_.map(path => [chainGov(pathGov(path), governor), info]);
-			}
-
-			let ret = false;
-			for (const [gov, childInfo] of info) {
-				const value = gov(childInfo, child, entry);
-				if (value) {
-					ret = ret || [];
-					push(ret, [gov, value]);
-				}
-			}
-
-			return ret;
-		}),
-	),
+	anyPath (...paths) {
+		return Observer.all(paths.map(path => this.path(path)));
+	},
 
 	/**
 	 * Defines a path that notify watchers will be called for.
