@@ -7,6 +7,10 @@ const immutableSetter = () => {
 	assert(false, "Cannot set an immutable observer");
 };
 
+const brokenChain = () => {
+	assert(false, "Cannot set a broken observer chain");
+};
+
 export const baseGovernorParent = Symbol();
 export const fromPath = Symbol();
 export const fromIgnore = Symbol();
@@ -396,7 +400,7 @@ Object.assign(Observer.prototype, {
 		(self, level = 1) => {
 			self.level_ = level;
 		},
-		defGet, defSet,
+		brokenChain, null,
 		(self, listener, governor) => self.parent_.register_(listener, chainGov(info => {
 			if (info === fromPath || info === fromIgnore) return 1;
 			if (isSymbol(info)) info = 1;
@@ -444,7 +448,7 @@ Object.assign(Observer.prototype, {
 		(self, name) => {
 			self.name_ = name;
 		},
-		defGet, defSet,
+		brokenChain, null,
 		(self, listener, governor) => self.parent_.register_(listener, chainGov((info, child) => {
 			if (info === fromPath || info === fromIgnore) return 1;
 			if (isSymbol(info)) info = 1;
