@@ -13,24 +13,28 @@ export const fromIgnore = Symbol();
 export const getRef = Symbol();
 
 const chainGov = (prev, next) => (info, child, entry) => {
-	if (isSymbol(info)) info = [prev, info];
-	let [gov, curInfo] = info;
+	let gov;
+	if (isSymbol(info)) {
+		gov = prev;
+	} else {
+		[gov, info] = info;
+	}
 
-	curInfo = gov(curInfo, child, entry);
-	if (!curInfo) {
+	info = gov(info, child, entry);
+	if (!info) {
 		return 0;
 	}
 
-	if (gov === prev && isSymbol(curInfo)) {
+	if (gov === prev && isSymbol(info)) {
 		gov = next;
 
-		curInfo = gov(curInfo, child, entry);
-		if (!curInfo) {
+		info = gov(info, child, entry);
+		if (!info) {
 			return 0;
 		}
 	}
 
-	return [gov, curInfo];
+	return [gov, info];
 };
 
 const pathGov = path => (info, child) => {
