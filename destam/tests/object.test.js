@@ -335,6 +335,26 @@ test("oobject memo path", () => {
 	expect(paths).to.deep.equal([['hello']]);
 });
 
+test("oobject skip memo", () => {
+	let object = OObject({
+		other: OObject(),
+	});
+
+	expect(() => {
+		object.observer.skip().memo().path('hello').watch(event => {});
+	}).to.throw();
+});
+
+test("oobject tree memo", () => {
+	let object = OObject({
+		other: OObject(),
+	});
+
+	expect(() => {
+		object.observer.tree('children').memo().path('hello').watch(event => {});
+	}).to.throw();
+});
+
 test("shallow query with a path and ordered memo", () => {
 	let object = OObject({});
 	let object2 = OObject({});
