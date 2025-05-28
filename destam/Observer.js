@@ -58,6 +58,9 @@ const registerMemo = (entry, obs, info) => {
 
 	if (!entry.user_) {
 		entry.user_ = entry.governor_(...info);
+		if (!entry.user_) {
+			return entry.parent_ = null;
+		}
 	}
 
 	entry.parent_ = obs?.register_(entry.listener_, entry.governor_, {
@@ -791,7 +794,7 @@ Object.assign(Observer.prototype, {
 				}, (user, link, parent) => {
 					if (isSymbol(user)) return base.info_ = [user, link, parent];
 
-					const obs = link.reg_.value?.[observerGetter];
+					const obs = base.value_?.[observerGetter];
 					for (const entry of self.flat_ ? self.listeners_ : self.listeners_.flat()) {
 						registerMemo(entry, obs, base.info_);
 					}
