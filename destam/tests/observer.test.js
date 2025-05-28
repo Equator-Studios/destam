@@ -785,31 +785,6 @@ test("observer skip multiple", () => {
 	expect(vals).to.deep.equal(["hello", "world", "hello 2", "world 2", "hello 3", "world 3", "hello 4"]);
 });
 
-test("observer anyPath", () => {
-	let tree = OObject();
-
-	let obs = tree.observer.anyPath('one', 'two', 'three');
-
-	const vals = [];
-	const watcher = obs.watch(delta => {
-		vals.push(delta.value);
-	});
-
-	tree.one = "one";
-	tree.two = "two";
-	tree.five = "five";
-	tree.three = "three";
-	tree.four = "four";
-
-	watcher();
-
-	expect(vals).to.deep.equal(["one", "two", "three"]);
-
-	expect(obs.get()).to.deep.equal(["one", "two", "three"]);
-	obs.set(["one m", "two m", "three m"]);
-	expect(obs.get()).to.deep.equal(["one m", "two m", "three m"]);
-});
-
 test("observer throttle", async () => {
 	let obs = Observer.mutable(0);
 

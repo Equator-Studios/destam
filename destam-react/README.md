@@ -322,7 +322,10 @@ const Undo = ({state}) => {
 const Todo = ({state}) => {
 	return <div>
 		<AddTodo todos={state.todos} />
-		<TodoList todos={state.observer.anyPath('todos', 'filter').map(([todos, filt]) => {
+		<TodoList todos={Observer.all([
+			state.observer.path('todos'),
+			state.observer.path('filter'),
+		]).map(([todos, filt]) => {
 			return todos.filter(todo => {
 				if (filt === 'completed' && !todo.completed) return false;
 				if (filt === 'active' && todo.completed) return false;

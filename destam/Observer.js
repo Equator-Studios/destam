@@ -466,31 +466,7 @@ Object.assign(Observer.prototype, {
 	),
 
 	/**
-	 * Defines a series of paths that notify watchers will be called for.
-	 *
-	 * See Observer.prototype.path
-	 *
-	 * DEPRECATED: Observer.all should be used in a conjuction with multiple
-	 * calls to Observer.prototype.path
-	 *
-	 * Examples:
-	 *   object.observer.anyPath('num1', 'num2').map(nums => Math.max(...nums))
-	 *   object.observer.anyPath(['nested', 'path'], ['a-different', 'nested-path'])
-	 *
-	 * Params:
-	 *   ...paths: A list of paths to listen for events.
-	 *
-	 * Returns:
-	 *   An observer
-	 */
-	anyPath (...paths) {
-		return Observer.all(paths.map(path => this.path(path)));
-	},
-
-	/**
 	 * Defines a path that notify watchers will be called for.
-	 *
-	 * See Observer.prototype.anyPath to listen to multiple paths simultaneously.
 	 *
 	 * Suppose we have this state tree:
 	 * OObject({

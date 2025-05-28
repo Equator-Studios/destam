@@ -96,7 +96,6 @@ In the example, we use the `skip` governer to skip a decision and basically look
 - shallow
 - tree
 - skip
-- anyPath
 - path
 - ignore
 

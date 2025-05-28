@@ -964,56 +964,6 @@ test("observer map with object", () => {
 	expect(values).to.deep.equal([10, 100]);
 });
 
-test ("multi path listen", () => {
-	const events = [];
-	const obj = OObject();
-
-	obj.observer.anyPath('hello', 'world', 'together').watch(thing => {
-		events.push(thing.value);
-	});
-
-	obj.hello = 1;
-	obj.world = 2;
-	obj.together = 3;
-	obj.hello = 4;
-
-	expect(events).to.deep.equal([1, 2, 3, 4]);
-});
-
-test ("multi path listen nested", () => {
-	const events = [];
-	const obj = OObject();
-	const obj2 = OObject();
-
-	obj.observer.anyPath('hello', 'world', 'together').watch(thing => {
-		events.push(thing.value);
-	});
-
-	obj.hello = 1;
-	obj.world = 2;
-	obj.together = 3;
-	obj.hello = obj2;
-	obj2.color = 'red';
-
-	expect(events).to.have.ordered.members([1, 2, 3, obj2, 'red']);
-});
-
-test ("multi path get and set", () => {
-	const obj = OObject();
-
-	let observer = obj.observer.anyPath('hello', 'world', 'together');
-
-	observer.set([1, 2, 3]);
-
-	expect(obj.hello).to.equal(1);
-	expect(obj.world).to.equal(2);
-	expect(obj.together).to.equal(3);
-
-	obj.hello = 4;
-
-	expect(observer.get()).to.deep.equal([4, 2, 3]);
-});
-
 test("object delete check during listener", () => {
 	const obj = OObject();
 
