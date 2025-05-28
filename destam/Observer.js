@@ -37,19 +37,6 @@ const chainGov = (prev, next) => (info, child, entry) => {
 	return [gov, info];
 };
 
-const pathGov = path => (info, child) => {
-	if (info === fromPath || info === fromIgnore) return 1;
-	if (isSymbol(info)) info = 1;
-
-	if (child.query_ !== path[info - 1]) {
-		return 0;
-	} else if (info === len(path)) {
-		return fromPath;
-	} else {
-		return info + 1;
-	}
-};
-
 const getPath = (obs, path, off) => {
 	let current = obs.get();
 
@@ -541,7 +528,18 @@ Object.assign(Observer.prototype, {
 			}
 		},
 		(self, listener, governor) => self.parent_.register_
-			(listener, chainGov(pathGov(self.path_), governor)),
+			(listener, chainGov((info, child) => {
+				if (info === fromPath || info === fromIgnore) return 1;
+				if (isSymbol(info)) info = 1;
+
+				if (child.query_ !== self.path_[info - 1]) {
+					return 0;
+				} else if (info === len(self.path_)) {
+					return fromPath;
+				} else {
+					return info + 1;
+				}
+			}, governor)),
 	),
 
 	/**
