@@ -301,6 +301,40 @@ test("shallow query with a path and memo", () => {
 	expect(paths).to.deep.equal([['next']]);
 });
 
+test("oobject path after memo", () => {
+	let object = OObject({
+		nested: OObject({
+			hello: 1,
+			world: 1,
+		}),
+	});
+
+	const paths = [];
+	object.observer.path('nested').memo().path('hello').watch(event => {
+		paths.push(event.path());
+	});
+
+	object.nested.hello = 2;
+	object.nested.world = 2;
+
+	expect(paths).to.deep.equal([['nested', 'hello']]);
+});
+
+test("oobject memo path", () => {
+	let object = OObject({
+		other: {},
+	});
+
+	const paths = [];
+	object.observer.memo().path('hello').watch(event => {
+		paths.push(event.path());
+	});
+
+	object.hello = 2;
+
+	expect(paths).to.deep.equal([['hello']]);
+});
+
 test("shallow query with a path and ordered memo", () => {
 	let object = OObject({});
 	let object2 = OObject({});
