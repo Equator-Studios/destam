@@ -1099,3 +1099,16 @@ test("oobject immutability after shallow", () => {
 	const obj = OObject().observer.shallow();
 	expect(obj.isImmutable()).to.equal(true);
 });
+
+test("oobject effect on broken chain", () => {
+	const obj = OObject();
+	const obs = obj.observer.ignore('whatever');
+	let calls = 0;
+	obs.effect(() => {
+		calls++;
+	});
+
+	obj.obj = 'obj';
+
+	expect(calls).to.equal(2);
+});
