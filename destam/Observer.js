@@ -101,7 +101,7 @@ const defGet = (self) => self.parent_.get();
 const defSet = (self, v) => self.parent_.set(v);
 const defRegister = (self, listener, governor) => self.parent_.register_(listener, governor);
 
-const createImpl = (construct, get, set, register) => {
+const createImpl = (construct, get, set, register, unbreak) => {
 	const proto = createInstance(Observer);
 	if (get) proto.get = function () {
 		return get(this);
@@ -123,7 +123,7 @@ const createImpl = (construct, get, set, register) => {
 				instance.set = immutableSetter;
 			}
 
-			if (this.get === brokenChain) {
+			if (!unbreak && this.get === brokenChain) {
 				instance.get = brokenChain;
 			}
 		}
@@ -191,6 +191,9 @@ Object.assign(Observer.prototype, {
 	 *
 	 * If the transform produces the same value, deltas will not be produced.
 	 *
+	 * If the parent is a broken chain, undefined is passed as the value in the
+	 * forward function.
+	 * 
 	 * Examples:
 	 *   integer.map(i => i * 10, i => i / 10)
 	 *
@@ -205,7 +208,14 @@ Object.assign(Observer.prototype, {
 				"Backward must be a function or undefined");
 
 			self.listeners_ = [];
-			self.forward_ = forward;
+			self.forward_ = () => {
+				let val;
+				if (self.parent_.get !== brokenChain) {
+					val = self.parent_.get();
+				}
+
+				return forward(val);
+			};
 
 			if (backward) {
 				self.backward_ = backward;
@@ -217,7 +227,7 @@ Object.assign(Observer.prototype, {
 			if (len(self.listeners_)) {
 				return self.cache_;
 			} else {
-				return self.forward_(self.parent_.get());
+				return self.forward_();
 			}
 		},
 		(self, v) => {
@@ -226,13 +236,13 @@ Object.assign(Observer.prototype, {
 		(self, listener) => {
 			if (!self.parentListener_) {
 				self.parentListener_ = self.parent_.register_((commit, args) => {
-					const value = self.forward_(self.parent_.get());
+					const value = self.forward_();
 
 					if (!isEqual(value, self.cache_)) {
 						runListeners(self, self.listeners_, () => (self.cache_ = value, commit), args);
 					}
 				}, watchGovernor);
-				self.cache_ = self.forward_(self.parent_.get());
+				self.cache_ = self.forward_();
 			}
 
 			push(self.listeners_, listener);
@@ -243,7 +253,8 @@ Object.assign(Observer.prototype, {
 					self.cache_ = self.parentListener_ = 0;
 				}
 			};
-		}
+		},
+		1
 	),
 
 	/**
