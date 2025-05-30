@@ -8,7 +8,7 @@ const immutableSetter = () => {
 };
 
 const brokenChain = () => {
-	assert(false, "Cannot set a broken observer chain");
+	assert(false, "Cannot get a broken observer chain");
 };
 
 export const baseGovernorParent = Symbol();
