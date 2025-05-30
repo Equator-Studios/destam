@@ -1145,3 +1145,10 @@ test("oobject Observer.all on broken chain with path", () => {
 
 	expect(Observer.all([obs]).get()[0]).to.equal(undefined);
 });
+
+test("oobject Observer.all on broken chain with path 2", () => {
+	const obj = OObject();
+	const obs = obj.observer.ignore('whatever').path('obj');
+
+	expect(Observer.all(Observer.immutable([obs])).get()[0]).to.equal(undefined);
+});
