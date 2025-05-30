@@ -1382,3 +1382,8 @@ test("observer NULL register listener", () => {
 	const listener = nil.watch(() => {});
 	listener();
 });
+
+test("oobject immutability after shallow", () => {
+	const obj = Observer.immutable().shallow();
+	expect(obj.isImmutable()).to.equal(true);
+});

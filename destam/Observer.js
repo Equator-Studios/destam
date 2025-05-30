@@ -115,7 +115,15 @@ const createImpl = (construct, get, set, register) => {
 
 	return function (...stuff) {
 		const instance = Object.create(proto);
-		instance.parent_ = this;
+
+		if (this) {
+			instance.parent_ = this;
+
+			if (this.set === immutableSetter && set === defSet) {
+				instance.set = immutableSetter;
+			}
+		}
+
 		return construct?.(instance, ...stuff) || instance;
 	};
 };

@@ -1094,3 +1094,8 @@ test("object events memo late watch", () => {
 
 	expect(vals).to.deep.equal([1, 2, obj.val]);
 });
+
+test("oobject immutability after shallow", () => {
+	const obj = OObject().observer.shallow();
+	expect(obj.isImmutable()).to.equal(true);
+});
