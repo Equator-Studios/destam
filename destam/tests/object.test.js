@@ -2,6 +2,7 @@ import {expect} from 'chai';
 import test from 'node:test';
 import OObject from '../Object.js';
 import {Insert} from '../Events.js';
+import Observer from '../Observer.js';
 
 test("should be instanceof itself", () => {
 	let arr = OObject();
@@ -1124,4 +1125,23 @@ test("oobject effect on broken chain with path", () => {
 	obj.obj = 'obj';
 
 	expect(calls).to.equal(2);
+});
+
+test("oobject map on broken chain with path", () => {
+	const obj = OObject();
+	const obs = obj.observer.ignore('whatever').path('obj');
+	const obs2 = obs.map(() => {
+		return 1;
+	});
+
+	obj.obj = 'obj';
+
+	expect(obs2.get()).to.equal(1);
+});
+
+test("oobject Observer.all on broken chain with path", () => {
+	const obj = OObject();
+	const obs = obj.observer.ignore('whatever').path('obj');
+
+	expect(Observer.all([obs]).get()[0]).to.equal(undefined);
 });
