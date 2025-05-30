@@ -355,6 +355,46 @@ test("oobject tree memo", () => {
 	}).to.throw();
 });
 
+test("oobject skip get", () => {
+	let object = OObject({
+		other: OObject(),
+	});
+
+	expect(() => {
+		object.observer.skip().get();
+	}).to.throw();
+});
+
+test("oobject tree get", () => {
+	let object = OObject({
+		other: OObject(),
+	});
+
+	expect(() => {
+		object.observer.tree('children').get();
+	}).to.throw();
+});
+
+test("oobject skip set", () => {
+	let object = OObject({
+		other: OObject(),
+	});
+
+	expect(() => {
+		object.observer.skip().set('value');
+	}).to.throw();
+});
+
+test("oobject tree set", () => {
+	let object = OObject({
+		other: OObject(),
+	});
+
+	expect(() => {
+		object.observer.tree('children').set('value');
+	}).to.throw();
+});
+
 test("shallow query with a path and ordered memo", () => {
 	let object = OObject({});
 	let object2 = OObject({});
