@@ -941,6 +941,9 @@ Object.assign(Observer.prototype, {
 	 * may return a callback that will be invoked when the effects handler
 	 * has resources to clean up.
 	 *
+	 * If the effect call cannot retrieve the current value (trying to read from
+	 * a broken chain) then undefined will be passed as the value.
+	 * 
 	 * Params:
 	 *   listener: Called when the listener should setup its effects. The listener
 	 *   can then return a callback that will be invoked upon cleanup.
@@ -950,17 +953,21 @@ Object.assign(Observer.prototype, {
 	effect (listener) {
 		assert(typeof listener === 'function', 'effect must be called with a function');
 
-		let listenerContext;
-		const reg = this.register_((commit, meta) => {
+		let listenerContext = 0;
+		const call = (commit, meta) => {
+			let val;
+			try {
+				val = this.get();
+			} catch (e) {}
+
 			if (listenerContext) listenerContext();
-			listenerContext = listener(this.get(), commit, meta);
+			listenerContext = listener(val, commit, meta);
 			assert(listenerContext == null || typeof listenerContext === 'function',
 				'Effect listener must return a nullish value or a function');
-		}, watchGovernor);
+		};
 
-		listenerContext = listener(this.get());
-		assert(listenerContext == null || typeof listenerContext === 'function',
-			'Effect listener must return a nullish value or a function');
+		const reg = this.register_(call, watchGovernor);
+		call();
 
 		return () => {
 			reg();
