@@ -90,7 +90,7 @@ const runListeners = (context, listeners, commit, args) => {
 	let proc = context.processingListeners_;
 	if (proc) call(proc);
 
-	proc = listeners.slice()get
+	proc = listeners.slice();
 	proc.args_ = args;
 	proc.event_ = commit();
 	callListeners(context.processingListeners_ = proc);
