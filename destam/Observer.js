@@ -548,7 +548,7 @@ Object.assign(Observer.prototype, {
 			assert(len(path), "Observer ignore must have at least one path");
 			self.path_ = path;
 		},
-		defGet, defSet,
+		brokenChain, null,
 		(self, listener, governor) => self.parent_.register_(listener, chainGov((info, child) => {
 			if (info === fromPath || info === fromIgnore) return 1;
 			if (isSymbol(info)) info = 1;
