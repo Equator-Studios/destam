@@ -90,7 +90,7 @@ const runListeners = (context, listeners, commit, args) => {
 	let proc = context.processingListeners_;
 	if (proc) call(proc);
 
-	proc = listeners.slice();
+	proc = listeners.slice()get
 	proc.args_ = args;
 	proc.event_ = commit();
 	callListeners(context.processingListeners_ = proc);
@@ -103,7 +103,7 @@ const defRegister = (self, listener, governor) => self.parent_.register_(listene
 
 const createImpl = (construct, get, set, register) => {
 	const proto = createInstance(Observer);
-	proto.get = function () {
+	if (get) proto.get = function () {
 		return get(this);
 	};
 	if (set) proto.set = function (val) {
@@ -121,6 +121,10 @@ const createImpl = (construct, get, set, register) => {
 
 			if (this.set === immutableSetter && set === defSet) {
 				instance.set = immutableSetter;
+			}
+
+			if (this.get === brokenChain) {
+				instance.get = brokenChain;
 			}
 		}
 
@@ -172,6 +176,7 @@ const Observer = createClass((get, set, register) => {
 Object.assign(Observer.prototype, {
 	constructor: Observer,
 	register_: () => noop,
+	get: brokenChain,
 	set: immutableSetter,
 
 	/**
@@ -408,7 +413,7 @@ Object.assign(Observer.prototype, {
 		(self, level = 1) => {
 			self.level_ = level;
 		},
-		brokenChain, null,
+		0, 0,
 		(self, listener, governor) => self.parent_.register_(listener, chainGov(info => {
 			if (info === fromPath || info === fromIgnore) return 1;
 			if (isSymbol(info)) info = 1;
@@ -456,7 +461,7 @@ Object.assign(Observer.prototype, {
 		(self, name) => {
 			self.name_ = name;
 		},
-		brokenChain, null,
+		0, 0,
 		(self, listener, governor) => self.parent_.register_(listener, chainGov((info, child) => {
 			if (info === fromPath || info === fromIgnore) return 1;
 			if (isSymbol(info)) info = 1;
@@ -556,7 +561,7 @@ Object.assign(Observer.prototype, {
 			assert(len(path), "Observer ignore must have at least one path");
 			self.path_ = path;
 		},
-		brokenChain, null,
+		0, 0,
 		(self, listener, governor) => self.parent_.register_(listener, chainGov((info, child) => {
 			if (info === fromPath || info === fromIgnore) return 1;
 			if (isSymbol(info)) info = 1;
@@ -941,8 +946,8 @@ Object.assign(Observer.prototype, {
 	 * may return a callback that will be invoked when the effects handler
 	 * has resources to clean up.
 	 *
-	 * If the effect call cannot retrieve the current value (trying to read from
-	 * a broken chain) then undefined will be passed as the value.
+	 * If the effect call cannot retrieve the current value because it is a
+	 * broken chain then undefined will be passed as the value.
 	 * 
 	 * Params:
 	 *   listener: Called when the listener should setup its effects. The listener
@@ -956,9 +961,9 @@ Object.assign(Observer.prototype, {
 		let listenerContext = 0;
 		const call = (commit, meta) => {
 			let val;
-			try {
+			if (this.get !== brokenChain) {
 				val = this.get();
-			} catch (e) {}
+			}
 
 			if (listenerContext) listenerContext();
 			listenerContext = listener(val, commit, meta);
