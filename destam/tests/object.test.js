@@ -1112,3 +1112,16 @@ test("oobject effect on broken chain", () => {
 
 	expect(calls).to.equal(2);
 });
+
+test("oobject effect on broken chain with path", () => {
+	const obj = OObject();
+	const obs = obj.observer.ignore('whatever').path('obj');
+	let calls = 0;
+	obs.effect(() => {
+		calls++;
+	});
+
+	obj.obj = 'obj';
+
+	expect(calls).to.equal(2);
+});
