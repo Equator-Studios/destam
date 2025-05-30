@@ -1079,7 +1079,13 @@ Observer.immutable = createImpl(
 );
 
 const allMutDeps = createImpl(null,
-	self => self.deps_.get().map(obs => obs.get()),
+	self => self.deps_.get().map(obs => {
+		if (obs.get === brokenChain) {
+			return undefined;
+		} else {
+			return obs.get();
+		}
+	}),
 	(self, v) => {
 		const d = self.deps_.get();
 		assert(len(v) === len(d), "Observer all set array length mismatch");
@@ -1108,7 +1114,13 @@ const allMutDeps = createImpl(null,
 );
 
 const allImmDeps = createImpl(null,
-	(self) => self.deps_.map(obs => obs.get()),
+	self => self.deps_.map(obs => {
+		if (obs.get === brokenChain) {
+			return undefined;
+		} else {
+			return obs.get();
+		}
+	}),
 	(self, v) => {
 		assert(len(v) === len(self.deps_), "Observer all set array length mismatch");
 
@@ -1130,6 +1142,9 @@ const allImmDeps = createImpl(null,
  *
  * Observer.all may also take an observable that resolves to an array. This can be
  * useful if the things you care about are only known at runtime.
+ *
+ * If any of the observers ends up benig a broken chain, undefined is used
+ * as its place when getting its value.
  *
  * Examples:
  *   Observer.all([Observer.mutable('value1'), Observer.mutable('value2')]);
