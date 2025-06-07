@@ -1,7 +1,5 @@
 export const observerGetter = Symbol();
 
-export const isSymbol = val => typeof val == 'symbol';
-
 export const isInstance = (inst, type) => inst instanceof type;
 
 export const createClass = (constructor, addon = {}, extend) => {

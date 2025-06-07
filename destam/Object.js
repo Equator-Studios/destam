@@ -1,6 +1,6 @@
 import {Insert, Modify, Delete} from './Events.js';
 import {observerGetter} from './Observer.js';
-import {isSymbol, isEqual, createProxy, createClass} from './util.js';
+import {isEqual, createProxy, createClass} from './util.js';
 import * as Network from './Network.js';
 
 const OObject = createClass((init, id) => {
@@ -22,7 +22,7 @@ const OObject = createClass((init, id) => {
 		(_, prop, value) => {
 			const prev = init[prop];
 
-			if (isSymbol(prop) || isEqual(prev, value)) {
+			if (typeof prop === 'symbol' || isEqual(prev, value)) {
 				init[prop] = value;
 				return true;
 			}
