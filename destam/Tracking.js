@@ -247,10 +247,10 @@ const Tracker = createClass(observer => {
 					user_: 2,
 					governor_: {
 						listener_: listener,
-						governor_: (info, child) => {
-							if (!(info - 1)) return 0;
+						governor_: (info, child, entry) => {
+							if (info === 1) return 0;
 
-							const childInfo = parent.governor_.governor_(parent.user_, child);
+							const childInfo = parent.governor_.governor_(parent.user_, child, entry);
 							if (!childInfo) return 0;
 
 							return 1;
