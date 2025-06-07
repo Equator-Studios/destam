@@ -77,8 +77,6 @@ const getPath = (obs, path, off) => {
 
 const registerMemo = (entry, obs, info) => {
 	entry.parent_?.();
-	if (!obs) return entry.parent_ = obs;
-
 	entry.parent_ = obs?.register_(entry.listener_, entry.governor_, {
 		user_: info[0], link_: info[1], parent_: info[2],
 	});
