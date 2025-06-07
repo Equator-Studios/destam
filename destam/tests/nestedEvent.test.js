@@ -231,7 +231,7 @@ test("paths false", () => {
 	expect(paths).to.deep.equal([]);
 });
 
-test("path ignore multiple", () => {
+test("path ignore", () => {
 	let nest = OObject({});
 	let object = OObject({nest});
 
@@ -249,7 +249,7 @@ test("path ignore multiple", () => {
 	expect(paths).to.deep.equal([['whatever']]);
 });
 
-test("path ignore", () => {
+test("path ignore multiple", () => {
 	let nest = OObject({});
 	let object = OObject({nest});
 
