@@ -1103,7 +1103,7 @@ test("oobject immutability after shallow", () => {
 
 test("oobject effect on broken chain", () => {
 	const obj = OObject();
-	const obs = obj.observer.ignore('whatever');
+	const obs = obj.observer.skip();
 	let calls = 0;
 	obs.effect(() => {
 		calls++;
@@ -1115,40 +1115,40 @@ test("oobject effect on broken chain", () => {
 });
 
 test("oobject effect on broken chain with path", () => {
-	const obj = OObject();
-	const obs = obj.observer.ignore('whatever').path('obj');
+	const obj = OObject({obj: OObject()});
+	const obs = obj.observer.skip().path('obj');
 	let calls = 0;
 	obs.effect(() => {
 		calls++;
 	});
 
-	obj.obj = 'obj';
+	obj.obj.obj = 'obj';
 
 	expect(calls).to.equal(2);
 });
 
 test("oobject map on broken chain with path", () => {
-	const obj = OObject();
-	const obs = obj.observer.ignore('whatever').path('obj');
+	const obj = OObject({obj: OObject()});
+	const obs = obj.observer.skip().path('obj');
 	const obs2 = obs.map(() => {
 		return 1;
 	});
 
-	obj.obj = 'obj';
+	obj.obj.obj = 'obj';
 
 	expect(obs2.get()).to.equal(1);
 });
 
-test("oobject Observer.all on broken chain with path", () => {
+test("oobject Observer.all on broken chain", () => {
 	const obj = OObject();
-	const obs = obj.observer.ignore('whatever').path('obj');
+	const obs = obj.observer.skip()
 
 	expect(Observer.all([obs]).get()[0]).to.equal(undefined);
 });
 
-test("oobject Observer.all on broken chain with path 2", () => {
+test("oobject Observer.all on broken chain 2", () => {
 	const obj = OObject();
-	const obs = obj.observer.ignore('whatever').path('obj');
+	const obs = obj.observer.skip()
 
 	expect(Observer.all(Observer.immutable([obs])).get()[0]).to.equal(undefined);
 });
