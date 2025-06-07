@@ -214,7 +214,7 @@ Object.assign(Observer.prototype, {
 	 *
 	 * If the parent is a broken chain, undefined is passed as the value in the
 	 * forward function.
-	 * 
+	 *
 	 * Examples:
 	 *   integer.map(i => i * 10, i => i / 10)
 	 *
@@ -979,7 +979,7 @@ Object.assign(Observer.prototype, {
 	 *
 	 * If the effect call cannot retrieve the current value because it is a
 	 * broken chain then undefined will be passed as the value.
-	 * 
+	 *
 	 * Params:
 	 *   listener: Called when the listener should setup its effects. The listener
 	 *   can then return a callback that will be invoked upon cleanup.
