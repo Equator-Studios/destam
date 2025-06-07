@@ -591,12 +591,12 @@ Object.assign(Observer.prototype, {
 			assert(len(path), "Observer ignore must have at least one path");
 			self.path_ = path;
 		},
-		0, 0,
+		defGet, defSet,
 		(self, listener, governor) => self.parent_.register_(listener, andGov((info, child) => {
 			if (info === fromPath) return 1;
 			if (isSymbol(info)) info = 1;
 
-			if (info === -1 || child.query_ !== self.path_[info - 1]) {
+			if (child.query_ !== self.path_[info - 1]) {
 				return -1;
 			}
 
