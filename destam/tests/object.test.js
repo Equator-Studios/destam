@@ -1185,3 +1185,20 @@ test("oobject map shallow calls", () => {
 
 	expect(calls).to.equal(2);
 });
+
+test("oobject memo non observable path", () => {
+	const obj = OObject();
+
+	const paths = [];
+	obj.observer.path('obj').memo().watch(delta => {
+		paths.push(delta.path());
+	});
+
+	obj.obj = OObject();
+	obj.obj.thing = 1;
+	obj.obj = {};
+	obj.obj.thing = 1;
+
+
+	expect(paths).to.deep.equal([['obj'], ['obj', 'thing'], ['obj']]);
+})
