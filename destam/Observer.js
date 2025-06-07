@@ -12,7 +12,6 @@ const brokenChain = () => {
 };
 
 export const baseGovernorParent = Symbol();
-export const fromPath = Symbol();
 export const getRef = Symbol();
 
 const chainGov = (prev, next) => (info, child, entry) => {
@@ -80,15 +79,8 @@ const registerMemo = (entry, obs, info) => {
 	entry.parent_?.();
 	if (!obs) return entry.parent_ = obs;
 
-	if (!entry.user_) {
-		entry.user_ = entry.governor_(...info);
-		if (!entry.user_) {
-			return entry.parent_ = null;
-		}
-	}
-
 	entry.parent_ = obs?.register_(entry.listener_, entry.governor_, {
-		link_: info[1], user_: entry.user_, parent_: info[2],
+		user_: info[0], link_: info[1], parent_: info[2],
 	});
 };
 
@@ -97,13 +89,8 @@ export const shallowListener = (obs, listener) => {
 };
 
 export const watchGovernor = (info, child) => {
-	// don't mask if we are inheriting frem a path
-	if (info !== fromPath) {
-		let str = child.query_;
-		return typeof str !== 'string' || str[0] !== '_';
-	}
-
-	return true;
+	let str = child.query_;
+	return typeof str !== 'string' || str[0] !== '_';
 };
 
 const runListeners = (context, listeners, commit, args) => {
@@ -413,9 +400,8 @@ Object.assign(Observer.prototype, {
 		},
 		defGet, defSet,
 		(self, listener, governor) => self.parent_.register_(listener, andGov(info => {
-			if (info === fromPath) return 1;
-			if (isSymbol(info)) info = 1;
-			if (info > self.level_) {
+			if (isSymbol(info)) info = 0;
+			if (info >= self.level_) {
 				return 0;
 			} else {
 				return info + 1;
@@ -446,7 +432,6 @@ Object.assign(Observer.prototype, {
 		},
 		0, 0,
 		(self, listener, governor) => self.parent_.register_(listener, chainGov(info => {
-			if (info === fromPath) return 1;
 			if (isSymbol(info)) info = 1;
 
 			if (info <= self.level_){
@@ -494,7 +479,6 @@ Object.assign(Observer.prototype, {
 		},
 		0, 0,
 		(self, listener, governor) => self.parent_.register_(listener, chainGov((info, child) => {
-			if (info === fromPath) return 1;
 			if (isSymbol(info)) info = 1;
 
 			if (info !== 1) {
@@ -556,13 +540,12 @@ Object.assign(Observer.prototype, {
 		},
 		(self, listener, governor) => self.parent_.register_
 			(listener, chainGov((info, child) => {
-				if (info === fromPath) return 1;
 				if (isSymbol(info)) info = 1;
 
-				if (child.query_ !== self.path_[info - 1]) {
+				if (info > len(self.path_)) {
+					return baseGovernorParent;
+				} else if (child.query_ !== self.path_[info - 1]) {
 					return 0;
-				} else if (info === len(self.path_)) {
-					return fromPath;
 				} else {
 					return info + 1;
 				}
@@ -594,7 +577,6 @@ Object.assign(Observer.prototype, {
 		},
 		defGet, defSet,
 		(self, listener, governor) => self.parent_.register_(listener, andGov((info, child) => {
-			if (info === fromPath) return 1;
 			if (isSymbol(info)) info = 1;
 
 			if (child.query_ !== self.path_[info - 1]) {
@@ -815,8 +797,10 @@ Object.assign(Observer.prototype, {
 						base.value_ = self.parent_.get();
 						return commit;
 					}, args);
-				}, (user, link, parent) => {
-					if (isSymbol(user)) return base.info_ = [user, link, parent];
+				}, (user, link, entry) => {
+					if (isSymbol(user)) {
+						base.info_ = [user, entry.link_, entry.parent_];
+					}
 
 					const obs = base.value_?.[observerGetter];
 					for (const entry of self.flat_ ? self.listeners_ : self.listeners_.flat()) {
