@@ -1167,3 +1167,21 @@ test("oobject Observer.all on broken chain 2", () => {
 
 	expect(Observer.all(Observer.immutable([obs])).get()[0]).to.equal(undefined);
 });
+
+test("oobject map shallow calls", () => {
+	const obj = OObject();
+
+	let calls = 0;
+	obj.observer.shallow(1).path('thing').map(val => {
+		calls++;
+		return null;
+	}).watch(() => {});
+
+	obj.thing = OObject();
+	obj.thing.nested = 1;
+	obj.thing.nested = 1;
+	obj.thing.nested = 1;
+	obj.thing.nested = 1;
+
+	expect(calls).to.equal(2);
+});
