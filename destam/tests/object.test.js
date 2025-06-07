@@ -336,6 +336,21 @@ test("oobject memo path", () => {
 	expect(paths).to.deep.equal([['hello']]);
 });
 
+test("oobject double memo path", () => {
+	let object = OObject({
+		other: {},
+	});
+
+	const paths = [];
+	object.observer.memo().memo().path('hello').watch(event => {
+		paths.push(event.path());
+	});
+
+	object.hello = 2;
+
+	expect(paths).to.deep.equal([['hello']]);
+});
+
 test("oobject skip memo", () => {
 	let object = OObject({
 		other: OObject(),
