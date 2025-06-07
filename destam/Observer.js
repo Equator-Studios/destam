@@ -16,7 +16,7 @@ export const getRef = Symbol();
 
 const chainGov = (prev, next) => (info, child, entry) => {
 	let gov;
-	if (isSymbol(info)) {
+	if (info === baseGovernorParent) {
 		gov = prev;
 	} else {
 		[gov, info] = info;
@@ -27,7 +27,7 @@ const chainGov = (prev, next) => (info, child, entry) => {
 		return 0;
 	}
 
-	if (gov === prev && isSymbol(info)) {
+	if (gov === prev && info === baseGovernorParent) {
 		gov = next;
 
 		info = gov(info, child, entry);
@@ -41,7 +41,7 @@ const chainGov = (prev, next) => (info, child, entry) => {
 
 const andGov = (prev, next) => (info, child, entry) => {
 	let parentInfo;
-	if (isSymbol(info)) {
+	if (info === baseGovernorParent) {
 		parentInfo = info;
 	} else {
 		[info, parentInfo] = info;
@@ -400,7 +400,7 @@ Object.assign(Observer.prototype, {
 		},
 		defGet, defSet,
 		(self, listener, governor) => self.parent_.register_(listener, andGov(info => {
-			if (isSymbol(info)) info = 0;
+			if (info === baseGovernorParent) info = 0;
 			if (info >= self.level_) {
 				return 0;
 			} else {
@@ -432,7 +432,7 @@ Object.assign(Observer.prototype, {
 		},
 		0, 0,
 		(self, listener, governor) => self.parent_.register_(listener, chainGov(info => {
-			if (isSymbol(info)) info = 1;
+			if (info === baseGovernorParent) info = 1;
 
 			if (info <= self.level_){
 				return info + 1;
@@ -479,7 +479,7 @@ Object.assign(Observer.prototype, {
 		},
 		0, 0,
 		(self, listener, governor) => self.parent_.register_(listener, chainGov((info, child) => {
-			if (isSymbol(info)) info = 1;
+			if (info === baseGovernorParent) info = 1;
 
 			if (info !== 1) {
 				return 1;
@@ -540,7 +540,7 @@ Object.assign(Observer.prototype, {
 		},
 		(self, listener, governor) => self.parent_.register_
 			(listener, chainGov((info, child) => {
-				if (isSymbol(info)) info = 1;
+				if (info === baseGovernorParent) info = 1;
 
 				if (info > len(self.path_)) {
 					return baseGovernorParent;
@@ -577,7 +577,7 @@ Object.assign(Observer.prototype, {
 		},
 		defGet, defSet,
 		(self, listener, governor) => self.parent_.register_(listener, andGov((info, child) => {
-			if (isSymbol(info)) info = 1;
+			if (info === baseGovernorParent) info = 1;
 
 			if (child.query_ !== self.path_[info - 1]) {
 				return -1;
@@ -798,7 +798,7 @@ Object.assign(Observer.prototype, {
 						return commit;
 					}, args);
 				}, (user, link, entry) => {
-					if (isSymbol(user)) {
+					if (user === baseGovernorParent) {
 						base.info_ = [user, entry.link_, entry.parent_];
 					}
 
