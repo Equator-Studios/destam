@@ -448,11 +448,11 @@ Object.assign(Observer.prototype, {
 			if (info === fromPath) return 1;
 			if (isSymbol(info)) info = 1;
 
-			if (info < self.level_){
+			if (info <= self.level_){
 				return info + 1;
 			}
 
-			return fromPath;
+			return baseGovernorParent;
 		}, governor))
 	),
 
