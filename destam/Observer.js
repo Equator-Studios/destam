@@ -1,5 +1,5 @@
 import {Synthetic} from './Events.js';
-import {isSymbol, isInstance, isEqual, createInstance, len, remove, push, callAll, createClass, assert, noop, call, callListeners} from './util.js';
+import {isInstance, isEqual, createInstance, len, remove, push, callAll, createClass, assert, noop, call, callListeners} from './util.js';
 import {observerGetter} from './util.js';
 export {observerGetter} from './util.js';
 
@@ -85,7 +85,7 @@ const registerMemo = (entry, obs, info) => {
 };
 
 export const shallowListener = (obs, listener) => {
-	return obs.register_(listener, isSymbol);
+	return obs.register_(listener, noop);
 };
 
 export const watchGovernor = (info, child) => {
