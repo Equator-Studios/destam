@@ -13,7 +13,6 @@ const brokenChain = () => {
 
 export const baseGovernorParent = Symbol();
 export const fromPath = Symbol();
-export const fromIgnore = Symbol();
 export const getRef = Symbol();
 
 const chainGov = (prev, next) => (info, child, entry) => {
@@ -446,7 +445,7 @@ Object.assign(Observer.prototype, {
 		},
 		0, 0,
 		(self, listener, governor) => self.parent_.register_(listener, chainGov(info => {
-			if (info === fromPath || info === fromIgnore) return 1;
+			if (info === fromPath) return 1;
 			if (isSymbol(info)) info = 1;
 
 			if (info < self.level_){
@@ -494,7 +493,7 @@ Object.assign(Observer.prototype, {
 		},
 		0, 0,
 		(self, listener, governor) => self.parent_.register_(listener, chainGov((info, child) => {
-			if (info === fromPath || info === fromIgnore) return 1;
+			if (info === fromPath) return 1;
 			if (isSymbol(info)) info = 1;
 
 			if (info !== 1) {
@@ -556,7 +555,7 @@ Object.assign(Observer.prototype, {
 		},
 		(self, listener, governor) => self.parent_.register_
 			(listener, chainGov((info, child) => {
-				if (info === fromPath || info === fromIgnore) return 1;
+				if (info === fromPath) return 1;
 				if (isSymbol(info)) info = 1;
 
 				if (child.query_ !== self.path_[info - 1]) {
@@ -593,19 +592,19 @@ Object.assign(Observer.prototype, {
 			self.path_ = path;
 		},
 		0, 0,
-		(self, listener, governor) => self.parent_.register_(listener, chainGov((info, child) => {
-			if (info === fromPath || info === fromIgnore) return 1;
+		(self, listener, governor) => self.parent_.register_(listener, andGov((info, child) => {
+			if (info === fromPath) return 1;
 			if (isSymbol(info)) info = 1;
 
-			if (child.query_ !== self.path_[info - 1]) {
-				return fromIgnore;
+			if (info === -1 || child.query_ !== self.path_[info - 1]) {
+				return -1;
 			}
 
 			if (info >= len(self.path_)) {
 				return 0;
+			} else {
+				return info + 1;
 			}
-
-			return info + 1;
 		}, governor))
 	),
 

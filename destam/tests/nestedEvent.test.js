@@ -291,7 +291,7 @@ test("path ignore with skip", () => {
 	let object = OObject({nest});
 
 	const paths = [];
-	object.observer.ignore(['nest', 'one']).skip().watch(event => {
+	object.observer.ignore(['nest', 'one']).skip(2).watch(event => {
 		paths.push(event.path());
 	});
 
@@ -347,7 +347,28 @@ test("nested pathing 2", () => {
 	let object = OObject({nest, nest2});
 
 	const paths = [];
-	object.observer.ignore('nest').path('thing').watch(event => {
+	object.observer.ignore('nest').skip().path('thing').watch(event => {
+		paths.push(event.path());
+	});
+
+	nest.thing = '1';
+	nest.one = '1';
+	nest.two = '2';
+	nest.three = '3';
+
+	nest2.one = 'hello';
+	nest2.thing = 'thing';
+
+	expect(paths).to.deep.equal([['nest2', 'thing']]);
+});
+
+test("nested pathing 3", () => {
+	let nest = OObject({});
+	let nest2 = OObject({});
+	let object = OObject({nest, nest2});
+
+	const paths = [];
+	object.observer.ignore('nest').path(['nest2', 'thing']).watch(event => {
 		paths.push(event.path());
 	});
 
