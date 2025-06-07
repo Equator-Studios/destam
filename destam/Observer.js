@@ -41,6 +41,27 @@ const chainGov = (prev, next) => (info, child, entry) => {
 	return [gov, info];
 };
 
+const andGov = (prev, next) => (info, child, entry) => {
+	let parentInfo;
+	if (isSymbol(info)) {
+		parentInfo = info;
+	} else {
+		[info, parentInfo] = info;
+	}
+
+	info = prev(info, child, entry);
+	if (!info) {
+		return 0;
+	}
+
+	parentInfo = next(parentInfo, child, entry);
+	if (!parentInfo) {
+		return 0;
+	}
+
+	return [info, parentInfo];
+};
+
 const getPath = (obs, path, off) => {
 	let current = obs.get();
 
@@ -392,15 +413,14 @@ Object.assign(Observer.prototype, {
 			self.level_ = level;
 		},
 		defGet, defSet,
-		(self, listener, governor) => self.parent_.register_(listener, (info, child, entry) => {
-			if (isSymbol(info)) info = [0, info];
-			if (info[0] > self.level_) return 0;
-
-			const currentVal = governor(info[1], child, entry);
-			if (!currentVal) return 0;
-
-			return [info[0] + 1, currentVal];
-		})
+		(self, listener, governor) => self.parent_.register_(listener, andGov((info, child, entry) => {
+			if (isSymbol(info)) info = 0;
+			if (info > self.level_) {
+				return 0;
+			} else {
+				return info + 1;
+			}
+		}, governor))
 	),
 
 	/**
