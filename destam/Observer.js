@@ -412,8 +412,9 @@ Object.assign(Observer.prototype, {
 			self.level_ = level;
 		},
 		defGet, defSet,
-		(self, listener, governor) => self.parent_.register_(listener, andGov((info, child, entry) => {
-			if (isSymbol(info)) info = 0;
+		(self, listener, governor) => self.parent_.register_(listener, andGov(info => {
+			if (info === fromPath) return 1;
+			if (isSymbol(info)) info = 1;
 			if (info > self.level_) {
 				return 0;
 			} else {

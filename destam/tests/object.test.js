@@ -523,7 +523,7 @@ test("try to query an object path that doesn't have a path", () => {
 	let object2 = OObject({});
 
 	const paths = [];
-	object.observer.shallow().watch(event => {
+	object.observer.shallow(1).watch(event => {
 		paths.push(event.path());
 	});
 
@@ -856,7 +856,7 @@ test("unlinking then relinking", () => {
 test("nested events", () => {
 	let object = OObject();
 
-	object.observer.shallow().watch(event => {
+	object.observer.shallow(1).watch(event => {
 		event.value.thing = 'thing';
 	});
 
@@ -908,7 +908,7 @@ test("event masking post", () => {
 test("nested events of parents", () => {
 	let object = OObject();
 
-	object.observer.shallow().watch(event => {
+	object.observer.shallow(1).watch(event => {
 		event.value.thing = 'thing';
 	});
 
