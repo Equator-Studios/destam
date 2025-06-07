@@ -75,13 +75,6 @@ const getPath = (obs, path, off) => {
 	return current;
 };
 
-const registerMemo = (entry, obs, info) => {
-	entry.parent_?.();
-	entry.parent_ = obs?.register_(entry.listener_, entry.governor_, {
-		user_: info[0], link_: info[1], parent_: info[2],
-	});
-};
-
 export const shallowListener = (obs, listener) => {
 	return obs.register_(listener, noop);
 };
@@ -796,13 +789,12 @@ Object.assign(Observer.prototype, {
 						return commit;
 					}, args);
 				}, (user, link, entry) => {
-					if (user === baseGovernorParent) {
-						base.info_ = [user, entry.link_, entry.parent_];
-					}
+					base.info_ = {user_: user, link_: entry.link_, parent_: entry.parent_};
 
 					const obs = base.value_?.[observerGetter];
 					for (const entry of self.flat_ ? self.listeners_ : self.listeners_.flat()) {
-						registerMemo(entry, obs, base.info_);
+						entry.parent_?.();
+						entry.parent_ = obs?.register_(entry.listener_, entry.governor_, base.info_);
 					}
 				});
 
@@ -815,7 +807,7 @@ Object.assign(Observer.prototype, {
 			};
 
 			if (base.info_) {
-				registerMemo(entry, base.value_?.[observerGetter], base.info_);
+				entry.parent_ = base.value_?.[observerGetter]?.register_(listener, governor, base.info_);
 			}
 
 			push(self.local_, entry);
