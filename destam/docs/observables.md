@@ -204,7 +204,7 @@ observer.ignore("myValue").path("myNestedObserver")
 // fire. The ignore() in this sense takes precedence.
 observer.ignore("myNestedObserver").path("myNestedObserver");
 
-// Note that the order of these events happen. ignore() is special: it will not
+// Note that the order of these governors is significant. ignore() is special: it will not
 // advance the governor pointer, it's simply there as an extra constraint. However,
 // path() will advance the governor pointer.
 observer.path("myNestedObserver").ignore("myNestedObserver");
