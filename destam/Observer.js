@@ -806,10 +806,7 @@ Object.assign(Observer.prototype, {
 				governor_: governor,
 			};
 
-			if (base.info_) {
-				entry.parent_ = base.value_?.[observerGetter]?.register_(listener, governor, base.info_);
-			}
-
+			entry.parent_ = base.value_?.[observerGetter]?.register_(listener, governor, base.info_);
 			push(self.local_, entry);
 			base.numListeners_++;
 
