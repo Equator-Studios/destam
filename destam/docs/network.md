@@ -278,7 +278,7 @@ for (let i = history.length - 1; i >= 0; i++) {
 // all those changes are undone.
 ```
 
-## Automatic flushing
+# Automatic flushing
 Destam network digests don't require applications to automatically flush them.
 Flushes can happen at any point in the application lifetime - even asynchronously.
 For almost all applications, just scheduling a periodic flush during idle is enough
@@ -294,7 +294,7 @@ setInterval(() => {
 However, this method is obviously naive. It will try to flush changes even
 though nothing changed.
 
-# Reactivity-aware flushing
+## Reactivity-aware flushing
 We can be a little bit more precise about this by leveraging the core reactivity
 model:
 ```js
@@ -312,7 +312,6 @@ stateTree.observer.wait(1000).watch(() => {
 ```
 This method will only flush if there is a period of inactivity for a second
 second. Better for slower pace document editing software.
-
 
 For a built in solution digest() accepts a timeout as a second paramater:
 ```js
