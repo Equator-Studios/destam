@@ -15,24 +15,24 @@ import { clone } from './clone.js';
 		let object2 = clone(object);
 		const network = createNetwork(object2.observer);
 
-		const packetizer = createNetwork(object.observer).digest((changes, observerRefs) => {
+		const tracking = createNetwork(object.observer).digest((changes, observerRefs) => {
 			const decoded = clone(changes, {observerRefs, observerNetwork: network});
 
 			network.apply(decoded);
 		}, null);
 
-		await func(object, packetizer.flush, object2);
-		await packetizer.flush();
+		await func(object, tracking.flush, object2);
+		await tracking.flush();
 		expect(object).to.deep.equal(object2);
 
 		network.remove();
 	}),
 ].forEach(test => {
-	test('basic packetize', async (obj1, flush) => {
+	test('basic tracking', async (obj1, flush) => {
 		obj1.thing = 'hello';
 	});
 
-	test("packetize duplicate", async (obj1, flush) => {
+	test("tracking duplicate", async (obj1, flush) => {
 		obj1.object = OObject();
 		obj1.object2 = obj1.object;
 	});
@@ -187,23 +187,23 @@ import { clone } from './clone.js';
 		expect(ntwo).to.equal(obj2[0]);
 	});
 
-	test ('packetize of two events', async (obj1, flush) => {
+	test ('tracking of two events', async (obj1, flush) => {
 		obj1.thing = 'hello';
 		obj1.else = 'something else';
 	});
 
-	test ('packetize of inserted then modifying element', async (obj1, flush) => {
+	test ('tracking of inserted then modifying element', async (obj1, flush) => {
 		obj1.thing = 'hello';
 		obj1.thing = 'other';
 	});
 
-	test ('packetize basic omap once', async (obj1, flush) => {
+	test ('tracking basic omap once', async (obj1, flush) => {
 		obj1.thing = OMap();
 		let id = UUID();
 		obj1.thing.set(id, 'hello');
 	});
 
-	test ('packetize basic omap', async (obj1, flush) => {
+	test ('tracking basic omap', async (obj1, flush) => {
 		obj1.thing = OMap();
 
 		await flush();
@@ -280,7 +280,7 @@ import { clone } from './clone.js';
 		obj1.thing.set(UUID(), true);
 	});
 
-	test ('packetize omap modify', async (obj1, flush) => {
+	test ('tracking omap modify', async (obj1, flush) => {
 		obj1.thing = OMap();
 
 		await flush();
@@ -293,13 +293,13 @@ import { clone } from './clone.js';
 		obj1.thing.set(id, 'world');
 	});
 
-	test ('packetize of inserted then delete element once', async (obj1, flush) => {
+	test ('tracking of inserted then delete element once', async (obj1, flush) => {
 		obj1.thing = 'hello';
 		obj1.thing = 'other';
 		delete obj1.thing;
 	});
 
-	test ('packetize of inserted then delete element', async (obj1, flush) => {
+	test ('tracking of inserted then delete element', async (obj1, flush) => {
 		obj1.thing = 'hello';
 
 		await flush();
@@ -307,7 +307,7 @@ import { clone } from './clone.js';
 		delete obj1.thing;
 	});
 
-	test ('packetize of inserted then modify and delete element', async (obj1, flush) => {
+	test ('tracking of inserted then modify and delete element', async (obj1, flush) => {
 		obj1.thing = 'hello';
 
 		await flush();
@@ -316,14 +316,14 @@ import { clone } from './clone.js';
 		delete obj1.thing;
 	});
 
-	test ('packetize of deleted then inserted element once', async (obj1, flush) => {
+	test ('tracking of deleted then inserted element once', async (obj1, flush) => {
 		obj1.thing = 'hello';
 
 		delete obj1.thing;
 		obj1.thing = 'other';
 	});
 
-	test ('packetize of deleted then inserted element', async (obj1, flush) => {
+	test ('tracking of deleted then inserted element', async (obj1, flush) => {
 		obj1.thing = 'hello';
 
 		await flush();
@@ -332,23 +332,23 @@ import { clone } from './clone.js';
 		obj1.thing = 'other';
 	});
 
-	test ('packetize of nesting', async (obj1, flush) => {
+	test ('tracking of nesting', async (obj1, flush) => {
 		obj1.nested = OArray();
 		obj1.nested.push(0);
 	});
 
-	test ('packetize of nesting double', async (obj1, flush) => {
+	test ('tracking of nesting double', async (obj1, flush) => {
 		obj1.nested = OArray();
 		obj1.nested.push(OArray());
 		obj1.nested[0].push(0);
 	});
 
-	test ('packetize of nesting double once', async (obj1, flush) => {
+	test ('tracking of nesting double once', async (obj1, flush) => {
 		obj1.nested = OArray([OArray()]);
 		obj1.nested[0].push(0);
 	});
 
-	test ('packetize of nesting then deleting', async (obj1, flush) => {
+	test ('tracking of nesting then deleting', async (obj1, flush) => {
 		obj1.nested = OArray();
 		obj1.nested.push(OArray());
 		obj1.nested[0].push(0);
@@ -359,7 +359,7 @@ import { clone } from './clone.js';
 		delete obj1.nested;
 	});
 
-	test ('packetize with null', async (obj1, flush) => {
+	test ('tracking with null', async (obj1, flush) => {
 		obj1.nested = OArray();
 		obj1.nested = null;
 	});
@@ -387,7 +387,7 @@ import { clone } from './clone.js';
 		object.nested.push(obj);
 	});
 
-	test("packetize object swap", async (object, flush) => {
+	test("tracking object swap", async (object, flush) => {
 		const one = OObject({one: 1}), two = OObject({two: 2});
 		object.numbers = OArray([one, two]);
 
@@ -396,7 +396,7 @@ import { clone } from './clone.js';
 		object.numbers.splice(0, 2, two, one);
 	});
 
-	test("packetize linked delete and insert", async (object, flush) => {
+	test("tracking linked delete and insert", async (object, flush) => {
 		const original = object.thing = OObject();
 		await flush();
 
@@ -404,7 +404,7 @@ import { clone } from './clone.js';
 		object.thing = original;
 	});
 
-	test("packetize linked delete modify and insert", async (object, flush) => {
+	test("tracking linked delete modify and insert", async (object, flush) => {
 		const original = object.thing = OObject();
 		await flush();
 
@@ -413,7 +413,7 @@ import { clone } from './clone.js';
 		object.thing = original;
 	});
 
-	test("packetize eliminate redundant modify", async (object, flush) => {
+	test("tracking eliminate redundant modify", async (object, flush) => {
 		object.thing = true;
 
 		await flush();
@@ -422,7 +422,7 @@ import { clone } from './clone.js';
 		object.thing = true;
 	});
 
-	test("packetize linked modify and insert", async (object, flush) => {
+	test("tracking linked modify and insert", async (object, flush) => {
 		const original = object.thing = OObject();
 		await flush();
 
@@ -442,19 +442,19 @@ import { clone } from './clone.js';
 		object.thing = OMap([elem]);
 	});
 
-	test("packetize nested changes", async (object, flush) => {
+	test("tracking nested changes", async (object, flush) => {
 		object.weird = OObject();
 		object.weird.other = OObject();
 		object.weird.other.param = 'param';
 	});
 
-	test("packetize nested changes preinitialized", async (object, flush) => {
+	test("tracking nested changes preinitialized", async (object, flush) => {
 		object.weird = OObject({other: null});
 		object.weird.other = OObject({other: OObject()});
 		object.weird.other.other.param = 'param';
 	});
 
-	test("packetize combining properties into child", async (object, flush) => {
+	test("tracking combining properties into child", async (object, flush) => {
 		object.one = OObject();
 		object.two = OObject();
 		await flush();
@@ -462,7 +462,7 @@ import { clone } from './clone.js';
 		object.array = OArray([object.one, object.two]);
 	});
 
-	test("packetize combining properties into child then delete", async (object, flush) => {
+	test("tracking combining properties into child then delete", async (object, flush) => {
 		object.one = OObject();
 		object.two = OObject();
 		await flush();
@@ -472,7 +472,7 @@ import { clone } from './clone.js';
 		delete object.two;
 	});
 
-	test("packetize combining properties into child then delete before", async (object, flush) => {
+	test("tracking combining properties into child then delete before", async (object, flush) => {
 		const orig1 = object.one = OObject();
 		const orig2 = object.two = OObject();
 		await flush();
@@ -483,30 +483,30 @@ import { clone } from './clone.js';
 		object.array = OArray([orig1, orig2]);
 	});
 
-	test("packetize reference base", async (object, flush) => {
+	test("tracking reference base", async (object, flush) => {
 		object.object = object;
 	});
 
-	test("packetize reference base nested", async (object, flush) => {
+	test("tracking reference base nested", async (object, flush) => {
 		object.object = object;
 		await flush();
 
 		object.thing = OObject();
 	});
 
-	test("packetize reference nested once", async (object, flush) => {
+	test("tracking reference nested once", async (object, flush) => {
 		object.thing = OObject();
 		object.thing2 = OObject({thing: object.thing});
 	});
 
-	test("packetize reference nested", async (object, flush) => {
+	test("tracking reference nested", async (object, flush) => {
 		object.thing = OObject();
 		await flush();
 
 		object.thing2 = OObject({thing: object.thing});
 	});
 
-	test("packetize reference nested delete", async (object,  flush) => {
+	test("tracking reference nested delete", async (object,  flush) => {
 		object.thing = OObject();
 		await flush();
 
@@ -515,12 +515,12 @@ import { clone } from './clone.js';
 		object.thing2 = OObject({thing: orig});
 	});
 
-	test("packetize multiple references circular once", async (object, flush) => {
+	test("tracking multiple references circular once", async (object, flush) => {
 		object.thing = OObject();
 		object.thing.thing = object.thing;
 	});
 
-	test("packetize array moved out then deleted two elements", async (object, flush) => {
+	test("tracking array moved out then deleted two elements", async (object, flush) => {
 		object.thing = OArray([
 			OObject(),
 			OObject()
@@ -534,7 +534,7 @@ import { clone } from './clone.js';
 		ref.name = 'thing';
 	});
 
-	test("packetize array added then mutated and replaced", async (object, flush) => {
+	test("tracking array added then mutated and replaced", async (object, flush) => {
 		object.thing = OArray();
 
 		await flush();
