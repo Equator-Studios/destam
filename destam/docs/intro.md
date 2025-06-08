@@ -11,7 +11,7 @@ Destam introduces six important ideas:
 ## [Observer](observer.md)
 An observer is object that basically acts as a box around your state that may mutate at a later date. This box provides an interface to attach a listener to so that the rest of the application can react to these mutations. It also provides a miriad of functions to transform that state into something else. This is the most important concept in Destam and having a good understanding of Observers is key to making high performance well designed applications. Other state management libraries have similar concepts that are often called atoms.
 
-## Observable
+## [Observable](observables.md)
 An observable is a container of many different pieces of state that represent those pieces of state in unique ways for your application. Observables can be created that looks like a standard javascript object or array, but plug into the rest of the Destam infastructure. Most of your state will be stored in Observables. Observables can then be used to generate Observers that are used to listen for and react to state changes.
 
 ## [State tree](state-tree.md)
