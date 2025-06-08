@@ -595,6 +595,9 @@ Object.assign(Observer.prototype, {
 	 *
 	 * Returns:
 	 *   An observer which will default to the given value
+	 *
+	 * This would be identical to writing something like:
+	 *   this.map(val => val == null ? def : Observer.immutable(val)).unwrap()
 	 */
 	def: createImpl(
 		(self, def) => {
