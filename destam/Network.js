@@ -147,7 +147,7 @@ export const createReg = createClass((constructor, id = createID?.()) => {
 }, {
 	get () { return this.value },
 	register_ (listener_, governor_, options) {
-		let listenerNode = {
+		options = {
 			user_: baseGovernorParent,
 			governor_: {
 				listener_,
@@ -158,11 +158,11 @@ export const createReg = createClass((constructor, id = createID?.()) => {
 			...options,
 		};
 
-		addListener(this, listenerNode);
+		addListener(this, options);
 
 		return () => {
-			if (listenerNode) removeListener(this, listenerNode);
-			listenerNode = 0;
+			if (options) removeListener(this, options);
+			options = 0;
 		};
 	}
 }, createInstance(Observer));
