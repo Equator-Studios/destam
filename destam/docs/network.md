@@ -314,7 +314,7 @@ This method will only flush if there is a period of inactivity for a second
 second. Better for slower pace document editing software.
 
 
-For a built in solution digest() accepts a timeout as a third paramater:
+For a built in solution digest() accepts a timeout as a second paramater:
 ```js
 network.digest(commit => {
 	// flushes automatically with the same timing semantics as throttle.
