@@ -277,3 +277,52 @@ for (let i = history.length - 1; i >= 0; i++) {
 
 // all those changes are undone.
 ```
+
+## Automatic flushing
+Destam network digests don't require applications to automatically flush them.
+Flushes can happen at any point in the application lifetime - even asynchronously.
+For almost all applications, just scheduling a periodic flush during idle is enough
+for a robust flushing mechanism:
+```js
+const network = createNetwork(stateTree);
+const digest = network.digest(...);
+
+setInterval(() => {
+	digest.flush();
+}, 1000);
+```
+However, this method is obviously naive. It will try to flush changes even
+though nothing changed.
+
+# Reactivity-aware flushing
+We can be a little bit more precise about this by leveraging the core reactivity
+model:
+```js
+stateTree.observer.throttle(1000).watch(() => {
+	digest.flush();
+});
+```
+With this method, now the network will only flush at most once a second and will
+remain quiet if there are no changes occurring. This is helpful for real-time
+collaboration.
+```js
+stateTree.observer.wait(1000).watch(() => {
+	digest.flush();
+});
+```
+This method will only flush if there is a period of inactivity for a second
+second. Better for slower pace document editing software.
+
+
+For a built in solution digest() accepts a timeout as a third paramater:
+```js
+network.digest(commit => {
+	// flushes automatically with the same timing semantics as throttle.
+}, 1000);
+```
+The built in approach benefits in two ways:
+1. cleaning up is simpler: You only need to remember to remove the digest, not
+the flush listener as well.
+2. This is a little bit higher performance. Attaching listeners to objects are
+not free. Everytime the state tree mutates, the listener has to explore those
+mutations. Digest will reuse its existing event stream.
