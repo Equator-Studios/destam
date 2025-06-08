@@ -54,7 +54,7 @@ But, sometimes we want to depend on multiple values in order to compute somethin
 const a = Observer.mutable(1);
 const b = Observer.mutable(2);
 
-const sum = Observer.all([a, b]).map(([a, b]) => a * b);
+const sum = Observer.all([a, b]).map(([a, b]) => a + b);
 ```
 
 The `Observer.all` function can be used to essentially combine observers into one. The observer will respond to any events that happen on any of the values it depends on. We then use the regular `map` funciton to take those two dependencies and add them together.
