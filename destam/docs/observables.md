@@ -88,7 +88,7 @@ observer.isImmutable() === true
 ## Narrowing down observers
 Listening on an observer derived from a observable will give you any mutation that
 happens on that observer. By default, observers capture everything.
-```
+```js
 observer.watch(delta => {
 	if (delta instanceof Insert) {
 		console.log('Insert', delta.path());
@@ -174,7 +174,7 @@ observer.isImmutable() === true
 path() acts as a whitelist, we specify which properties we care about. However,
 we can use ignore() as a blacklist. This lets us ignore one property, while still
 listening to events from all the others.
-```
+```js
 observer.ignore("myValue").watch(() => {
 	// will be called when any of the other properties change but the ignored value.
 });
