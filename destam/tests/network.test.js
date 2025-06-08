@@ -62,6 +62,31 @@ import { stringify, parse, clone } from './clone.js';
 		expect(object2).to.deep.equal(OObject());
 		network.remove();
 	}),
+	(name, callback) => test("invert commit" + name, () => {
+		const object = OObject();
+		const object2 = parse(stringify(object));
+		const network = createNetwork(object2.observer);
+
+		const events = [];
+
+		object.observer.watchCommit(commit => {
+			const cloned = clone(commit);
+			network.apply(cloned);
+		});
+
+		object2.observer.watchCommit(commit => {
+			events.push(commit);
+		});
+
+		callback(object, object2);
+
+		for (let i = events.length - 1; i >= 0; i--) {
+			network.apply(events[i].map(d => d.invert()));
+		}
+
+		expect(object2).to.deep.equal(OObject());
+		network.remove();
+	}),
 ].forEach(test => {
 	test("basic object network insert", (object) => {
 		object.hello = 'world';
