@@ -1,4 +1,4 @@
-import Observer, {baseGovernorParent} from './Observer.js';
+import Observer, {defaultGovernor} from './Observer.js';
 import {createInstance, push, call, callListeners, createClass} from './util.js';
 
 const createLinkEntry = (link, parent, governor_, user) => {
@@ -148,7 +148,7 @@ export const createReg = createClass((constructor, id = createID?.()) => {
 	get () { return this.value },
 	register_ (listener_, governor_, options) {
 		options = {
-			user_: baseGovernorParent,
+			user_: defaultGovernor,
 			governor_: {
 				listener_,
 				governor_,

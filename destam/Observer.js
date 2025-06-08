@@ -11,12 +11,12 @@ const brokenChain = () => {
 	assert(false, "Cannot get a broken observer chain");
 };
 
-export const baseGovernorParent = Symbol();
+export const defaultGovernor = Symbol();
 export const getRef = Symbol();
 
 const chainGov = (prev, next) => (info, child, entry) => {
 	let gov;
-	if (info === baseGovernorParent) {
+	if (info === defaultGovernor) {
 		gov = prev;
 	} else {
 		[gov, info] = info;
@@ -27,7 +27,7 @@ const chainGov = (prev, next) => (info, child, entry) => {
 		return 0;
 	}
 
-	if (gov === prev && info === baseGovernorParent) {
+	if (gov === prev && info === defaultGovernor) {
 		gov = next;
 
 		info = gov(info, child, entry);
@@ -41,7 +41,7 @@ const chainGov = (prev, next) => (info, child, entry) => {
 
 const andGov = (prev, next) => (info, child, entry) => {
 	let parentInfo;
-	if (info === baseGovernorParent) {
+	if (info === defaultGovernor) {
 		parentInfo = info;
 	} else {
 		[info, parentInfo] = info;
@@ -391,7 +391,7 @@ Object.assign(Observer.prototype, {
 		},
 		defGet, defSet,
 		(self, listener, governor) => self.parent_.register_(listener, andGov(info => {
-			if (info === baseGovernorParent) info = 0;
+			if (info === defaultGovernor) info = 0;
 			if (info >= self.level_) {
 				return 0;
 			} else {
@@ -423,13 +423,13 @@ Object.assign(Observer.prototype, {
 		},
 		0, 0,
 		(self, listener, governor) => self.parent_.register_(listener, chainGov(info => {
-			if (info === baseGovernorParent) info = 1;
+			if (info === defaultGovernor) info = 1;
 
 			if (info <= self.level_){
 				return info + 1;
 			}
 
-			return baseGovernorParent;
+			return defaultGovernor;
 		}, governor))
 	),
 
@@ -470,14 +470,14 @@ Object.assign(Observer.prototype, {
 		},
 		0, 0,
 		(self, listener, governor) => self.parent_.register_(listener, chainGov((info, child) => {
-			if (info === baseGovernorParent) info = 1;
+			if (info === defaultGovernor) info = 1;
 
 			if (info !== 1) {
 				return 1;
 			}
 
 			if (child.query_ !== self.name_) {
-				return baseGovernorParent;
+				return defaultGovernor;
 			}
 
 			return 2;
@@ -531,10 +531,10 @@ Object.assign(Observer.prototype, {
 		},
 		(self, listener, governor) => self.parent_.register_
 			(listener, chainGov((info, child) => {
-				if (info === baseGovernorParent) info = 1;
+				if (info === defaultGovernor) info = 1;
 
 				if (info > len(self.path_)) {
-					return baseGovernorParent;
+					return defaultGovernor;
 				} else if (child.query_ !== self.path_[info - 1]) {
 					return 0;
 				} else {
@@ -568,7 +568,7 @@ Object.assign(Observer.prototype, {
 		},
 		defGet, defSet,
 		(self, listener, governor) => self.parent_.register_(listener, andGov((info, child) => {
-			if (info === baseGovernorParent) info = 1;
+			if (info === defaultGovernor) info = 1;
 
 			if (child.query_ !== self.path_[info - 1]) {
 				return -1;
