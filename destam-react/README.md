@@ -97,7 +97,7 @@ const Component = (defaultName) => {
 ```
 
 The above component would not work because the observer is being recreated every
-time the component mounts. It would always take teh value of defaultName regardless
+time the component rerenders. It would always take the value of defaultName regardless
 if the user changes what's in the textarea. The way to fix this is to use
 `React.useMemo`.
 
@@ -161,7 +161,7 @@ const Component = () => {
 		const listener = query.watch(update);
 
 		return () => {
-			listener.remove();
+			listener();
 		}
 	}, [queryValue]);
 
@@ -177,7 +177,7 @@ Note that sometimes instead of:
 const listener = query.watch(update);
 
 return () => {
-	listener.remove();
+	listener();
 }
 ```
 You can return the remove function directly. These two things do the same things.
@@ -185,7 +185,7 @@ The problem with the below solution is that it's not trivial to add other
 things that need to be cleaned up with the useEffect.
 
 ```js
-return query.watch(update).remove;
+return query.watch(update);
 ```
 
 # Complete example
@@ -300,7 +300,7 @@ const Undo = ({state}) => {
 				setHistory(history => history.slice(0, pos).concat([commit]));
 				return pos + 1;
 			});
-		}).remove;
+		});
 	}, [state]);
 
 	return <div>
