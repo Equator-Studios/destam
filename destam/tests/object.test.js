@@ -1228,3 +1228,27 @@ test("oobject default with governor", () => {
 
 	expect(events).to.deep.equal([['defNested'], ['nested'], ['nested', 'defNested'], ['nested'], ['defNested']]);
 });
+
+test("oobject unwrap with governor", () => {
+	const obj = OObject({
+
+	});
+
+	const events = [];
+	const obs = obj.observer.path('wrapped').unwrap().path('path');
+	obs.watch(delta => {
+		events.push(delta.path);
+	});
+
+	obj.whatever = 1;
+	obj.wrapped = 1;
+	obj.wrapped = OObject()
+	obj.wrapped.path = 1;
+	obj.wrapped.otherPath = 1;
+	obj.wrapped = OObject().observer;
+	obj.wrapped.get().path = 1;
+	obj.wrapped.get().otherPath = 1;
+	delete obj.wrapped;
+
+	expect(events).to.deep.equal([['wrapped'], ['wrapped'], ['wrapped', 'path'], ['wrapped'], ['path'], ['wrapped']]);
+});
