@@ -240,17 +240,13 @@ Object.assign(Observer.prototype, {
 			const cur = self.current_ = {};
 
 			const unregister = self.parent_.register_((commit, args) => {
-				const prev = self.current_;
 				self.current_ = cur;
-				try {
-					const value = self.forward_();
-					if (!cur.hasCache_ || !isEqual(value, cur.cache_)) {
-						cur.cache_ = value;
-						cur.hasCache_ = 1;
-						listener(commit, args);
-					}
-				} finally {
-					if (prev) self.current_ = prev;
+
+				const value = self.forward_();
+				if (!cur.hasCache_ || !isEqual(value, cur.cache_)) {
+					cur.cache_ = value;
+					cur.hasCache_ = 1;
+					listener(commit, args);
 				}
 			}, governor);
 
