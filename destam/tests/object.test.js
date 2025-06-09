@@ -1229,6 +1229,37 @@ test("oobject default with governor", () => {
 	expect(events).to.deep.equal([['defNested'], ['nested'], ['nested', 'defNested'], ['nested'], ['defNested']]);
 });
 
+test("oobject open coded default with governor", () => {
+	const obj = OObject({
+		nested: null,
+	});
+
+	const def = OObject({
+
+	});
+
+	const events = [];
+	const obs = obj.observer
+		.path('nested')
+		.map(val => val == null ? def.observer : Observer.immutable(val))
+		.unwrap()
+		.path('defNested');
+	obs.watch(delta => {
+		events.push(delta.path);
+	});
+
+	def.whatever = 1;
+	def.defNested = 1;
+	obj.nested = OObject({});
+	obj.nested.defNested = 1;
+	obj.nested.whatever = 1;
+	delete obj.nested;
+	delete def.defNested;
+	delete def.whatever;
+
+	expect(events).to.deep.equal([['defNested'], ['nested'], ['nested', 'defNested'], ['nested'], ['defNested']]);
+});
+
 test("oobject unwrap with governor", () => {
 	const obj = OObject({
 
