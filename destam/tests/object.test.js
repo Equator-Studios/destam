@@ -1183,7 +1183,7 @@ test("oobject map shallow calls", () => {
 	obj.thing.nested = 1;
 	obj.thing.nested = 1;
 
-	expect(calls).to.equal(2);
+	expect(calls).to.equal(1);
 });
 
 test("oobject memo non observable path", () => {

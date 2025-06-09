@@ -224,10 +224,14 @@ Object.assign(Observer.prototype, {
 			}
 		},
 		(self) => {
-			if (self.current_) {
-				return self.current_.cache_;
-			} else {
+			const current = self.current_;
+			if (!current) {
 				return self.forward_();
+			} else if (current.hasCache_) {
+				return current.cache_;
+			} else {
+				current.hasCache_ = 1;
+				return current.cache_ = self.forward_();
 			}
 		},
 		(self, v) => {
@@ -240,15 +244,15 @@ Object.assign(Observer.prototype, {
 				self.current_ = cur;
 				try {
 					const value = self.forward_();
-					if (!isEqual(value, cur.cache_)) {
+					if (!cur.hasCache_ || !isEqual(value, cur.cache_)) {
 						cur.cache_ = value;
+						cur.hasCache_ = 1;
 						listener(commit, args);
 					}
 				} finally {
 					self.current_ = prev;
 				}
 			}, governor);
-			cur.cache_ = self.forward_();
 
 			return remove;
 		},

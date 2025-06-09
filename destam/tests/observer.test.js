@@ -656,7 +656,7 @@ test("observer map call frequency", () => {
 
 	orig.set(2);
 
-	expect(calls).to.equal(2);
+	expect(calls).to.equal(1);
 	expect(val).to.equal(4);
 });
 
