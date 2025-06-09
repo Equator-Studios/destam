@@ -1387,3 +1387,46 @@ test("immutability after shallow", () => {
 	const obj = Observer.immutable().shallow();
 	expect(obj.isImmutable()).to.equal(true);
 });
+
+test("map set to undefined", () => {
+	const obs = Observer.mutable(1)
+
+	let vals = [];
+	const map = obs.map(a => a);
+	map.watch(() => {
+		vals.push(map.get());
+	});
+
+	obs.set(undefined);
+
+	expect(vals).to.deep.equal([undefined]);
+});
+
+test("map no cache", () => {
+	const obs = Observer.mutable(1)
+
+	const map = obs.map(a => a);
+	expect(map.get()).to.equal(1);
+});
+
+test("mutable recursion", () => {
+	const obs = Observer.mutable(0);
+
+	obs.effect(num => {
+		if (num >= 10) return;
+		obs.set(num + 1);
+	});
+
+	expect(obs.get()).to.equal(10);
+});
+
+test("unwrap mutable recursion", () => {
+	const obs = Observer.mutable(Observer.mutable(0)).unwrap();
+
+	obs.effect(num => {
+		if (num >= 10) return;
+		obs.set(num + 1);
+	});
+
+	expect(obs.get()).to.equal(10);
+});
