@@ -207,7 +207,6 @@ Object.assign(Observer.prototype, {
 			assert(backward == null || typeof backward === 'function',
 				"Backward must be a function or undefined");
 
-			self.listeners_ = [];
 			self.forward_ = () => {
 				let val;
 				if (self.parent_.get !== brokenChain) {
@@ -238,8 +237,9 @@ Object.assign(Observer.prototype, {
 			self.parent_.set(self.backward_(v));
 		},
 		(self, listener, governor) => {
-			const cur = {};
-			const remove = self.parent_.register_((commit, args) => {
+			const cur = self.current_ = {};
+
+			const unregister = self.parent_.register_((commit, args) => {
 				const prev = self.current_;
 				self.current_ = cur;
 				try {
@@ -250,11 +250,14 @@ Object.assign(Observer.prototype, {
 						listener(commit, args);
 					}
 				} finally {
-					self.current_ = prev;
+					if (prev) self.current_ = prev;
 				}
 			}, governor);
 
-			return remove;
+			return () => {
+				if (self.current_ === cur) self.current_ = 0;
+				unregister();
+			};
 		},
 		1
 	),
