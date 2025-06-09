@@ -1199,6 +1199,32 @@ test("oobject memo non observable path", () => {
 	obj.obj = {};
 	obj.obj.thing = 1;
 
-
 	expect(paths).to.deep.equal([['obj'], ['obj', 'thing'], ['obj']]);
-})
+});
+
+test("oobject default with governor", () => {
+	const obj = OObject({
+		nested: null,
+	});
+
+	const def = OObject({
+
+	});
+
+	const events = [];
+	const obs = obj.observer.path('nested').def(def.observer).path('defNested');
+	obs.watch(delta => {
+		events.push(delta.path);
+	});
+
+	def.whatever = 1;
+	def.defNested = 1;
+	obj.nested = OObject({});
+	obj.nested.defNested = 1;
+	obj.nested.whatever = 1;
+	delete obj.nested;
+	delete def.defNested;
+	delete def.whatever;
+
+	expect(events).to.deep.equal([['defNested'], ['nested'], ['nested', 'defNested'], ['nested'], ['defNested']]);
+});
