@@ -224,8 +224,8 @@ Object.assign(Observer.prototype, {
 			}
 		},
 		(self) => {
-			if (len(self.listeners_)) {
-				return self.cache_;
+			if (self.current_) {
+				return self.current_.cache_;
 			} else {
 				return self.forward_();
 			}
@@ -234,25 +234,23 @@ Object.assign(Observer.prototype, {
 			self.parent_.set(self.backward_(v));
 		},
 		(self, listener, governor) => {
-			if (!self.parentListener_) {
-				self.parentListener_ = self.parent_.register_((commit, args) => {
+			const cur = {};
+			const remove = self.parent_.register_((commit, args) => {
+				const prev = self.current_;
+				self.current_ = cur;
+				try {
 					const value = self.forward_();
-
-					if (!isEqual(value, self.cache_)) {
-						runListeners(self, self.listeners_, () => (self.cache_ = value, commit), args);
+					if (!isEqual(value, cur.cache_)) {
+						cur.cache_ = value;
+						listener(commit, args);
 					}
-				}, governor);
-				self.cache_ = self.forward_();
-			}
-
-			push(self.listeners_, listener);
-
-			return () => {
-				if (remove(self.listeners_, listener) && !len(self.listeners_)) {
-					self.parentListener_();
-					self.cache_ = self.parentListener_ = 0;
+				} finally {
+					self.current_ = prev;
 				}
-			};
+			}, governor);
+			cur.cache_ = self.forward_();
+
+			return remove;
 		},
 		1
 	),
