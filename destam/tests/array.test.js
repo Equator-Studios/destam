@@ -126,7 +126,7 @@ test("array pathing", () => {
 
 	const paths = [];
 	object.observer.watch(event => {
-		paths.push(indexPosition(object, event.path(object)[0]));
+		paths.push(indexPosition(object, event.path[0]));
 	});
 
 	object.push('1');
@@ -141,7 +141,7 @@ test("array pathing for deleted objects", () => {
 
 	let events = [];
 	object.observer.watch(event => {
-		events.push(indexPosition(object, event.path(object)));
+		events.push(indexPosition(object, event.path));
 	});
 
 	object.push('init');

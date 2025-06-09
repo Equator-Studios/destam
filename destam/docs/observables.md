@@ -91,15 +91,15 @@ happens on that observer. By default, observers capture everything.
 ```js
 observer.watch(delta => {
 	if (delta instanceof Insert) {
-		console.log('Insert', delta.path());
+		console.log('Insert', delta.path);
 	}
 
 	if (delta instanceof Modify) {
-		console.log('Modify', delta.path());
+		console.log('Modify', delta.path);
 	}
 
 	if (delta instanceof Delete) {
-		console.log('Delete', delta.path());
+		console.log('Delete', delta.path);
 	}
 });
 
@@ -140,7 +140,7 @@ state.myValue = 1; // myValue changed to: 1
 
 // Note that the path the delta would report would be the same as the one without
 // the path(). The path() is only there to narrow events, not change their behavior.
-// delta.path() === ["myValue"]
+// delta.path === ["myValue"]
 
 observer.path('myValue').set(2);
 // Note that the observer returned from path() are mutable. Observers derived from

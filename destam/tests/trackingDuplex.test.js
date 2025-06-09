@@ -175,7 +175,7 @@ import { clone } from './clone.js';
 		two.observer.watch(delta => {
 			if (delta.value.value) return;
 
-			two[delta.path()[0]] = OObject({value: delta.value});
+			two[delta.path[0]] = OObject({value: delta.value});
 		});
 
 		one.one = 1;

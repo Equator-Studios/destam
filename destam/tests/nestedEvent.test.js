@@ -185,7 +185,7 @@ test("nested pathing", () => {
 
 	const paths = [];
 	object.observer.watch(event => {
-		paths.push(event.path(object));
+		paths.push(event.path);
 	});
 
 	nest.one = '1';
@@ -201,7 +201,7 @@ test("paths true", () => {
 
 	const paths = [];
 	object.observer.path('nest').watch(event => {
-		paths.push(event.path(object));
+		paths.push(event.path);
 	});
 
 	nest.one = '1';
@@ -219,7 +219,7 @@ test("paths false", () => {
 
 	const paths = [];
 	object.observer.path('nothing').watch(event => {
-		paths.push(event.path());
+		paths.push(event.path);
 	});
 
 	nest.one = '1';
@@ -237,7 +237,7 @@ test("path ignore", () => {
 
 	const paths = [];
 	object.observer.ignore('nest').watch(event => {
-		paths.push(event.path());
+		paths.push(event.path);
 	});
 
 	nest.one = '1';
@@ -255,7 +255,7 @@ test("path ignore multiple", () => {
 
 	const paths = [];
 	object.observer.ignore(['nest', 'one']).watch(event => {
-		paths.push(event.path());
+		paths.push(event.path);
 	});
 
 	nest.one = '1';
@@ -273,7 +273,7 @@ test("path ignore with hidden", () => {
 
 	const paths = [];
 	object.observer.ignore(['nest', 'one']).watch(event => {
-		paths.push(event.path());
+		paths.push(event.path);
 	});
 
 	nest.one = '1';
@@ -292,7 +292,7 @@ test("path ignore with skip", () => {
 
 	const paths = [];
 	object.observer.ignore(['nest', 'one']).skip(2).watch(event => {
-		paths.push(event.path());
+		paths.push(event.path);
 	});
 
 	nest.one = '1';
@@ -316,7 +316,7 @@ test("path ignore with tree", () => {
 
 	const paths = [];
 	object.observer.ignore('nest').tree('tree').watch(event => {
-		paths.push(event.path());
+		paths.push(event.path);
 	});
 
 	object.nest.hello = "hello";
@@ -331,7 +331,7 @@ test("nested pathing", () => {
 
 	const paths = [];
 	object.observer.watch(event => {
-		paths.push(event.path());
+		paths.push(event.path);
 	});
 
 	nest.one = '1';
@@ -348,7 +348,7 @@ test("nested pathing 2", () => {
 
 	const paths = [];
 	object.observer.ignore('nest').skip().path('thing').watch(event => {
-		paths.push(event.path());
+		paths.push(event.path);
 	});
 
 	nest.thing = '1';
@@ -369,7 +369,7 @@ test("nested pathing 3", () => {
 
 	const paths = [];
 	object.observer.ignore('nest').path(['nest2', 'thing']).watch(event => {
-		paths.push(event.path());
+		paths.push(event.path);
 	});
 
 	nest.thing = '1';
@@ -389,7 +389,7 @@ test("handle circles", () => {
 
 	const paths = [];
 	object.observer.watch(event => {
-		paths.push(event.path());
+		paths.push(event.path);
 	});
 
 	object.next = object2;

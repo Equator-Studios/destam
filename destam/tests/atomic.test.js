@@ -9,7 +9,7 @@ test("atomic oobject", () => {
 
 	const commits = [];
 	obj.observer.watchCommit(commit => {
-		commits.push(commit.map(delta => delta.path()));
+		commits.push(commit.map(delta => delta.path));
 	});
 
 	atomic(() => {
@@ -41,7 +41,7 @@ test("atomic oarray", () => {
 
 	const commits = [];
 	obj.observer.watchCommit(commit => {
-		commits.push(commit.map(delta => delta.path()));
+		commits.push(commit.map(delta => delta.path));
 	});
 
 	atomic(() => {

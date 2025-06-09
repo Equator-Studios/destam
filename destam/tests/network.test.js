@@ -164,7 +164,7 @@ import { stringify, parse, clone } from './clone.js';
 
 		const paths = [];
 		const watcher = object2.observer.path('array').watch(event => {
-			const path = event.path().splice(1);
+			const path = event.path.splice(1);
 			if (path.length) path[0] = indexPosition(array, path[0]);
 			paths.push(path);
 		});
@@ -423,7 +423,7 @@ test("network delete", () => {
 
 	const paths = [];
 	object2.observer.watch(event => {
-		paths.push(event.path(object2));
+		paths.push(event.path);
 	});
 
 	const nested = OObject();

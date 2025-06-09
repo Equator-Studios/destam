@@ -1047,7 +1047,7 @@ test("tracking flush mutations during digest", () => new Promise((ok, err) => {
 
 	const stuff = [];
 	network.digest((changes) => {
-		stuff.push(changes[0].path());
+		stuff.push(changes[0].path);
 
 		if (stuff.length === 1) {
 			obj.value2 = 1;
@@ -1070,7 +1070,7 @@ test("tracking constraint network", async () => {
 
 	const stuff = [];
 	const digest = network.digest(changes => {
-		stuff.push(changes.map(delta => delta.path()));
+		stuff.push(changes.map(delta => delta.path));
 	});
 
 	obj.thing = OObject();
@@ -1088,7 +1088,7 @@ test("tracking constraint network with dummy", async () => {
 
 	const stuff = [];
 	const digest = network.digest(changes => {
-		stuff.push(changes.map(delta => delta.path()));
+		stuff.push(changes.map(delta => delta.path));
 	});
 
 	obj.thing = OObject();

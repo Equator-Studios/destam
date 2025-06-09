@@ -72,7 +72,7 @@ const state = OObject({
 });
 
 state.observer.watch(state => {
-	console.log(state.path());
+	console.log(state.path);
 });
 
 // the watcher above will console.log ['foo']
@@ -127,7 +127,7 @@ let object = OObject({
     second: OObject()
 });
 
-object.observer.watch(event => console.log(event.path()));
+object.observer.watch(event => console.log(event.path));
 
 object.first.property = 'value'; // ['first', 'property'] will be printed.
 object.second.property = 'value'; // ['second', 'property'] will be printed.

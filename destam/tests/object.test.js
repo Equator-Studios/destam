@@ -248,7 +248,7 @@ test("object pathing", () => {
 
 	const paths = [];
 	object.observer.watch(event => {
-		paths.push(event.path());
+		paths.push(event.path);
 	});
 
 	object.one = '1';
@@ -265,7 +265,7 @@ test("shallow query with a path", () => {
 
 	const paths = [];
 	object.observer.path('next').shallow(1).watch(event => {
-		paths.push(event.path());
+		paths.push(event.path);
 	});
 
 	object.next = object2;
@@ -293,7 +293,7 @@ test("shallow query with a path and memo", () => {
 
 	const paths = [];
 	object.observer.path('next').memo().shallow().watch(event => {
-		paths.push(event.path());
+		paths.push(event.path);
 	});
 
 	object.next = object2;
@@ -312,7 +312,7 @@ test("oobject path after memo", () => {
 
 	const paths = [];
 	object.observer.path('nested').memo().path('hello').watch(event => {
-		paths.push(event.path());
+		paths.push(event.path);
 	});
 
 	object.nested.hello = 2;
@@ -328,7 +328,7 @@ test("oobject memo path", () => {
 
 	const paths = [];
 	object.observer.memo().path('hello').watch(event => {
-		paths.push(event.path());
+		paths.push(event.path);
 	});
 
 	object.hello = 2;
@@ -343,7 +343,7 @@ test("oobject double memo path", () => {
 
 	const paths = [];
 	object.observer.memo().memo().path('hello').watch(event => {
-		paths.push(event.path());
+		paths.push(event.path);
 	});
 
 	object.hello = 2;
@@ -419,11 +419,11 @@ test("shallow query with a path and ordered memo", () => {
 	const [one, two] = object.observer.path('next').memo(2);
 
 	one.shallow().watch(event => {
-		paths.push(event.path());
+		paths.push(event.path);
 	});
 
 	two.watch(event => {
-		paths.push(event.path());
+		paths.push(event.path);
 	});
 
 	object.next = object2;
@@ -443,7 +443,7 @@ test("object switch selector", () => {
 
 	const paths = [];
 	sel(1).watch(delta => {
-		paths.push(delta.path());
+		paths.push(delta.path);
 	});
 
 	object.nested = OObject({
@@ -461,7 +461,7 @@ test("shallow query with a path and memo predefine", () => {
 
 	const paths = [];
 	object.observer.path('next').memo().shallow().watch(event => {
-		paths.push(event.path());
+		paths.push(event.path);
 	});
 
 	object2.thing = 'thing';
@@ -475,7 +475,7 @@ test("double path", () => {
 
 	const paths = [];
 	object.observer.path('next').path('thing').watch(event => {
-		paths.push(event.path());
+		paths.push(event.path);
 	});
 
 	object.next = object2;
@@ -491,7 +491,7 @@ test("double path and memo", () => {
 
 	const paths = [];
 	object.observer.path('next').memo().path('thing').watch(event => {
-		paths.push(event.path());
+		paths.push(event.path);
 	});
 
 	object.next = object2;
@@ -509,7 +509,7 @@ test("double path and memo predefine", () => {
 
 	const paths = [];
 	object.observer.path('next').memo().path('thing').watch(event => {
-		paths.push(event.path());
+		paths.push(event.path);
 	});
 
 	object2.thing = 'thing';
@@ -524,7 +524,7 @@ test("try to query an object path that doesn't have a path", () => {
 
 	const paths = [];
 	object.observer.shallow(1).watch(event => {
-		paths.push(event.path());
+		paths.push(event.path);
 	});
 
 	object.next = object2;
@@ -607,7 +607,7 @@ test("path to hidden", () => {
 
 	const paths = [];
 	object.observer.path('_hidden').watch(event => {
-		paths.push(event.path());
+		paths.push(event.path);
 	});
 
 	object._hidden = object2;
@@ -628,7 +628,7 @@ test("path to hidden with shallow", () => {
 
 	const paths = [];
 	object.observer.path('_hidden').shallow().watch(event => {
-		paths.push(event.path());
+		paths.push(event.path);
 	});
 
 	object._hidden = object2;
@@ -648,7 +648,7 @@ test("object relinking", () => {
 
 	let events = [];
 	object.observer.watch(event => {
-		events.push(event.path());
+		events.push(event.path);
 	});
 
 
@@ -664,7 +664,7 @@ test("pathing for deleted objects", () => {
 
 	let events = [];
 	object.observer.watch(event => {
-		events.push(event.path());
+		events.push(event.path);
 	});
 
 	object.value = 'initialize';
@@ -749,7 +749,7 @@ test("circle network", () => {
 
 	let events = [];
 	object.observer.watch(event => {
-		events.push(event.path());
+		events.push(event.path);
 	});
 
 	object.nested.changed = 'yes';
@@ -768,12 +768,12 @@ test("usage of unlinked network", () => {
 
 	let events = [];
 	object.observer.watch(event => {
-		events.push(event.path());
+		events.push(event.path);
 	});
 
 	let events2 = [];
 	object2.observer.watch(event => {
-		events2.push(event.path());
+		events2.push(event.path);
 	});
 
 	object.other = object2;
@@ -797,12 +797,12 @@ test("usage of unlinked network with a circle", () => {
 
 	let events = [];
 	object.observer.watch(event => {
-		events.push(event.path(object));
+		events.push(event.path);
 	});
 
 	let events2 = [];
 	object2.observer.watch(event => {
-		events2.push(event.path(object2));
+		events2.push(event.path);
 	});
 
 	object.other = object2;
@@ -826,12 +826,12 @@ test("usage of unlinked network with a circle of parent", () => {
 
 	let events = [];
 	object.observer.watch(event => {
-		events.push(event.path());
+		events.push(event.path);
 	});
 
 	let events2 = [];
 	object2.observer.watch(event => {
-		events2.push(event.path());
+		events2.push(event.path);
 	});
 
 	object.other = object2;
@@ -862,7 +862,7 @@ test("nested events", () => {
 
 	let events = [];
 	object.observer.watch(event => {
-		events.push(event.path());
+		events.push(event.path);
 	});
 
 	object.thing = OObject();
@@ -880,7 +880,7 @@ test("event masking pre", () => {
 
 	let events = [];
 	object.observer.watch(event => {
-		events.push(event.path());
+		events.push(event.path);
 	});
 
 	object.thing = OObject();
@@ -893,7 +893,7 @@ test("event masking post", () => {
 
 	let events = [];
 	object.observer.watch(event => {
-		events.push(event.path());
+		events.push(event.path);
 	});
 
 	let watcher = object.observer.watch(event => {
@@ -931,7 +931,7 @@ test("skip and path", () => {
 
 	const events = [];
 	object.observer.skip().path('value').watch(event => {
-		events.push(event.path());
+		events.push(event.path);
 	});
 
 
@@ -950,7 +950,7 @@ test("register hidden then public", () => {
 
 	const events = [];
 	object.observer.watch(event => {
-		events.push(event.path());
+		events.push(event.path);
 	});
 
 	object._hidden = OObject();
@@ -970,7 +970,7 @@ test("skip and path and shallow", () => {
 
 	const events = [];
 	object.observer.skip().path('value').shallow().watch(event => {
-		events.push(event.path());
+		events.push(event.path);
 	});
 
 	object.one.value = OObject();
@@ -994,7 +994,7 @@ test("shallow listener on observer mutating to null", () => {
 
 	let events = [];
 	object.observer.path("hello").shallow().watch(event => {
-		events.push(event.path());
+		events.push(event.path);
 	});
 
 	object.hello = OObject();
@@ -1191,7 +1191,7 @@ test("oobject memo non observable path", () => {
 
 	const paths = [];
 	obj.observer.path('obj').memo().watch(delta => {
-		paths.push(delta.path());
+		paths.push(delta.path);
 	});
 
 	obj.obj = OObject();

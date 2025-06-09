@@ -20,7 +20,7 @@ const createModifier = () => {
 		 *   An array of values representing the path in the state tree the event
 		 *   took place
 		 */
-		path () {
+		get path () {
 			assert(this.network_, "orphaned event");
 
 			const path = [];
