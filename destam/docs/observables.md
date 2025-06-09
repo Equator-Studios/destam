@@ -182,6 +182,8 @@ observer.ignore("myValue").watch(() => {
 state.myValue = newValue; // ignored by the above listener
 state.myOtherValue = 1; // the listener above will react to this.
 ```
+Note that ignoring a property, all nested properties will be ignored too. Listener
+recursion only works when all the parents are being listened on as well.
 
 ### Combining governors
 Where it gets interesting is that we can combine governors:
