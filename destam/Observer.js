@@ -394,11 +394,7 @@ Object.assign(Observer.prototype, {
 		defGet, defSet,
 		(self, listener, governor) => self.parent_.register_(listener, andGov(info => {
 			if (info === defaultGovernor) info = self.level_ + 1;
-			if (info > 1) {
-				return info - 1;
-			}
-
-			return 0;
+			return info - 1;
 		}, governor))
 	),
 
@@ -426,11 +422,7 @@ Object.assign(Observer.prototype, {
 		0, 0,
 		(self, listener, governor) => self.parent_.register_(listener, chainGov(info => {
 			if (info === defaultGovernor) info = self.level_ + 1;
-			if (info > 1){
-				return info - 1;
-			}
-
-			return defaultGovernor;
+			return info - 1 || defaultGovernor;
 		}, governor))
 	),
 
