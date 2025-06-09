@@ -969,7 +969,7 @@ Object.assign(Observer.prototype, {
 				'Effect listener must return a nullish value or a function');
 		};
 
-		const reg = this.register_(call, watchGovernor);
+		const reg = shallowListener(this, call);
 		call();
 
 		return () => {
