@@ -1283,3 +1283,38 @@ test("oobject unwrap with governor", () => {
 
 	expect(events).to.deep.equal([['wrapped'], ['wrapped'], ['wrapped', 'path'], ['wrapped'], ['path'], ['wrapped']]);
 });
+
+test("oobject switcher", () => {
+	const sw = Observer.mutable('a');
+
+	const obj = OObject({
+		a: OObject(),
+		b: OObject(),
+	});
+
+	const events = [];
+	const obs = sw.map(key => obj.observer.path(key)).unwrap().path('path');
+	obs.watch(delta => {
+		if (!delta.network_) {
+			events.push([]);
+		} else {
+			events.push(delta.path);
+		}
+	});
+
+	obj.a.path = 1;
+	obj.a.other = 1;
+	obj.c = 3;
+	sw.set('b');
+	obj.a.path = 2;
+	obj.b.path = 1;
+	obj.b.other = 1;
+	sw.set('a');
+	obj.b.path = 2;
+	sw.set('d');
+	obj.d = OObject();
+	obj.d.path = 1;
+	obj.d.other = 1;
+
+	expect(events).to.deep.equal([['a', 'path'], [], ['b', 'path'], [], [], ['d'], ['d', 'path']]);
+});
