@@ -273,7 +273,7 @@ Object.assign(Observer.prototype, {
 	 */
 	unwrap: createImpl(null,
 		self => {
-			const val = self.parent_.get();
+			const val = self.current_ ? self.current_.cache_ : self.parent_.get();
 			if (isInstance(val, Observer)) {
 				return val.get();
 			}
@@ -281,7 +281,7 @@ Object.assign(Observer.prototype, {
 			return val;
 		},
 		(self, v) => {
-			const val = self.parent_.get();
+			const val = self.current_ ? self.current_.cache_ : self.parent_.get();
 			if (isInstance(val, Observer)) {
 				val.set(v);
 			} else {
@@ -294,7 +294,15 @@ Object.assign(Observer.prototype, {
 				if (l) l();
 				const val = self.parent_.get();
 				if (l = isInstance(val, Observer)) {
-					l = val.register_(listener, governor);
+					l = val.register_((commit, args) => {
+						const prev = self.current_;
+						self.current_ = {cache_: val};
+						try {
+							listener(commit, args);
+						} finally {
+							self.current_ = prev;
+						}
+					}, governor);
 				}
 			};
 
