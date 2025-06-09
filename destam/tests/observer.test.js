@@ -1460,3 +1460,18 @@ test("bool values", () => {
 
 	expect(stuff).to.deep.equal(['no', 'yes', 'no']);
 });
+
+test("get after map remove", () => {
+	const val = Observer.mutable(0);
+	const map = val.map(x => x);
+
+
+	const listener = map.effect(() => {});
+	listener();
+
+	expect(map.get()).to.equal(0);
+	val.set(2);
+	expect(map.get()).to.equal(2);
+	val.set(3);
+	expect(map.get()).to.equal(3);
+});
