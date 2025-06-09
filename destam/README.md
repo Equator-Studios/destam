@@ -9,7 +9,7 @@ const state = OObject({
 });
 
 state.observer.path('address').watch(delta => {
-	console.log(`${delta.getParent().name}'s address changed to ${delta.value}`);
+	console.log(`${delta.parent.name}'s address changed to ${delta.value}`);
 });
 
 state.address = 'Toronto';

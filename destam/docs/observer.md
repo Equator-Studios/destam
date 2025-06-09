@@ -110,8 +110,8 @@ let object = OObject({
 
 object.observer.watch(state => {
     console.log(state.value) // should print 'value' - but this time the event came from the nested object.
-    console.log(state.getParent() === object.nested) // state.getParent() will give us the object that generated the event so this statement should be true.
-    console.log(state.getParent() !== object) // true
+    console.log(state.parent === object.nested) // state.parent will give us the object that generated the event so this statement should be true.
+    console.log(state.parent !== object) // true
 });
 
 object.nested.property = 'value';

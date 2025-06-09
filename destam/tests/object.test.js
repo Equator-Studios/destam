@@ -543,7 +543,7 @@ test("test parent object getter", () => {
 
 	const paths = [];
 	object.observer.watch(event => {
-		paths.push(event.getParent());
+		paths.push(event.parent);
 	});
 
 	object.next = object2;
@@ -679,7 +679,7 @@ test("parent for deleted objects", () => {
 
 	let events = [];
 	object.observer.watch(event => {
-		events.push(event.getParent());
+		events.push(event.parent);
 	});
 
 	object.value = 'initialize';
@@ -914,7 +914,7 @@ test("nested events of parents", () => {
 
 	let events = [];
 	object.observer.watch(event => {
-		events.push(event.getParent());
+		events.push(event.parent);
 	});
 
 	object.thing = OObject();

@@ -38,7 +38,7 @@ const createModifier = () => {
 		 * Returns:
 		 *   The observable that was mutated to trigger this event.
 		 */
-		getParent () {
+		get parent () {
 			assert(this.network_, "orphaned event");
 
 			return this.network_.link_.reg_.value;
