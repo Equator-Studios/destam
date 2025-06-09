@@ -233,7 +233,7 @@ Object.assign(Observer.prototype, {
 		(self, v) => {
 			self.parent_.set(self.backward_(v));
 		},
-		(self, listener) => {
+		(self, listener, governor) => {
 			if (!self.parentListener_) {
 				self.parentListener_ = self.parent_.register_((commit, args) => {
 					const value = self.forward_();
@@ -241,7 +241,7 @@ Object.assign(Observer.prototype, {
 					if (!isEqual(value, self.cache_)) {
 						runListeners(self, self.listeners_, () => (self.cache_ = value, commit), args);
 					}
-				}, watchGovernor);
+				}, governor);
 				self.cache_ = self.forward_();
 			}
 
