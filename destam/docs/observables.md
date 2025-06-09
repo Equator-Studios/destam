@@ -141,6 +141,14 @@ state.myValue = 1; // myValue changed to: 1
 // Note that the path the delta would report would be the same as the one without
 // the path(). The path() is only there to narrow events, not change their behavior.
 // delta.path() === ["myValue"]
+
+observer.path('myValue').set(2);
+// Note that the observer returned from path() are mutable. Observers derived from
+// an immutable observer aren't necessarily immutable themselves.
+
+// The code above is equivelant to:
+state.myValue = 2;
+// both versions will call listeners just the same.
 ```
 
 ### observer.prototype.shallow
