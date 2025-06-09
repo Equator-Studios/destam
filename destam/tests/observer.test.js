@@ -1430,3 +1430,33 @@ test("unwrap mutable recursion", () => {
 
 	expect(obs.get()).to.equal(10);
 });
+
+test("bool coerse", () => {
+	const val = Observer.mutable(0);
+
+	const stuff = [];
+	val.bool().effect(val => {
+		stuff.push(val);
+	});
+
+	val.set(1);
+	val.set(2);
+	val.set(0);
+
+	expect(stuff).to.deep.equal([false, true, false]);
+});
+
+test("bool values", () => {
+	const val = Observer.mutable(0);
+
+	const stuff = [];
+	val.bool('yes', 'no').effect(val => {
+		stuff.push(val);
+	});
+
+	val.set(1);
+	val.set(2);
+	val.set(0);
+
+	expect(stuff).to.deep.equal(['no', 'yes', 'no']);
+});
