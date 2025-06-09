@@ -51,7 +51,7 @@ const createModifier = () => {
 		 * Returns:
 		 *   An event that does the inverse of this event.
 		 */
-		invert () {
+		get inverse () {
 			let cons;
 			if (isInstance(this, Insert)) {
 				cons = Delete;

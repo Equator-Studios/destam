@@ -56,7 +56,7 @@ import { stringify, parse, clone } from './clone.js';
 		callback(object, object2);
 
 		for (let i = events.length - 1; i >= 0; i--) {
-			network.apply([events[i].invert()]);
+			network.apply([events[i].inverse]);
 		}
 
 		expect(object2).to.deep.equal(OObject());
@@ -81,7 +81,7 @@ import { stringify, parse, clone } from './clone.js';
 		callback(object, object2);
 
 		for (let i = events.length - 1; i >= 0; i--) {
-			network.apply(events[i].map(d => d.invert()));
+			network.apply(events[i].map(d => d.inverse));
 		}
 
 		expect(object2).to.deep.equal(OObject());

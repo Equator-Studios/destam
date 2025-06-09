@@ -272,7 +272,7 @@ network.digest((commit) => {
 // ... state changes and the history is built
 
 for (let i = history.length - 1; i >= 0; i++) {
-	network.apply(history[i].map(delta => delta.invert()));
+	network.apply(history[i].map(delta => delta.inverse));
 }
 
 // all those changes are undone.

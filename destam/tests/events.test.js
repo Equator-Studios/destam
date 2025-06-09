@@ -4,9 +4,9 @@ import OObject from '../Object.js';
 import {Insert, Modify, Delete} from '../Events.js';
 
 test("event invert instanceof", () => {
-	expect(Insert().invert()).to.be.an.instanceOf(Delete);
-	expect(Modify().invert()).to.be.an.instanceOf(Modify);
-	expect(Delete().invert()).to.be.an.instanceOf(Insert);
+	expect(Insert().inverse).to.be.an.instanceOf(Delete);
+	expect(Modify().inverse).to.be.an.instanceOf(Modify);
+	expect(Delete().inverse).to.be.an.instanceOf(Insert);
 });
 
 test("recursive events", () => {

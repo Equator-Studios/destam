@@ -306,7 +306,7 @@ const Undo = ({state}) => {
 	return <div>
 		<button disabled={historyPos === 0} onClick={() => {
 			setHistoryPos(pos => {
-				network.apply(history[pos - 1].map(delta => delta.invert()), 'is-undo-action');
+				network.apply(history[pos - 1].map(delta => delta.inverse), 'is-undo-action');
 				return pos - 1;
 			});
 		}}>Undo</button>
