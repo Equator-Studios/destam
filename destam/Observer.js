@@ -325,6 +325,22 @@ Object.assign(Observer.prototype, {
 	),
 
 	/**
+	 * Coerses this observer into a boolean. If the observer is truthy, the
+	 * first paramater is returned (defaulting to true), if falsy, the second
+	 * paramater is returned (default to false)
+	 *
+	 * Params:
+	 *   yes: Result to return when the observer is truthy
+	 *   no: Result to return when the observer is falsy
+	 *
+	 * Returns:
+	 *   A new observer either resolving to the two conditions.
+	 */
+	bool (yes = true, no = false) {
+		return this.map(val => val ? yes : no);
+	},
+
+	/**
 	 * Defines access control. Essentially proxies mutations into the given
 	 * callback.
 	 *
