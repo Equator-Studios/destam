@@ -19,7 +19,8 @@ const chainGov = (prev, next) => (info, child, entry) => {
 	if (info === defaultGovernor) {
 		gov = prev;
 	} else {
-		[gov, info] = info;
+		gov = info.a;
+		info = info.b;
 	}
 
 	info = gov(info, child, entry);
@@ -36,7 +37,7 @@ const chainGov = (prev, next) => (info, child, entry) => {
 		}
 	}
 
-	return [gov, info];
+	return {a: gov, b: info};
 };
 
 const andGov = (prev, next) => (info, child, entry) => {
@@ -44,7 +45,8 @@ const andGov = (prev, next) => (info, child, entry) => {
 	if (info === defaultGovernor) {
 		parentInfo = info;
 	} else {
-		[info, parentInfo] = info;
+		parentInfo = info.b;
+		info = info.a;
 	}
 
 	info = prev(info, child, entry);
@@ -57,7 +59,7 @@ const andGov = (prev, next) => (info, child, entry) => {
 		return 0;
 	}
 
-	return [info, parentInfo];
+	return {a: info, b: parentInfo};
 };
 
 const getPath = (obs, path, off) => {
