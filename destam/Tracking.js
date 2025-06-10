@@ -349,13 +349,19 @@ const Tracker = createClass(observer => {
 				}
 			},
 			remove_: (reg, dummy) => {
-				if (this.isExternal_) {
+				if ((this.isExternal_ && ignore(this.externalArg_))
+						|| trackedChanges.get(reg) === false) {
 					unrefDummy(dummy);
+					trackedChanges.set(reg, false);
+
+					// the remote removed the object. Remove any deltas for it
+					for (const link of changes.keys()) {
+						if (link.reg_ === reg) changes.delete(link);
+					}
 				} else {
 					dummies.push(dummy);
+					trackedChanges.set(reg, true);
 				}
-
-				trackedChanges.set(reg, true);
 			},
 			commit_: (commit, args) => {
 				if (ignore(args)) {
