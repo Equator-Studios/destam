@@ -21,26 +21,28 @@ const trackers = async (func, n) => {
 		const network = networks[0];
 		const otherNetwork = networks[i];
 
-		let a = {}, b = {};
-
+		const a = {}, b = {};
 		digests.push(
 			network.digest((changes, observerRefs) => {
 				const decoded = clone(changes, {observerRefs, observerNetwork: otherNetwork});
 
 				otherNetwork.apply(decoded, b);
+				return changes.length > 0;
 			}, null, arg => arg === a),
 			otherNetwork.digest((changes, observerRefs) => {
 				const decoded = clone(changes, {observerRefs, observerNetwork: network});
 
 				network.apply(decoded, a);
+				return changes.length > 0;
 			}, null, arg => arg === b),
 		);
 	}
 
 	await func(objects, digests.map(d => d.flush));
-	await digests[1].flush();
-	await digests[0].flush();
-	await Promise.all(digests.map(d => d.flush()));
+
+	while (true) {
+		if ((await Promise.all(digests.map(d => d.flush()))).indexOf(true) === -1) break;
+	}
 
 	for (let i = 1; i < n; i++) {
 		expect(objects[0]).to.deep.equal(objects[i]);
