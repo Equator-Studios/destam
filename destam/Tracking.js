@@ -368,7 +368,7 @@ const Tracker = createClass(observer => {
 					return;
 				}
 
-				for (let delta of commit) {
+				for (const delta of commit) {
 					const link = delta.network_.link_;
 					if (!trackingReg(trackedChanges, link.reg_)) {
 						continue;
@@ -402,22 +402,19 @@ const Tracker = createClass(observer => {
 					} else if (isInstance(prev, Delete)) {
 						if (isEqual(delta.value, prev.prev)) {
 							changes.delete(link);
-							delta = 0;
 						} else {
 							const mod = Modify(prev.prev, delta.value, delta.ref);
 							mod.id = prev.id;
 							mod.time = delta.time;
 							changes.set(link, mod);
-							delta = mod;
 						}
 					} else if (isInstance(delta, Delete)) {
 						if (isInstance(prev, Insert)) {
 							changes.delete(link);
-							delta = 0;
 		 				} else {
-		 					delta = cloneEvent(delta, delta.prev);
-		 					delta.prev = prev.prev;
-		 					changes.set(link, delta);
+		 					const cloned = cloneEvent(delta, delta.prev);
+		 					cloned.prev = prev.prev;
+		 					changes.set(link, cloned);
 		 				}
 					} else {
 	 					prev = cloneEvent(prev, prev.prev);
@@ -425,9 +422,8 @@ const Tracker = createClass(observer => {
 	 					prev.time = delta.time;
 						if (isInstance(prev, Modify) && isEqual(prev.prev, prev.value)) {
 							changes.delete(link);
-							delta = 0;
 						} else {
-							changes.set(link, delta = prev);
+							changes.set(link, prev);
 						}
 					}
 				}
