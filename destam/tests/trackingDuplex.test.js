@@ -8,71 +8,50 @@ import createNetwork from '../Tracking.js';
 
 import { clone } from './clone.js';
 
+const trackers = async (func, n) => {
+	const objects = [OObject()];
+	for (let i = 1; i < n; i++) {
+		objects.push(clone(objects[0]));
+	}
+
+	const networks = objects.map(obj => createNetwork(obj.observer));
+
+	const digests = [];
+	for (let i = 1; i < n; i++) {
+		const network = networks[0];
+		const otherNetwork = networks[i];
+
+		let a = {}, b = {};
+
+		digests.push(
+			network.digest((changes, observerRefs) => {
+				const decoded = clone(changes, {observerRefs, observerNetwork: otherNetwork});
+
+				otherNetwork.apply(decoded, b);
+			}, null, arg => arg === a),
+			otherNetwork.digest((changes, observerRefs) => {
+				const decoded = clone(changes, {observerRefs, observerNetwork: network});
+
+				network.apply(decoded, a);
+			}, null, arg => arg === b),
+		);
+	}
+
+	await func(objects[0], objects[1], digests[0].flush, digests[1].flush);
+	await digests[1].flush();
+	await digests[0].flush();
+	await Promise.all(digests.map(d => d.flush()));
+
+	for (let i = 1; i < n; i++) {
+		expect(objects[0]).to.deep.equal(objects[i]);
+	}
+
+	for (const net of networks) net.remove();
+}
+
 [
-	(name, func) => test('tracking duplex: ' + name, async () => {
-		let object = OObject();
-		let object2 = clone(object);
-
-		const network = createNetwork(object.observer)
-		const network2 = createNetwork(object2.observer);
-
-		const packetizer = network.digest((changes, observerRefs) => {
-			const decoded = clone(changes, {observerRefs, observerNetwork: network2});
-
-			network2.apply(decoded, network2);
-		}, null, arg => arg === network);
-
-		const packetizer2 = network2.digest((changes, observerRefs) => {
-			const decoded = clone(changes, {observerRefs, observerNetwork: network});
-
-			network.apply(decoded, network);
-		}, null, arg => arg === network2);
-
-		await func(object, object2, packetizer.flush, packetizer2.flush);
-		await packetizer.flush();
-		await packetizer2.flush();
-		expect(object).to.deep.equal(object2);
-
-		network.remove();
-		network2.remove();
-	}),
-	(name, func) => test('tracking triplex: ' + name, async () => {
-		let object = OObject();
-		let object2 = clone(object);
-		let object3 = clone(object);
-
-		const network = createNetwork(object.observer)
-		const network2 = createNetwork(object2.observer);
-		const network3 = createNetwork(object3.observer);
-
-		const packetizer = network.digest((changes, observerRefs) => {
-			const decoded = clone(changes, {observerRefs, observerNetwork: network2});
-
-			network2.apply(decoded, network2);
-		}, 0, arg => arg === network);
-
-		const packetizer2 = network2.digest((changes, observerRefs) => {
-			const decoded = clone(changes, {observerRefs, observerNetwork: network});
-
-			network.apply(decoded, network);
-		}, 0, arg => arg === network2);
-
-		const packetizer3 = network.digest((changes, observerRefs) => {
-			const decoded = clone(changes, {observerRefs, observerNetwork: network3});
-
-			network3.apply(decoded);
-		}, 0);
-
-		await func(object, object2, packetizer.flush, packetizer2.flush);
-		await packetizer.flush();
-		await packetizer2.flush();
-		await packetizer3.flush();
-		expect(object).to.deep.equal(object2);
-
-		network.remove();
-		network2.remove();
-		network3.remove();
-	}),
+	(name, func) => test('tracking duplex: ' + name, async () => trackers(func, 2)),
+	(name, func) => test('tracking triplex: ' + name, async () => trackers(func, 3)),
 ].forEach(test => {
 	test('basic', (one, two) => {
 		one.a = 'a';
