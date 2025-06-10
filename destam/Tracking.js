@@ -349,8 +349,9 @@ const Tracker = createClass(observer => {
 				}
 			},
 			remove_: (reg, dummy) => {
-				if ((this.isExternal_ && ignore(this.externalArg_))
-						|| trackedChanges.get(reg) === false) {
+				if (trackedChanges.get(reg) === false) {
+					unrefDummy(dummy);
+				} else if (this.isExternal_ && ignore(this.externalArg_)) {
 					unrefDummy(dummy);
 					trackedChanges.set(reg, false);
 
