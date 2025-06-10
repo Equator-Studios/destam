@@ -37,7 +37,7 @@ const trackers = async (func, n) => {
 		);
 	}
 
-	await func(objects[0], objects[1], digests[0].flush, digests[1].flush);
+	await func(objects, digests.map(d => d.flush));
 	await digests[1].flush();
 	await digests[0].flush();
 	await Promise.all(digests.map(d => d.flush()));
@@ -53,24 +53,24 @@ const trackers = async (func, n) => {
 	(name, func) => test('tracking duplex: ' + name, async () => trackers(func, 2)),
 	(name, func) => test('tracking triplex: ' + name, async () => trackers(func, 3)),
 ].forEach(test => {
-	test('basic', (one, two) => {
+	test('basic', ([one, two]) => {
 		one.a = 'a';
 		two.b = 'b';
 	});
 
-	test('edit other', async (one, two, flush) => {
+	test('edit other', async ([one, two], [flush]) => {
 		one.obj = OObject();
 		await flush();
 		two.obj.prop = "prop";
 	});
 
-	test('edit other inverse', async (two, one, _, flush) => {
+	test('edit other inverse', async ([two, one], [_, flush]) => {
 		one.obj = OObject();
 		await flush();
 		two.obj.prop = "prop";
 	});
 
-	test('delete and edit other', async (one, two, flush, flush2) => {
+	test('delete and edit other', async ([one, two], [flush, flush2]) => {
 		one.obj = OObject();
 		await flush();
 		await flush2();
@@ -81,7 +81,7 @@ const trackers = async (func, n) => {
 		two.obj = orig;
 	});
 
-	test('delete and edit other invert', async (two, one, flush2, flush) => {
+	test('delete and edit other invert', async ([two, one], [flush2, flush]) => {
 		one.obj = OObject();
 		await flush();
 		await flush2();
@@ -92,7 +92,7 @@ const trackers = async (func, n) => {
 		two.obj = orig;
 	});
 
-	test('replace and edit other', async (one, two, flush, flush2) => {
+	test('replace and edit other', async ([one, two], [flush, flush2]) => {
 		one.obj = OObject();
 		await flush();
 		await flush2();
@@ -103,7 +103,7 @@ const trackers = async (func, n) => {
 		two.obj = orig;
 	});
 
-	test('replace and edit other invert', async (two, one, flush2, flush) => {
+	test('replace and edit other invert', async ([two, one], [flush2, flush]) => {
 		one.obj = OObject();
 		await flush();
 		await flush2();
@@ -114,7 +114,7 @@ const trackers = async (func, n) => {
 		two.obj = orig;
 	});
 
-	test('replace with reference and edit other', async (one, two, flush, flush2) => {
+	test('replace with reference and edit other', async ([one, two], [flush, flush2]) => {
 		one.obj = one.obj2 = OObject();
 		await flush();
 		await flush2();
@@ -125,7 +125,7 @@ const trackers = async (func, n) => {
 		two.obj = orig;
 	});
 
-	test('replace with reference and edit other', async (two, one, flush2, flush) => {
+	test('replace with reference and edit other', async ([two, one], [flush2, flush]) => {
 		one.obj = one.obj2 = OObject();
 		await flush();
 		await flush2();
@@ -136,7 +136,7 @@ const trackers = async (func, n) => {
 		two.obj = orig;
 	});
 
-	test('increment number', async (one, two, flush, flush2) => {
+	test('increment number', async ([one, two], [flush, flush2]) => {
 		one.num = 0;
 
 		for (let i = 0; i < 5; i++) {
@@ -150,7 +150,7 @@ const trackers = async (func, n) => {
 		expect(two.num).to.equal(10);
 	});
 
-	test('object replacement', async (one, two, flush, flush2) => {
+	test('object replacement', async ([one, two], [flush, flush2]) => {
 		two.observer.watch(delta => {
 			if (delta.value.value) return;
 
