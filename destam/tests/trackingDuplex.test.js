@@ -38,7 +38,7 @@ const trackers = async (func, n) => {
 		);
 	}
 
-	await func(objects, digests.map(d => d.flush));
+	await func(objects, networks.map(d => () => d.flush()));
 
 	while (true) {
 		if ((await Promise.all(digests.map(d => d.flush()))).indexOf(true) === -1) break;
@@ -54,6 +54,7 @@ const trackers = async (func, n) => {
 [
 	(name, func) => test('tracking duplex: ' + name, async () => trackers(func, 2)),
 	(name, func) => test('tracking triplex: ' + name, async () => trackers(func, 3)),
+	(name, func) => test('tracking 4: ' + name, async () => trackers(func, 4)),
 ].forEach(test => {
 	test('basic', ([one, two]) => {
 		one.a = 'a';
@@ -75,17 +76,92 @@ const trackers = async (func, n) => {
 	test('delete and edit other', async ([one, two], [flush, flush2]) => {
 		one.obj = OObject();
 		await flush();
+		let orig = two.obj;
+		delete one.obj;
+		await flush();
+		orig.prop = "prop";
+		two.obj = orig;
+	});
+
+	test('delete and edit other 1.5', async ([one, two], [flush, flush2]) => {
+		one.obj = OObject();
+		await flush();
+		let orig = two.obj;
+		orig.prop = "prop";
+		delete one.obj;
+		await flush();
+		two.obj = orig;
+	});
+
+	test('delete and edit other 2', async ([one, two], [flush, flush2]) => {
+		one.obj = OObject();
+		await flush();
 		await flush2();
 		let orig = two.obj;
 		delete one.obj;
 		await flush();
 		orig.prop = "prop";
+		two.obj = orig;
+	});
+
+	test('delete and edit other 2.5', async ([one, two], [flush, flush2]) => {
+		one.obj = OObject();
+		await flush();
+		await flush2();
+		let orig = two.obj;
+		orig.prop = "prop";
+		delete one.obj;
+		await flush();
+		two.obj = orig;
+	});
+
+	test('delete and edit other 3', async ([one, two], [flush, flush2]) => {
+		one.obj = OObject();
+		await flush();
+		await flush2();
+		let orig = two.obj;
+		delete one.obj;
+		await flush();
+		await flush2();
+		orig.prop = "prop";
+		two.obj = orig;
+	});
+
+	test('delete and edit other 3.5', async ([one, two], [flush, flush2]) => {
+		one.obj = OObject();
+		await flush();
+		await flush2();
+		let orig = two.obj;
+		orig.prop = "prop";
+		delete one.obj;
+		await flush();
+		await flush2();
 		two.obj = orig;
 	});
 
 	test('delete and edit other invert', async ([two, one], [flush2, flush]) => {
 		one.obj = OObject();
 		await flush();
+		let orig = two.obj;
+		delete one.obj;
+		await flush();
+		orig.prop = "prop";
+		two.obj = orig;
+	});
+
+	test('delete and edit other invert 1.5', async ([two, one], [flush2, flush]) => {
+		one.obj = OObject();
+		await flush();
+		let orig = two.obj;
+		orig.prop = "prop";
+		delete one.obj;
+		await flush();
+		two.obj = orig;
+	});
+
+	test('delete and edit other invert 2', async ([two, one], [flush2, flush]) => {
+		one.obj = OObject();
+		await flush();
 		await flush2();
 		let orig = two.obj;
 		delete one.obj;
@@ -94,13 +170,70 @@ const trackers = async (func, n) => {
 		two.obj = orig;
 	});
 
+	test('delete and edit other invert 2.5', async ([two, one], [flush2, flush]) => {
+		one.obj = OObject();
+		await flush();
+		await flush2();
+		let orig = two.obj;
+		orig.prop = "prop";
+		delete one.obj;
+		await flush();
+		two.obj = orig;
+	});
+
+	test('delete and edit other invert 3', async ([two, one], [flush2, flush]) => {
+		one.obj = OObject();
+		await flush();
+		await flush2();
+		let orig = two.obj;
+		delete one.obj;
+		await flush();
+		await flush2();
+		orig.prop = "prop";
+		two.obj = orig;
+	});
+
+	test('delete and edit other invert 3.5', async ([two, one], [flush2, flush]) => {
+		one.obj = OObject();
+		await flush();
+		await flush2();
+		let orig = two.obj;
+		orig.prop = "prop";
+		delete one.obj;
+		await flush();
+		await flush2();
+		two.obj = orig;
+	});
+
 	test('replace and edit other', async ([one, two], [flush, flush2]) => {
+		one.obj = OObject();
+		await flush();
+		let orig = two.obj;
+		one.obj = OObject();
+		await flush();
+		orig.prop = "prop";
+		two.obj = orig;
+	});
+
+	test('replace and edit other 2', async ([one, two], [flush, flush2]) => {
 		one.obj = OObject();
 		await flush();
 		await flush2();
 		let orig = two.obj;
 		one.obj = OObject();
 		await flush();
+		orig.prop = "prop";
+		two.obj = orig;
+	});
+
+	test('replace and edit other 3', async ([one, two], [flush, flush2]) => {
+		one.obj = OObject();
+		await flush();
+		await flush2();
+		let orig = two.obj;
+		one.obj = OObject();
+		await flush();
+		await flush2();
 		orig.prop = "prop";
 		two.obj = orig;
 	});
@@ -108,10 +241,32 @@ const trackers = async (func, n) => {
 	test('replace and edit other invert', async ([two, one], [flush2, flush]) => {
 		one.obj = OObject();
 		await flush();
+		let orig = two.obj;
+		one.obj = OObject();
+		await flush();
+		orig.prop = "prop";
+		two.obj = orig;
+	});
+
+	test('replace and edit other invert 2', async ([two, one], [flush2, flush]) => {
+		one.obj = OObject();
+		await flush();
 		await flush2();
 		let orig = two.obj;
 		one.obj = OObject();
 		await flush();
+		orig.prop = "prop";
+		two.obj = orig;
+	});
+
+	test('replace and edit other invert 3', async ([two, one], [flush2, flush]) => {
+		one.obj = OObject();
+		await flush();
+		await flush2();
+		let orig = two.obj;
+		one.obj = OObject();
+		await flush();
+		await flush2();
 		orig.prop = "prop";
 		two.obj = orig;
 	});
@@ -168,4 +323,36 @@ const trackers = async (func, n) => {
 
 		one.one.prop = "prop";
 	});
+
+	test('big busy array', async (objects, flush) => {
+		objects[0].array = OArray();
+		await flush[0]();
+
+		for (let i = 0; i < 25; i++) {
+			const obj = objects[Math.floor(Math.random() * objects.length)];
+			obj.array.splice(Math.floor(obj.array.length * Math.random()), 0, Math.random());
+
+			await flush[Math.floor(Math.random() * flush.length)]();
+		}
+	});
+
+	// TODO: No conflict resolution yet
+	/*
+	test('big busy array and delete', async (objects, flush) => {
+		objects[0].array = OArray();
+		await flush[0]();
+
+		for (let i = 0; i < 100; i++) {
+			const obj = objects[Math.floor(Math.random() * objects.length)];
+
+			if (Math.random() < .2) {
+				obj.array.splice(Math.floor(obj.array.length * Math.random()), 1);
+			} else {
+				obj.array.splice(Math.floor(obj.array.length * Math.random()), 0, Math.random());
+			}
+
+			await flush[Math.floor(Math.random() * flush.length)]();
+		}
+	});
+	*/
 });
