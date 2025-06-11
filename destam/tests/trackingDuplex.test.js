@@ -8,7 +8,7 @@ import createNetwork from '../Tracking.js';
 
 import { clone } from './clone.js';
 
-const trackers = async (func, n) => {
+const trackers = async (func, n, invert) => {
 	const objects = [OObject()];
 	for (let i = 1; i < n; i++) {
 		objects.push(clone(objects[0]));
@@ -38,7 +38,17 @@ const trackers = async (func, n) => {
 		);
 	}
 
-	await func(objects, networks.map(d => () => d.flush()));
+	{
+		let objs = objects;
+		let flushs = networks.map(d => () => d.flush());
+
+		if (invert) {
+			objs = [objs[1], objs[0], ...objs.slice(2)];
+			flushs = [flushs[1], flushs[0], ...flushs.slice(2)];
+		}
+
+		await func(objs, flushs);
+	}
 
 	while (true) {
 		if ((await Promise.all(digests.map(d => d.flush()))).indexOf(true) === -1) break;
@@ -49,12 +59,15 @@ const trackers = async (func, n) => {
 	}
 
 	for (const net of networks) net.remove();
-}
+};
 
 [
-	(name, func) => test('tracking duplex: ' + name, async () => trackers(func, 2)),
-	(name, func) => test('tracking triplex: ' + name, async () => trackers(func, 3)),
-	(name, func) => test('tracking 4: ' + name, async () => trackers(func, 4)),
+	(name, func) => test('tracking duplex: ' + name, async () => trackers(func, 2, false)),
+	(name, func) => test('tracking duplex inverted: ' + name, async () => trackers(func, 2, true)),
+	(name, func) => test('tracking triplex: ' + name, async () => trackers(func, 3, false)),
+	(name, func) => test('tracking triplex inverted: ' + name, async () => trackers(func, 3, true)),
+	(name, func) => test('tracking 4: ' + name, async () => trackers(func, 4, false)),
+	(name, func) => test('tracking 4 inverted: ' + name, async () => trackers(func, 4, true)),
 ].forEach(test => {
 	test('basic', ([one, two]) => {
 		one.a = 'a';
@@ -93,6 +106,19 @@ const trackers = async (func, n) => {
 		two.obj = orig;
 	});
 
+	test('delete and edit other 1.5 add back', async ([one, two], [flush, flush2]) => {
+		one.obj = OObject();
+		await flush();
+		let orig = two.obj;
+		orig.prop = "prop";
+		let putBack = one.obj;
+		delete one.obj;
+		await flush();
+		one.obj = putBack;
+		await flush();
+		two.obj = orig;
+	});
+
 	test('delete and edit other 2', async ([one, two], [flush, flush2]) => {
 		one.obj = OObject();
 		await flush();
@@ -111,6 +137,20 @@ const trackers = async (func, n) => {
 		let orig = two.obj;
 		orig.prop = "prop";
 		delete one.obj;
+		await flush();
+		two.obj = orig;
+	});
+
+	test('delete and edit other 2.5 add back', async ([one, two], [flush, flush2]) => {
+		one.obj = OObject();
+		await flush();
+		await flush2();
+		let orig = two.obj;
+		orig.prop = "prop";
+		let putBack = one.obj;
+		delete one.obj;
+		await flush();
+		one.obj = putBack;
 		await flush();
 		two.obj = orig;
 	});
@@ -139,67 +179,17 @@ const trackers = async (func, n) => {
 		two.obj = orig;
 	});
 
-	test('delete and edit other invert', async ([two, one], [flush2, flush]) => {
-		one.obj = OObject();
-		await flush();
-		let orig = two.obj;
-		delete one.obj;
-		await flush();
-		orig.prop = "prop";
-		two.obj = orig;
-	});
-
-	test('delete and edit other invert 1.5', async ([two, one], [flush2, flush]) => {
-		one.obj = OObject();
-		await flush();
-		let orig = two.obj;
-		orig.prop = "prop";
-		delete one.obj;
-		await flush();
-		two.obj = orig;
-	});
-
-	test('delete and edit other invert 2', async ([two, one], [flush2, flush]) => {
-		one.obj = OObject();
-		await flush();
-		await flush2();
-		let orig = two.obj;
-		delete one.obj;
-		await flush();
-		orig.prop = "prop";
-		two.obj = orig;
-	});
-
-	test('delete and edit other invert 2.5', async ([two, one], [flush2, flush]) => {
+	test('delete and edit other 3.5 add back', async ([one, two], [flush, flush2]) => {
 		one.obj = OObject();
 		await flush();
 		await flush2();
 		let orig = two.obj;
 		orig.prop = "prop";
-		delete one.obj;
-		await flush();
-		two.obj = orig;
-	});
-
-	test('delete and edit other invert 3', async ([two, one], [flush2, flush]) => {
-		one.obj = OObject();
-		await flush();
-		await flush2();
-		let orig = two.obj;
+		let putBack = one.obj;
 		delete one.obj;
 		await flush();
 		await flush2();
-		orig.prop = "prop";
-		two.obj = orig;
-	});
-
-	test('delete and edit other invert 3.5', async ([two, one], [flush2, flush]) => {
-		one.obj = OObject();
-		await flush();
-		await flush2();
-		let orig = two.obj;
-		orig.prop = "prop";
-		delete one.obj;
+		one.obj = putBack;
 		await flush();
 		await flush2();
 		two.obj = orig;
@@ -238,38 +228,39 @@ const trackers = async (func, n) => {
 		two.obj = orig;
 	});
 
-	test('replace and edit other invert', async ([two, one], [flush2, flush]) => {
+	test('replace and edit other 1.5', async ([one, two], [flush, flush2]) => {
 		one.obj = OObject();
 		await flush();
 		let orig = two.obj;
+		orig.prop = "prop";
 		one.obj = OObject();
 		await flush();
-		orig.prop = "prop";
 		two.obj = orig;
 	});
 
-	test('replace and edit other invert 2', async ([two, one], [flush2, flush]) => {
+	test('replace and edit other 2.5', async ([one, two], [flush, flush2]) => {
 		one.obj = OObject();
 		await flush();
 		await flush2();
 		let orig = two.obj;
+		orig.prop = "prop";
 		one.obj = OObject();
 		await flush();
-		orig.prop = "prop";
 		two.obj = orig;
 	});
 
-	test('replace and edit other invert 3', async ([two, one], [flush2, flush]) => {
+	test('replace and edit other 3.5', async ([one, two], [flush, flush2]) => {
 		one.obj = OObject();
 		await flush();
 		await flush2();
 		let orig = two.obj;
+		orig.prop = "prop";
 		one.obj = OObject();
 		await flush();
 		await flush2();
-		orig.prop = "prop";
 		two.obj = orig;
 	});
+
 
 	test('replace with reference and edit other', async ([one, two], [flush, flush2]) => {
 		one.obj = one.obj2 = OObject();
@@ -327,6 +318,7 @@ const trackers = async (func, n) => {
 	test('big busy array', async (objects, flush) => {
 		objects[0].array = OArray();
 		await flush[0]();
+		await flush[1]();
 
 		for (let i = 0; i < 25; i++) {
 			const obj = objects[Math.floor(Math.random() * objects.length)];
