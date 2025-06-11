@@ -567,3 +567,35 @@ test("conflicting ids omap", () => {
 	object.set(id, thing);
 	network.remove();
 });
+
+test("network digest timeout", async () => {
+	const obj = OObject();
+	const net = createNetwork(obj.observer);
+
+	let called = false;
+	net.digest((changes) => {
+		called = true;
+	}, 0);
+
+	obj.one = 1;
+	obj.two = 2;
+
+	await new Promise(ok => setTimeout(ok, 10));
+	expect(called).to.equal(true);
+});
+
+test("network digest timeout flush anyway", async () => {
+	const obj = OObject();
+	const net = createNetwork(obj.observer);
+
+	let called = false;
+	net.digest((changes) => {
+		called = true;
+	}, 0);
+
+	obj.one = 1;
+	obj.two = 2;
+	await net.flush();
+
+	expect(called).to.equal(true);
+});
