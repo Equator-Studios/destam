@@ -166,6 +166,7 @@ OArray.apply = (reg, value, link, events) => {
 };
 
 const unrefDummy = (dummy) => {
+	assert(dummy.refs_ > 0);
 	dummy.refs_--;
 	if (!dummy.refs_) {
 		dummy.regPrev_.regNext_ = dummy.regNext_;
