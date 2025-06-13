@@ -1352,3 +1352,39 @@ test("oobject switcher", () => {
 
 	expect(events).to.deep.equal([['a', 'path'], [], ['b', 'path'], [], [], ['d'], ['d', 'path']]);
 });
+
+test("oobject ignore switcher", () => {
+	const id = Observer.mutable();
+	const state = OObject();
+	const stateSyncObs = id.map(id => state.observer.ignore(id)).unwrap();
+
+	const events = [];
+	stateSyncObs.watch(delta => {
+		if (!delta.network_) {
+			events.push('');
+		} else {
+			events.push(delta.path[0]);
+		}
+	});
+
+	state.one = 1;
+	state.two = 2;
+	state.three = 3;
+
+	id.set('one');
+	state.one++;
+	state.two++;
+	state.three++;
+
+	id.set('two');
+	state.one++;
+	state.two++;
+	state.three++;
+
+	id.set('three');
+	state.one++;
+	state.two++;
+	state.three++;
+
+	expect(events).to.deep.equal(['one', 'two', 'three', '', 'two', 'three', '', 'one', 'three', '', 'one', 'two']);
+});
