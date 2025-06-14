@@ -371,6 +371,10 @@ const Tracker = createClass(observer => {
 				}
 
 				for (const delta of commit) {
+					if (!delta.network_) {
+						continue;
+					}
+
 					const link = delta.network_.link_;
 					if (!trackingReg(trackedChanges, link.reg_)) {
 						continue;
