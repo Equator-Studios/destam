@@ -41,26 +41,26 @@ import Observer from '../Observer.js';
 			}
 		});
 
-		state.one = 1;
-		state.two = 2;
-		state.three = 3;
+		state.a = 1;
+		state.b = 2;
+		state.c = 3;
 
-		id.set('one');
-		state.one++;
-		state.two++;
-		state.three++;
+		id.set('a');
+		state.a++;
+		state.b++;
+		state.c++;
 
-		id.set('two');
-		state.one++;
-		state.two++;
-		state.three++;
+		id.set('b');
+		state.a++;
+		state.b++;
+		state.c++;
 
-		id.set('three');
-		state.one++;
-		state.two++;
-		state.three++;
+		id.set('c');
+		state.a++;
+		state.b++;
+		state.c++;
 
-		expect(events).to.deep.equal(['', 'one', '', 'two', '', 'three']);
+		expect(events).to.deep.equal(['', 'a', '', 'b', '', 'c']);
 	});
 
 	test("ignore switcher", (id, state) => {
@@ -75,26 +75,26 @@ import Observer from '../Observer.js';
 			}
 		});
 
-		state.one = 1;
-		state.two = 2;
-		state.three = 3;
+		state.a = 1;
+		state.b = 2;
+		state.c = 3;
 
-		id.set('one');
-		state.one++;
-		state.two++;
-		state.three++;
+		id.set('a');
+		state.a++;
+		state.b++;
+		state.c++;
 
-		id.set('two');
-		state.one++;
-		state.two++;
-		state.three++;
+		id.set('b');
+		state.a++;
+		state.b++;
+		state.c++;
 
-		id.set('three');
-		state.one++;
-		state.two++;
-		state.three++;
+		id.set('c');
+		state.a++;
+		state.b++;
+		state.c++;
 
-		expect(events).to.deep.equal(['one', 'two', 'three', '', 'two', 'three', '', 'one', 'three', '', 'one', 'two']);
+		expect(events).to.deep.equal(['a', 'b', 'c', '', 'b', 'c', '', 'a', 'c', '', 'a', 'b']);
 	});
 
 	test("switcher and path", (sw, obj) => {
