@@ -91,12 +91,4 @@ tree.observer.skip().path('state').watch(() => {
 
 In the example, we use the `skip` governer to skip a decision and basically look at everything because we have the array. Then once we are looking at individual items in the array, we will then invoke the `tree` governor to look at specifically the `state`.
 
-## List of governors
-- path
-- shallow
-- tree
-- skip
-- path
-- ignore
-
-Documentation for these governers can be found within the source code.
+See [governors.md](governors.md) for more information.
