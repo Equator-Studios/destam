@@ -38,12 +38,12 @@ test("governor identities skip", createTest(
 	o => o.skip(2).shallow()
 ));
 
-test("governor skip infinity", createTest(
+test("governor identities skip infinity", createTest(
 	o => o.skip(Infinity),
 	o => o,
 ));
 
-test("governor shallow infinity", createTest(
+test("governor identities shallow infinity", createTest(
 	o => o.shallow(Infinity),
 	o => o,
 ));
@@ -51,6 +51,11 @@ test("governor shallow infinity", createTest(
 test("governor identities skip and shallow", createTest(
 	o => o.skip().shallow(),
 	o => o.shallow(1)
+));
+
+test("governor identities shallow", createTest(
+	o => o.shallow(),
+	o => Observer.immutable(),
 ));
 
 test("governor identities multi path", createTest(
