@@ -58,7 +58,7 @@ observer.path('nestedProperties').ignore(`prop1`)
 ```
 ### Understanding the governor pointer
 In order to understand this basic example, you have to understand what each of the
-governors are trying to reference. If you take something like `path()`, the
+governors are trying to target. If you take something like `path()`, the
 property of the path is dependent on what object it targets. Each governor as a
 result will target something. The cool thing about this is that a governor may
 have multiple targets. This is called a [broken chain](#broken-chains) and has
@@ -87,7 +87,7 @@ observer.path('nestedProperties').ignore(`prop1`);
 ```
 Understanding that the first of the composed governors will advance the governor
 pointer to start referencing the `nestedProperties` object instead of the base
-object. Since `ignore()` does not advance the pointer, it will still reference
+object. Since `ignore()` does not advance the pointer, it will still target
 `nestedProperties` with `.get()` but will now ignore any changes to `prop1` to
 any listeners attached to this observer.
 
@@ -114,7 +114,7 @@ we then call `.path()` later to single out the property we care about. The impor
 thing here to conceptualize is that we have to create a deeper `.shallow()` call with the second example is that we are calling that before `.path()` which advances the pointer.
 
 Note that since `.ignore()` does not advance the pointer, .get() will work and will
-just reference the base object.
+just target the base object.
 ```js
 observer.shallow().get() === state;
 ```
@@ -215,6 +215,6 @@ observer.path('array').tree('children').path('name')
 ```
 `.tree()` takes a parameter of the property that it can look more deeply into. This is typically `children` going by programming conventions.
 
-Note how `tree()` will now have multiple references all referring to these
+Note how `tree()` will now have multiple targets all referring to these
 `{children: [], name: String }` nodes. That means `.get()` will break because of
-a [broken chain](#broken-chains) but `.path()` can be composed on top of that to instead reference the `name` of each node instead of the nodes themselves.
+a [broken chain](#broken-chains) but `.path()` can be composed on top of that to instead target the `name` of each node instead of the nodes themselves.
