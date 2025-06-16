@@ -45,7 +45,7 @@ observer.path('nestedProperties');
 ```
 
 ### Observer.prototype.ignore
-`ignore()` is the opposite of `path()`. It will take a property value just like `path()` but listen to all other properties but the one specified.
+`ignore()` is the opposite of `path()`. It will take a property value just like `path()` except it's like a blacklist. It listen to all other properties but the one specified.
 ```js
 // will react to all changes throughout the tree except for the `property` property and all its descendants.
 observer.ignore(`property`)
@@ -79,9 +79,14 @@ On the contrary, `ignore()` will not advance the governor pointer.
 observer.ignore(`property`).get() === state;
 ```
 Here, the observer is still referencing the base `state` object, but the ignore
-is essentially acting as a filter for events that listeners may attach later.
+is essentially acting as a filter for events. This can be useful to masking
+non-important information.
 
- Let's consider the initial example:
+A common example of why you would want to ignore a value is for distributed user
+states in collaborative platforms. The user may send events to the server, but
+the server doesn't want to reflect those events back to the user.
+
+Let's consider the initial example:
 ```js
 observer.path('nestedProperties').ignore(`prop1`);
 ```
@@ -113,7 +118,7 @@ that will respond to any property changes of the `state` for any property. Howev
 we then call `.path()` later to single out the property we care about. The important
 thing here to conceptualize is that we have to create a deeper `.shallow()` call with the second example is that we are calling that before `.path()` which advances the pointer.
 
-Note that since `.ignore()` does not advance the pointer, .get() will work and will
+Note that since `.shallow()` does not advance the pointer, .get() will work and will
 just target the base object.
 ```js
 observer.shallow().get() === state;
