@@ -180,7 +180,7 @@ Here, we try to repair the chain right after `.skip()`. The `.path()` won't func
 Note that this will not drop performance. `.map()` basically is transparent to governors. Any governors that are defined after the map() will effect what .map() looks at. So the `.path('name')` will look past the .map() and make it only fire for `name` properties.
 
 ## `.tree()`
-`.tree()` is one of those wildcard observers that might seem out of place, but can really demonstrate the power of governors in destam. `.tree()` is meant to track.
+`.tree()` is one of those wildcard observers that might seem out of place, but can really demonstrate the power of governors in destam. `.tree()` is meant to track data in a tree based structure.
 
 Let's change our state up a little bit. Let's flesh out the `array` in our state
 so that it actually has some interesting nesting going on:
