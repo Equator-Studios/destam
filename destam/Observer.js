@@ -245,7 +245,7 @@ Object.assign(Observer.prototype, {
 				cur.hasCache_ = 1;
 
 				const value = self.forward_();
-				if (!cur.hascache_ || !isEqual(value, cur.cache_)) {
+				if (!hadCache || !isEqual(value, cur.cache_)) {
 					cur.cache_ = value;
 					
 					listener(commit, args);
