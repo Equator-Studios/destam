@@ -241,11 +241,13 @@ Object.assign(Observer.prototype, {
 
 			const unregister = self.parent_.register_((commit, args) => {
 				self.current_ = cur;
+				const hadCache = cur.hasCache_;
+				cur.hasCache_ = 1;
 
 				const value = self.forward_();
-				if (!cur.hasCache_ || !isEqual(value, cur.cache_)) {
+				if (!cur.hascache_ || !isEqual(value, cur.cache_)) {
 					cur.cache_ = value;
-					cur.hasCache_ = 1;
+					
 					listener(commit, args);
 				}
 			}, governor);
