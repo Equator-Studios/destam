@@ -1517,7 +1517,7 @@ test("recursive get in map call freq", () => {
 	expect(freq).to.equal(5);
 });
 
-test.only("recursive get in map call freq 2", () => {
+test("recursive get in map call freq 2", () => {
 	const val = Observer.mutable(0);
 
 	let freq = 0;
@@ -1538,7 +1538,7 @@ test.only("recursive get in map call freq 2", () => {
 	expect(freq).to.equal(4);
 });
 
-test.only("recursive get in map call freq 3", () => {
+test("recursive get in map call freq 3", () => {
 	const val = Observer.mutable(1);
 
 	let freq = 0;
@@ -1581,4 +1581,54 @@ test("recursive get in map and unwrap", () => {
 	val.set(5);
 
 	expect(vals).to.deep.equal([0, 1, 2, 5]);
+});
+
+test("recursive get in map and unwrap 2", () => {
+	const val = Observer.mutable(0);
+
+	const map = val.map(val => {
+		const prev = map.get();
+		if (prev) {
+			if (val !== 0) prev.set(val);
+			return prev;
+		} else {
+			return Observer.mutable(val);
+		}
+	});
+
+	const vals = [];
+	const unwrap = map.unwrap();
+	const listener = unwrap.watch(val => {vals.push(unwrap.get())});
+
+	val.set(1);
+	val.set(2);
+	val.set(0);
+	val.set(5);
+
+	expect(vals).to.deep.equal([1, 2, 5]);
+});
+
+test("recursive get in map and unwrap 3", () => {
+	const val = Observer.mutable(1);
+
+	const map = val.map(val => {
+		const prev = map.get();
+		if (prev) {
+			if (val !== 0) prev.set(val);
+			return prev;
+		} else {
+			return Observer.mutable(val);
+		}
+	});
+
+	const vals = [];
+	const unwrap = map.unwrap();
+	const listener = unwrap.watch(val => {vals.push(unwrap.get())});
+
+	val.set(0);
+	val.set(2);
+	val.set(0);
+	val.set(5);
+
+	expect(vals).to.deep.equal([2, 5]);
 });
