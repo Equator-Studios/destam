@@ -1475,3 +1475,110 @@ test("get after map remove", () => {
 	val.set(3);
 	expect(map.get()).to.equal(3);
 });
+
+test("recursive get in map", () => {
+	const val = Observer.mutable(0);
+
+	const map = val.map(val => {
+		if (val === 0) return map.get();
+		return val;
+	});
+
+	const vals = [];
+	const listener = map.effect(val => {vals.push(val)});
+
+	val.set(1);
+	val.set(2);
+	val.set(0);
+	val.set(5);
+
+	expect(vals).to.deep.equal([undefined, 1, 2, 5]);
+});
+
+test("recursive get in map call freq", () => {
+	const val = Observer.mutable(0);
+
+	let freq = 0;
+	const map = val.map(val => {
+		console.log(val);
+		freq++;
+		if (val === 0) return map.get();
+		return val;
+	});
+
+	const vals = [];
+	const listener = map.effect(val => {vals.push(val)});
+
+	val.set(1);
+	val.set(2);
+	val.set(0);
+	val.set(5);
+
+	expect(freq).to.equal(5);
+});
+
+test.only("recursive get in map call freq 2", () => {
+	const val = Observer.mutable(0);
+
+	let freq = 0;
+	const map = val.map(val => {
+		freq++;
+		if (val === 0) return map.get();
+		return val;
+	});
+
+	const vals = [];
+	const listener = map.watch(() => {vals.push(map.get())});
+
+	val.set(1);
+	val.set(2);
+	val.set(0);
+	val.set(5);
+
+	expect(freq).to.equal(4);
+});
+
+test.only("recursive get in map call freq 3", () => {
+	const val = Observer.mutable(1);
+
+	let freq = 0;
+	const map = val.map(val => {
+		freq++;
+		if (val === 0) return map.get();
+		return val;
+	});
+
+	const vals = [];
+	const listener = map.watch(() => {vals.push(map.get())});
+
+	val.set(0);
+	val.set(2);
+	val.set(0);
+	val.set(5);
+
+	expect(freq).to.equal(4);
+});
+
+test("recursive get in map and unwrap", () => {
+	const val = Observer.mutable(0);
+
+	const map = val.map(val => {
+		const prev = map.get();
+		if (prev) {
+			if (val !== 0) prev.set(val);
+			return prev;
+		} else {
+			return Observer.mutable(val);
+		}
+	});
+
+	const vals = [];
+	const listener = map.unwrap().effect(val => {vals.push(val)});
+
+	val.set(1);
+	val.set(2);
+	val.set(0);
+	val.set(5);
+
+	expect(vals).to.deep.equal([0, 1, 2, 5]);
+});
