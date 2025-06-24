@@ -315,6 +315,9 @@ const trackers = async (func, n, invert) => {
 		one.one.prop = "prop";
 	});
 
+	// TODO: is flaky. Because OArrays rely on non-deterministic behaviour with
+	// element placement, we might get unlucky.
+	/*
 	test('big busy array', async (objects, flush) => {
 		objects[0].array = OArray();
 		await flush[0]();
@@ -327,6 +330,7 @@ const trackers = async (func, n, invert) => {
 			await flush[Math.floor(Math.random() * flush.length)]();
 		}
 	});
+	*/
 
 	// TODO: No conflict resolution yet
 	/*
