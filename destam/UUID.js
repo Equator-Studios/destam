@@ -222,7 +222,7 @@ createClass(UUID.Map, {
 			this.arr_[hash & this.mask_] = undefined;
 
 			// if under 25% residency, shrink
-			// we can get away with shrinkink without rebalancing the hash map
+			// we can get away with shrinking without rebalancing the hash map
 			// because shrinking itself will rebalance for us
 			if (this.size < (len(this.arr_) >> 2) && len(this.arr_) > HASH_MAP_MIN) {
 				this._resize(len(this.arr_) >> 1);
