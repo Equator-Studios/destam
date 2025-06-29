@@ -22,26 +22,26 @@ test("uuid create", () => {
 	expect(id.buffer).to.not.equal(undefined);
 });
 
-test("uuid compare", () => {
+test("uuid equal", () => {
 	const id = UUID();
 	const id2 = UUID();
 	const long = UUID(16);
 
-	expect(UUID.compare(id, id)).to.equal(true);
-	expect(UUID.compare(id, id2)).to.equal(false);
-	expect(UUID.compare(id, long)).to.equal(false);
+	expect(UUID.equal(id, id)).to.equal(true);
+	expect(UUID.equal(id, id2)).to.equal(false);
+	expect(UUID.equal(id, long)).to.equal(false);
 });
 
 test("uuid hex conversions", () => {
 	let id = UUID();
 
-	expect(UUID.compare(UUID(id.toHex()), id)).to.equal(true);
+	expect(UUID.equal(UUID(id.toHex()), id)).to.equal(true);
 });
 
-test("compare with conversions", () => {
+test("equal with conversions", () => {
 	let id = UUID();
 
-	expect(UUID.compare(id.toHex(), id)).to.equal(true);
+	expect(UUID.equal(id.toHex(), id)).to.equal(true);
 });
 
 test("convert to bytes from string", () => {
@@ -126,5 +126,5 @@ test("uuid map delete custom comparator", () => {
 	const id = UUID();
 
 	map.set(id, true);
-	expect(map.delete(id, (elem, id) => UUID.compare(elem.id, id) && elem.id)).to.equal(id);
+	expect(map.delete(id, (elem, id) => UUID.equal(elem.id, id) && elem.id)).to.equal(id);
 });

@@ -80,7 +80,7 @@ const UUID = createClass((size = 4) => {
 	},
 });
 
-UUID.compare = (first, second) => {
+UUID.equal = (first, second) => {
 	if (first === second) return true;
 
 	first = UUID(first).buffer;
@@ -118,7 +118,7 @@ createClass(UUID.Map, {
 		while (true) {
 			let spot = arr[hash & mask];
 
-			if (replace && spot && UUID.compare(elem.id, spot.id)){
+			if (replace && spot && UUID.equal(elem.id, spot.id)){
 				arr[hash & mask] = elem;
 				return false;
 			}else if (!spot) {
@@ -167,7 +167,7 @@ createClass(UUID.Map, {
 			let spot = this.arr_[hash & this.mask_];
 			if (!spot) return false;
 
-			if (UUID.compare(id, spot.id)) {
+			if (UUID.equal(id, spot.id)) {
 				return true;
 			}
 
@@ -185,7 +185,7 @@ createClass(UUID.Map, {
 			let spot = this.arr_[hash & this.mask_];
 			if (!spot) return undefined;
 
-			if (UUID.compare(id, spot.id)) {
+			if (UUID.equal(id, spot.id)) {
 				return spot;
 			}
 
@@ -197,7 +197,7 @@ createClass(UUID.Map, {
 	},
 	delete (id, comp) {
 		if (this.size === 0) return false;
-		if (!comp) comp = (elem, id) => UUID.compare(elem.id, id);
+		if (!comp) comp = (elem, id) => UUID.equal(elem.id, id);
 
 		let hash = hashCode(id);
 		while (true) {

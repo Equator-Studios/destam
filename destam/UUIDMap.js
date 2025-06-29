@@ -87,7 +87,7 @@ OMap.prototype = Object.assign(createInstance(UUID.Map), {
 		Network.callListeners(events);
 	},
 	delete (id, comp) {
-		if (!comp) comp = elem => UUID.compare(elem.id, id);
+		if (!comp) comp = elem => UUID.equal(elem.id, id);
 
 		const reg = this[observerGetter];
 
