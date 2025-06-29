@@ -128,3 +128,27 @@ test("uuid map delete custom comparator", () => {
 	map.set(id, true);
 	expect(map.delete(id, (elem, id) => UUID.equal(elem.id, id) && elem.id)).to.equal(id);
 });
+
+test("uuid compare", () => {
+	const a = UUID(new Int32Array([0]));
+	const lo = UUID(new Int32Array([-1]));
+	const hi = UUID(new Int32Array([1]));
+
+	expect(UUID.compare(a, lo) === -1);
+	expect(UUID.compare(a, a) === 0);
+	expect(UUID.compare(a, hi) === 1);
+	expect(UUID.compare(lo, hi) === 1);
+	expect(UUID.compare(hi, lo) === -1);
+});
+
+test("uuid compare unequal lengths", () => {
+	const a = UUID(new Int32Array([0]));
+	const lo = UUID(new Int32Array([1, 0]));
+	const hi = UUID(new Int32Array([1, 0, 0]));
+
+	expect(UUID.compare(a, lo) === -1);
+	expect(UUID.compare(a, a) === 0);
+	expect(UUID.compare(a, hi) === 1);
+	expect(UUID.compare(lo, hi) === 1);
+	expect(UUID.compare(hi, lo) === -1);
+});

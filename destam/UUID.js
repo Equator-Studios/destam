@@ -80,19 +80,27 @@ const UUID = createClass((size = 4) => {
 	},
 });
 
-UUID.equal = (first, second) => {
-	if (first === second) return true;
+UUID.compare = (a, b) => {
+	if (a === b) return 0;
 
-	first = UUID(first).buffer;
-	second = UUID(second).buffer;
+	a = UUID(a).buffer;
+	b = UUID(b).buffer;
 
-	if (len(first) !== len(second)) return false;
-	for (let i = 0; i < len(first); i++){
-		if (first[i] !== second[i]) return false;
+	const lenDif = len(a) - len(b);
+	if (lenDif !== 0) return lenDif < 0 ? -1 : 1;
+
+	for (let i = 0; i < len(a); i++){
+		if (a[i] < b[i]) {
+			return -1;
+		} else if (a[i] > b[i]) {
+			return 1;
+		}
 	}
 
-	return true;
+	return 0;
 };
+
+UUID.equal = (a, b) => UUID.compare(a, b) === 0;
 
 const hashCode = uuid => {
 	return uuid.buffer[0];
