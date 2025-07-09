@@ -302,7 +302,22 @@ test("path ignore with skip", () => {
 	object._whatever = 'whatever';
 	nest._whatever = 'whatever';
 
-	expect(paths).to.deep.equal([['nest', 'two'], ['nest', 'three'], ['_whatever'], ['nest', '_whatever']]);
+	expect(paths).to.deep.equal([['nest', 'two'], ['nest', 'three']]);
+});
+
+test("skip ignore underscore", () => {
+	let nest = OObject({});
+	let object = OObject({nest});
+
+	const paths = [];
+	object.observer.skip(Infinity).watch(event => {
+		paths.push(event.path);
+	});
+
+	object._whatever = 'whatever';
+	nest._whatever = 'whatever';
+
+	expect(paths).to.deep.equal([]);
 });
 
 test("path ignore with tree", () => {
