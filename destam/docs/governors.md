@@ -124,10 +124,41 @@ just target the base object.
 observer.shallow().get() === state;
 ```
 
+## Default governor
+Watching destam state trees through the standard .watch()/.watchCommit()/.effect()
+will by default use a governor that will ignore any string query member that starts
+with an underscore. This is used to target OObject underscore variables. Underscore
+variables are meant to act as "private" variables that shouldn't call public listeners
+(wildcard listeners that just want to capture everything). However, when explicitly
+listened on (using the .path() governor), you can still observe these variables.
+```js
+const obj = OObject();
+
+obj.observer.watch(console.log); // public variable
+obj.observer.path('_privateVariable').watch(console.log); // my single private variable
+
+// the console log for the public listener will invoke with an event for publicVirable.
+obj.publicVariable = 1;
+
+// the console log listening to the specific private variable will get invoked.
+obj._privateVariable = 1;
+
+// will trigger none of the listeners
+obj._myOtherPrivate = 1;
+
+```
+
 ### `.skip()`
 `.skip()` is basically a fancy way to force advancing the governor pointer. Like
 with `.path()` instead of singling out a property, we basically don't care about
-any individual thing and target everything. Consider an array we have in the
+any individual item. They are meant to be wildcard governors meant to capture
+everything* up to a certain depth.
+
+\*: Since this is a wildcard governor, the same rules for the
+[default gorvernor](#default-governor) apply. Underscore properties will be
+ignored.
+
+Consider an array we have in the
 above example state. What happens if we want to target the `name` of each element?
 Let's start with what we know:
 ```js
