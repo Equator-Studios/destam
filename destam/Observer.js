@@ -432,6 +432,9 @@ Object.assign(Observer.prototype, {
 	 * additional checks are imposed. This can be useful for looking at a
 	 * piece of state from an entire array.
 	 *
+	 * Note that since this is a wildcard governor (matches all values within its
+	 * domain), it will ignore any query property that starts with a underscore.
+	 *
 	 * Suppose we have this state tree:
 	 * OArray([
 	 *   OObject({state: "state-1"}),
@@ -931,6 +934,12 @@ Object.assign(Observer.prototype, {
 	 * provided within a commit is undefined. Commit listeners are called in
 	 * an undefined order. Mutation events are called synchronously after
 	 * the mutation has been applied to the observer.
+
+	 * Note that this will apply a default governor that will will ignore any
+	 * query property that starts with a underscore. This special case exists
+	 * so that underscore variables are still observable through the observer
+	 * network, but they need to be explicit. (Underscore variables work with the
+	 * .path()) governor.
 	 *
 	 * Params:
 	 *   listener: Called when this observer mutates.
