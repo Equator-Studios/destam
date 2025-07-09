@@ -1632,3 +1632,47 @@ test("recursive get in map and unwrap 3", () => {
 
 	expect(vals).to.deep.equal([2, 5]);
 });
+
+test("throwing map get twice", () => {
+	const val = Observer.mutable(1).map(x => {
+		throw new Error("Oh no");
+	});
+
+	expect(() => val.get()).to.throw();
+	expect(() => val.get()).to.throw();
+});
+
+test("throwing map get twice with watch", () => {
+	const val = Observer.mutable(1).map(x => {
+		throw new Error("Oh no");
+	});
+
+	val.watch(() => {});
+
+	expect(() => val.get()).to.throw();
+	expect(() => val.get()).to.throw();
+});
+
+test("throwing map set twice", () => {
+	const base = Observer.mutable(1);
+	const val = base.map(x => {
+		throw new Error("Oh no");
+	});
+
+	val.watch(() => {});
+
+	expect(() => base.set(2)).to.throw();
+	expect(() => base.set(3)).to.throw();
+});
+
+test("throwing map set then get", () => {
+	const base = Observer.mutable(1);
+	const val = base.map(x => {
+		throw new Error("Oh no");
+	});
+
+	val.watch(() => {});
+
+	expect(() => base.set(2)).to.throw();
+	expect(() => val.get()).to.throw();
+});
