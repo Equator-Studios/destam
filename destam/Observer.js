@@ -229,8 +229,13 @@ Object.assign(Observer.prototype, {
 			} else if (current.hasCache_) {
 				return current.cache_;
 			} else {
-				current.hasCache_ = 1;
-				return current.cache_ = self.forward_();
+				try {
+					current.hasCache_ = 1;
+					return current.cache_ = self.forward_();
+				} catch(e) {
+					current.hasCache_ = 0;
+					throw e;
+				}
 			}
 		},
 		(self, v) => {
@@ -242,13 +247,18 @@ Object.assign(Observer.prototype, {
 			const unregister = self.parent_.register_((commit, args) => {
 				self.current_ = cur;
 				const hadCache = cur.hasCache_;
-				cur.hasCache_ = 1;
+				try {
+					cur.hasCache_ = 1;
 
-				const value = self.forward_();
-				if (!hadCache || !isEqual(value, cur.cache_)) {
-					cur.cache_ = value;
-					
-					listener(commit, args);
+					const value = self.forward_();
+					if (!hadCache || !isEqual(value, cur.cache_)) {
+						cur.cache_ = value;
+
+						listener(commit, args);
+					}
+				} catch (e) {
+					cur.hasCache_ = hadCache;
+					throw e;
 				}
 			}, governor);
 
