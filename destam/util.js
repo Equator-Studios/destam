@@ -3,7 +3,7 @@ export const observerGetter = Symbol();
 export const isInstance = (inst, type) => inst instanceof type;
 
 export const createClass = (constructor, addon = {}, extend) => {
-	addon.constructor = constructor;
+	Object.defineProperty(addon, 'constructor', {value: constructor, writable: true});
 	constructor.prototype = extend ? Object.assign(extend, addon) : addon;
 	return constructor;
 };
