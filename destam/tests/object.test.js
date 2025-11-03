@@ -18,6 +18,51 @@ test("object hasOwnProperty", () => {
 	expect(arr.hasOwnProperty("hello")).to.equal(true);
 });
 
+const testin = (ret, exp) => {
+	for (let o in ret) {
+		let i = exp.indexOf(o);
+		if (i === -1) throw new Error("Object decoded with expected property: " + o);
+
+		exp.splice(i, 1);
+	}
+
+	if (exp.length) {
+		throw new Error("Object decoded without expected properties: " + exp);
+	}
+};
+
+test("object in empty object", () => {
+	testin(OObject(), []);
+});
+
+test("object in", () => {
+	const testin = (ret, exp) => {
+		for (let o in ret) {
+			let i = exp.indexOf(o);
+			if (i === -1) throw new Error("Object decoded with expected property: " + o);
+
+			exp.splice(i, 1);
+		}
+
+		if (exp.length) {
+			throw new Error("Object decoded without expected properties: " + exp);
+		}
+	};
+
+	testin(OObject({}), []);
+	testin(OObject({
+		'hello': {},
+		'dude': 'dude'
+	}), ['hello', 'dude']);
+
+	let obj = {};
+	testin(OObject({
+		'hello': obj,
+		'hello copy': obj,
+		'dude': 'dude'
+	}), ['hello', 'hello copy', 'dude']);
+});
+
 test("object prototype", () => {
 	const cons = () => {
 		return Object.create(cons.prototype);
