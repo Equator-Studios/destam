@@ -56,7 +56,6 @@ const OMap = (map, id) => {
 };
 
 OMap.prototype = Object.assign(createInstance(UUID.Map), {
-	constructor: OMap,
 	set (id, value) {
 		return this.setElement(OObject({id, value}));
 	},

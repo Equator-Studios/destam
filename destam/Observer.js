@@ -174,7 +174,6 @@ const Observer = createClass((get, set, register) => {
 });
 
 Object.assign(Observer.prototype, {
-	constructor: Observer,
 	register_: () => noop,
 	get: brokenChain,
 	set: immutableSetter,
