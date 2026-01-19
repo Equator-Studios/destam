@@ -705,7 +705,6 @@ Object.assign(Observer.prototype, {
 		},
 		(self) => isEqual(self.sel_, self.parent_.get()) ? self.selValue_ : self.defValue_,
 		(self, val) => {
-			assert(val === self.sel_);
 			self.parent_.set(val);
 		},
 		(self, listener) => {
