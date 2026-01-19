@@ -922,10 +922,10 @@ test("observer selector set selected", () => {
 
 	expect(one.get()).to.equal(false);
 	expect(two.get()).to.equal(false);
-	one.set(1);
+	one.set(true);
 	expect(one.get()).to.equal(true);
 	expect(two.get()).to.equal(false);
-	two.set(2);
+	two.set(true);
 	expect(one.get()).to.equal(false);
 	expect(two.get()).to.equal(true);
 });

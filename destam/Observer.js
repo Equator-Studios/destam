@@ -704,9 +704,7 @@ Object.assign(Observer.prototype, {
 			};
 		},
 		(self) => isEqual(self.sel_, self.parent_.get()) ? self.selValue_ : self.defValue_,
-		(self, val) => {
-			self.parent_.set(val);
-		},
+		(self, val) => self.parent_.set(isEqual(self.selValue_, val) ? self.sel_ : null),
 		(self, listener) => {
 			const map = self.map_;
 			const sel = self.sel_;
