@@ -1500,7 +1500,6 @@ test("recursive get in map call freq", () => {
 
 	let freq = 0;
 	const map = val.map(val => {
-		console.log(val);
 		freq++;
 		if (val === 0) return map.get();
 		return val;
