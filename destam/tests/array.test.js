@@ -351,3 +351,22 @@ test("array out of bounds", () => {
 	expect(() => arr[3] = 'val').to.throw();
 	expect(() => arr['0hello'] = 'val').to.throw();
 });
+
+test("array observer and lifetime", () => {
+	const arr = OArray();
+
+	const obs = arr.observer.lifetime(() => {
+		arr.push(0);
+
+		return () => arr.push(1);
+	});
+
+	expect(arr).to.deep.equal([]);
+	const watch = obs.watch(() => {});
+	arr.push(3);
+	expect(arr).to.deep.equal([0, 3]);
+	watch();
+	expect(arr).to.deep.equal([0, 3, 1]);
+
+	expect(obs.get()).to.equal(arr);
+});
