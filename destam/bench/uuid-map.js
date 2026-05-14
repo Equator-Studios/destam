@@ -1,82 +1,48 @@
 import UUID from '../UUID.js';
+import makeBench from './bench.js';
 
 const COUNT = 10_000;
 const LOOKUPS = 1_000_000;
-const ROUNDS = 100;
+const ROUNDS = 5;
+
+const bench = makeBench(ROUNDS);
 
 const uuids = Array.from({length: COUNT}, () => UUID());
 const nextPow2 = n => 1 << Math.ceil(Math.log2(n));
-const prealloc = nextPow2(COUNT / 0.8) * 4;
+const preallocBase = nextPow2(COUNT / 0.8);
 const elems = uuids.map(id => ({id, value: true}));
 const hexKeys = uuids.map(id => id.rawHex());
 
-// --- UUID.Map (default minAllocation) ---
-const uuidMapPopStart = performance.now();
-const uuidMap = UUID.Map();
-for (const elem of elems) uuidMap.setElement(elem);
-const uuidMapPopTime = performance.now() - uuidMapPopStart;
+const uuidMapBench = (label, minAllocation) => bench(label, (ready) => {
+    const map = UUID.Map(null, minAllocation);
+    for (const elem of elems) map.setElement(elem);
+    ready();
+    for (let i = 0; i < LOOKUPS; i++) map.getElement(uuids[i % COUNT]);
+    ready();
+    for (const id of uuids) map.delete(id);
+});
 
-const uuidMapStart = performance.now();
-for (let i = 0; i < LOOKUPS; i++) uuidMap.getElement(uuids[i % COUNT]);
-const uuidMapTime = performance.now() - uuidMapStart;
+// Each bench: setElement → getElement x LOOKUPS → delete
+uuidMapBench('UUID.Map (default)', undefined);
+uuidMapBench(`UUID.Map (preallocated x1 ${preallocBase})`, preallocBase);
+uuidMapBench(`UUID.Map (preallocated x2 ${preallocBase * 2})`, preallocBase * 2);
+uuidMapBench(`UUID.Map (preallocated x4 ${preallocBase * 4})`, preallocBase * 4);
+uuidMapBench(`UUID.Map (preallocated x8 ${preallocBase * 8})`, preallocBase * 8);
 
-const uuidMapDelStart = performance.now();
-for (let r = 0; r < ROUNDS; r++) {
-    for (const elem of elems) uuidMap.setElement(elem);
-    for (const id of uuids) uuidMap.delete(id);
-}
-const uuidMapDelTime = (performance.now() - uuidMapDelStart) / ROUNDS;
+bench('native Map (cached key)', (ready) => {
+    const map = new Map();
+    for (let i = 0; i < COUNT; i++) map.set(hexKeys[i], true);
+    ready();
+    for (let i = 0; i < LOOKUPS; i++) map.get(hexKeys[i % COUNT]);
+    ready();
+    for (const key of hexKeys) map.delete(key);
+});
 
-// --- UUID.Map (preallocated minAllocation) ---
-const uuidMapPrePopStart = performance.now();
-const uuidMapPre = UUID.Map(null, prealloc);
-for (const elem of elems) uuidMapPre.setElement(elem);
-const uuidMapPrePopTime = performance.now() - uuidMapPrePopStart;
-
-const uuidMapPreStart = performance.now();
-for (let i = 0; i < LOOKUPS; i++) uuidMapPre.getElement(uuids[i % COUNT]);
-const uuidMapPreTime = performance.now() - uuidMapPreStart;
-
-const uuidMapPreDelStart = performance.now();
-for (let r = 0; r < ROUNDS; r++) {
-    for (const elem of elems) uuidMapPre.setElement(elem);
-    for (const id of uuids) uuidMapPre.delete(id);
-}
-const uuidMapPreDelTime = (performance.now() - uuidMapPreDelStart) / ROUNDS;
-
-// --- native Map (cached rawHex key) ---
-const nativeMapPopStart = performance.now();
-const nativeMap = new Map();
-for (let i = 0; i < COUNT; i++) nativeMap.set(hexKeys[i], true);
-const nativeMapPopTime = performance.now() - nativeMapPopStart;
-
-const nativeMapStart = performance.now();
-for (let i = 0; i < LOOKUPS; i++) nativeMap.get(hexKeys[i % COUNT]);
-const nativeMapTime = performance.now() - nativeMapStart;
-
-const nativeMapDelStart = performance.now();
-for (let r = 0; r < ROUNDS; r++) {
-    for (let i = 0; i < COUNT; i++) nativeMap.set(hexKeys[i], true);
-    for (const key of hexKeys) nativeMap.delete(key);
-}
-const nativeMapDelTime = (performance.now() - nativeMapDelStart) / ROUNDS;
-
-// --- native Map (rawHex() computed at lookup) ---
-const nativeMapDynStart = performance.now();
-for (let i = 0; i < LOOKUPS; i++) nativeMap.get(uuids[i % COUNT].rawHex());
-const nativeMapDynTime = performance.now() - nativeMapDynStart;
-
-const nativeMapDynDelStart = performance.now();
-for (let r = 0; r < ROUNDS; r++) {
-    for (const id of uuids) nativeMap.set(id.rawHex(), true);
-    for (const id of uuids) nativeMap.delete(id.rawHex());
-}
-const nativeMapDynDelTime = (performance.now() - nativeMapDynDelStart) / ROUNDS;
-
-const fmt = (pop, lookup, del) =>
-    `populate ${pop.toFixed(1)}ms  lookup ${lookup.toFixed(1)}ms  delete ${del.toFixed(1)}ms`;
-
-console.log(`UUID.Map (default):              ${fmt(uuidMapPopTime, uuidMapTime, uuidMapDelTime)}`);
-console.log(`UUID.Map (preallocated ${prealloc}):  ${fmt(uuidMapPrePopTime, uuidMapPreTime, uuidMapPreDelTime)}`);
-console.log(`native Map (cached key):         ${fmt(nativeMapPopTime, nativeMapTime, nativeMapDelTime)}`);
-console.log(`native Map (rawHex() on each):   ${fmt(nativeMapPopTime, nativeMapDynTime, nativeMapDynDelTime)}`);
+bench('native Map (rawHex() on each)', (ready) => {
+    const map = new Map();
+    for (const id of uuids) map.set(id.rawHex(), true);
+    ready();
+    for (let i = 0; i < LOOKUPS; i++) map.get(uuids[i % COUNT].rawHex());
+    ready();
+    for (const id of uuids) map.delete(id.rawHex());
+});
