@@ -1,8 +1,19 @@
-import {expect} from 'chai';
+import assert from 'node:assert/strict';
 import test from 'node:test';
 import {Insert} from '../Events.js';
 import OObject from '../Object.js';
 import OArray, {positionIndex} from '../Array.js';
+
+const assertMembers = (actual, expected) => {
+	assert.strictEqual(actual.length, expected.length);
+	const rem = [...actual];
+
+	for (const exp of expected) {
+		const i = rem.findIndex(a => a === exp);
+		assert.ok(i !== -1);
+		rem.splice(i, 1);
+	}
+};
 
 test("initialized with nested object", () => {
 	let nested = OObject({});
@@ -23,15 +34,15 @@ test("initialized with nested object", () => {
 	nested.two = '2';
 	nested.three = '3';
 
-	expect (Object.keys(object)).to.have.members(['nested', 'one', 'two', 'three']);
-	expect (Object.keys(nested)).to.have.members(['one', 'two', 'three']);
-	expect (object.one).to.equal('1');
-	expect (object.two).to.equal('2');
-	expect (object.three).to.equal('3');
-	expect (nested.one).to.equal('1');
-	expect (nested.two).to.equal('2');
-	expect (nested.three).to.equal('3');
-	expect (events).to.have.members(['1', '2', '3', '1', '2', '3']);
+	assert.deepStrictEqual(new Set(Object.keys(object)), new Set(['nested', 'one', 'two', 'three']));
+	assert.deepStrictEqual(new Set(Object.keys(nested)), new Set(['one', 'two', 'three']));
+	assert.strictEqual(object.one, '1');
+	assert.strictEqual(object.two, '2');
+	assert.strictEqual(object.three, '3');
+	assert.strictEqual(nested.one, '1');
+	assert.strictEqual(nested.two, '2');
+	assert.strictEqual(nested.three, '3');
+	assertMembers(events, ['1', '2', '3', '1', '2', '3']);
 });
 
 test("nested object attached", () => {
@@ -53,15 +64,15 @@ test("nested object attached", () => {
 	nested.two = '2';
 	nested.three = '3';
 
-	expect (Object.keys(object)).to.have.members(['nested', 'one', 'two', 'three']);
-	expect (Object.keys(nested)).to.have.members(['one', 'two', 'three']);
-	expect (object.one).to.equal('1');
-	expect (object.two).to.equal('2');
-	expect (object.three).to.equal('3');
-	expect (nested.one).to.equal('1');
-	expect (nested.two).to.equal('2');
-	expect (nested.three).to.equal('3');
-	expect (events).to.have.members([nested, '1', '2', '3', '1', '2', '3']);
+	assert.deepStrictEqual(new Set(Object.keys(object)), new Set(['nested', 'one', 'two', 'three']));
+	assert.deepStrictEqual(new Set(Object.keys(nested)), new Set(['one', 'two', 'three']));
+	assert.strictEqual(object.one, '1');
+	assert.strictEqual(object.two, '2');
+	assert.strictEqual(object.three, '3');
+	assert.strictEqual(nested.one, '1');
+	assert.strictEqual(nested.two, '2');
+	assert.strictEqual(nested.three, '3');
+	assertMembers(events, [nested, '1', '2', '3', '1', '2', '3']);
 });
 
 test("nested object attached and overriden", () => {
@@ -94,9 +105,9 @@ test("nested object attached and overriden", () => {
 	nested.two = null;
 	nested.three = null;
 
-	expect (Object.keys(object)).to.have.members(['nested', 'one', 'two', 'three']);
-	expect (Object.keys(nested)).to.have.members(['one', 'two', 'three']);
-	expect (events).to.have.members([nested, '1', '2', '3', '1', '2', '3', nested2, '1', '2', '3']);
+	assert.deepStrictEqual(new Set(Object.keys(object)), new Set(['nested', 'one', 'two', 'three']));
+	assert.deepStrictEqual(new Set(Object.keys(nested)), new Set(['one', 'two', 'three']));
+	assertMembers(events, [nested, '1', '2', '3', '1', '2', '3', nested2, '1', '2', '3']);
 });
 
 test("initialized with hidden nested object", () => {
@@ -121,9 +132,9 @@ test("initialized with hidden nested object", () => {
 	nested.two = '2';
 	nested.three = '3';
 
-	expect (Object.keys(object)).to.have.members(['_nested', 'one', 'two', 'three']);
-	expect (Object.keys(nested)).to.have.members(['one', 'two', 'three']);
-	expect (events).to.have.members(['1', '2', '3']);
+	assert.deepStrictEqual(new Set(Object.keys(object)), new Set(['_nested', 'one', 'two', 'three']));
+	assert.deepStrictEqual(new Set(Object.keys(nested)), new Set(['one', 'two', 'three']));
+	assertMembers(events, ['1', '2', '3']);
 });
 
 test("nested hidden object attached", () => {
@@ -145,9 +156,9 @@ test("nested hidden object attached", () => {
 	nested.two = '2';
 	nested.three = '3';
 
-	expect (Object.keys(object)).to.have.members(['_nested', 'one', 'two', 'three']);
-	expect (Object.keys(nested)).to.have.members(['one', 'two', 'three']);
-	expect (events).to.have.members(['1', '2', '3']);
+	assert.deepStrictEqual(new Set(Object.keys(object)), new Set(['_nested', 'one', 'two', 'three']));
+	assert.deepStrictEqual(new Set(Object.keys(nested)), new Set(['one', 'two', 'three']));
+	assertMembers(events, ['1', '2', '3']);
 });
 
 test("nested hidden object attached and overriden", () => {
@@ -174,9 +185,9 @@ test("nested hidden object attached and overriden", () => {
 	nested2.two = '2';
 	nested2.three = '3';
 
-	expect (Object.keys(object)).to.have.members(['_nested', 'one', 'two', 'three']);
-	expect (Object.keys(nested)).to.have.members(['one', 'two', 'three']);
-	expect (events).to.have.members(['1', '2', '3']);
+	assert.deepStrictEqual(new Set(Object.keys(object)), new Set(['_nested', 'one', 'two', 'three']));
+	assert.deepStrictEqual(new Set(Object.keys(nested)), new Set(['one', 'two', 'three']));
+	assertMembers(events, ['1', '2', '3']);
 });
 
 test("nested pathing", () => {
@@ -192,7 +203,7 @@ test("nested pathing", () => {
 	nest.two = '2';
 	nest.three = '3';
 
-	expect(paths).to.deep.equal([['nest', 'one'], ['nest', 'two'], ['nest', 'three']]);
+	assert.deepStrictEqual(paths, [['nest', 'one'], ['nest', 'two'], ['nest', 'three']]);
 });
 
 test("paths true", () => {
@@ -210,7 +221,7 @@ test("paths true", () => {
 
 	object.whatever = 'whatever';
 
-	expect(paths).to.deep.equal([['nest', 'one'], ['nest', 'two'], ['nest', 'three']]);
+	assert.deepStrictEqual(paths, [['nest', 'one'], ['nest', 'two'], ['nest', 'three']]);
 });
 
 test("paths false", () => {
@@ -228,7 +239,7 @@ test("paths false", () => {
 
 	object.whatever = 'whatever';
 
-	expect(paths).to.deep.equal([]);
+	assert.deepStrictEqual(paths, []);
 });
 
 test("path ignore", () => {
@@ -246,7 +257,7 @@ test("path ignore", () => {
 
 	object.whatever = 'whatever';
 
-	expect(paths).to.deep.equal([['whatever']]);
+	assert.deepStrictEqual(paths, [['whatever']]);
 });
 
 test("path ignore multiple", () => {
@@ -264,7 +275,7 @@ test("path ignore multiple", () => {
 
 	object.whatever = 'whatever';
 
-	expect(paths).to.deep.equal([['nest', 'two'], ['nest', 'three'], ['whatever']]);
+	assert.deepStrictEqual(paths, [['nest', 'two'], ['nest', 'three'], ['whatever']]);
 });
 
 test("path ignore with hidden", () => {
@@ -283,7 +294,7 @@ test("path ignore with hidden", () => {
 	object._whatever = 'whatever';
 	nest._whatever = 'whatever';
 
-	expect(paths).to.deep.equal([['nest', 'two'], ['nest', 'three']]);
+	assert.deepStrictEqual(paths, [['nest', 'two'], ['nest', 'three']]);
 });
 
 test("path ignore with skip", () => {
@@ -302,7 +313,7 @@ test("path ignore with skip", () => {
 	object._whatever = 'whatever';
 	nest._whatever = 'whatever';
 
-	expect(paths).to.deep.equal([['nest', 'two'], ['nest', 'three']]);
+	assert.deepStrictEqual(paths, [['nest', 'two'], ['nest', 'three']]);
 });
 
 test("skip ignore underscore", () => {
@@ -317,7 +328,7 @@ test("skip ignore underscore", () => {
 	object._whatever = 'whatever';
 	nest._whatever = 'whatever';
 
-	expect(paths).to.deep.equal([]);
+	assert.deepStrictEqual(paths, []);
 });
 
 test("path ignore with tree", () => {
@@ -337,7 +348,7 @@ test("path ignore with tree", () => {
 	object.nest.hello = "hello";
 	object.tree[0].hello = "hello";
 
-	expect(paths).to.deep.equal([['tree', positionIndex(object.tree, 0), 'hello']]);
+	assert.deepStrictEqual(paths, [['tree', positionIndex(object.tree, 0), 'hello']]);
 });
 
 test("nested pathing", () => {
@@ -353,7 +364,7 @@ test("nested pathing", () => {
 	nest.two = '2';
 	nest.three = '3';
 
-	expect(paths).to.deep.equal([['nest', 'one'], ['nest', 'two'], ['nest', 'three']]);
+	assert.deepStrictEqual(paths, [['nest', 'one'], ['nest', 'two'], ['nest', 'three']]);
 });
 
 test("nested pathing 2", () => {
@@ -374,7 +385,7 @@ test("nested pathing 2", () => {
 	nest2.one = 'hello';
 	nest2.thing = 'thing';
 
-	expect(paths).to.deep.equal([['nest2', 'thing']]);
+	assert.deepStrictEqual(paths, [['nest2', 'thing']]);
 });
 
 test("nested pathing 3", () => {
@@ -395,7 +406,7 @@ test("nested pathing 3", () => {
 	nest2.one = 'hello';
 	nest2.thing = 'thing';
 
-	expect(paths).to.deep.equal([['nest2', 'thing']]);
+	assert.deepStrictEqual(paths, [['nest2', 'thing']]);
 });
 
 test("handle circles", () => {
@@ -414,10 +425,10 @@ test("handle circles", () => {
 	object.two = '2';
 	object.three = '3';
 
-	expect(paths).to.deep.equal([['next'], ['next', 'next'], ['one'], ['two'], ['three']]);
-	expect(object.next.next.next.next.one).to.equal('1');
-	expect(object.next.next.two).to.equal('2');
-	expect(object.next.next.next.next.next.next.three).to.equal('3');
+	assert.deepStrictEqual(paths, [['next'], ['next', 'next'], ['one'], ['two'], ['three']]);
+	assert.strictEqual(object.next.next.next.next.one, '1');
+	assert.strictEqual(object.next.next.two, '2');
+	assert.strictEqual(object.next.next.next.next.next.next.three, '3');
 });
 
 test("array in object shallow after map", () => {
@@ -434,5 +445,5 @@ test("array in object shallow after map", () => {
 	obj.arr.push(1);
 	obj.arr.push(2);
 
-	expect(events).to.deep.equal([[1], [1, 2]]);
+	assert.deepStrictEqual(events, [[1], [1, 2]]);
 });

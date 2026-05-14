@@ -1,7 +1,7 @@
 import {atomic} from '../Network.js';
 import OObject from '../Object.js';
 import OArray from '../Array.js';
-import {expect} from 'chai';
+import assert from 'node:assert/strict';
 import test from 'node:test';
 
 test("atomic oobject", () => {
@@ -17,7 +17,7 @@ test("atomic oobject", () => {
 		obj.two = 2;
 	});
 
-	expect(commits).to.deep.equal([[['one'], ['two']]]);
+	assert.deepStrictEqual(commits, [[['one'], ['two']]]);
 });
 
 test("atomic oobject error", () => {
@@ -28,12 +28,12 @@ test("atomic oobject error", () => {
 		throw new Error("oh oh");
 	});
 
-	expect(() => {
+	assert.throws(() => {
 		atomic(() => {
 			obj.one = 1;
 			obj.two = 2;
 		});
-	}).to.throw();
+	});
 });
 
 test("atomic oarray", () => {
@@ -49,7 +49,7 @@ test("atomic oarray", () => {
 		obj.push(2);
 	});
 
-	expect(commits).to.deep.equal([[
+	assert.deepStrictEqual(commits, [[
 		[obj.observer.indexes_[0].query_],
 		[obj.observer.indexes_[1].query_]
 	]]);

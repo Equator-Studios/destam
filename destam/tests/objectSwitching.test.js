@@ -1,7 +1,7 @@
 import OObject from '../Object.js';
 import createNetwork from '../Tracking.js';
 import { clone } from './clone.js';
-import {expect} from 'chai';
+import assert from 'node:assert/strict';
 import test from 'node:test';
 import Observer from '../Observer.js';
 
@@ -26,7 +26,7 @@ import Observer from '../Observer.js';
 
 		await network.flush();
 
-		expect(obj).to.deep.equal(obj2);
+		assert.deepStrictEqual(obj, obj2);
 	}),
 ].forEach(test => {
 	test("switcher", (id, state) => {
@@ -60,7 +60,7 @@ import Observer from '../Observer.js';
 		state.b++;
 		state.c++;
 
-		expect(events).to.deep.equal(['', 'a', '', 'b', '', 'c']);
+		assert.deepStrictEqual(events, ['', 'a', '', 'b', '', 'c']);
 	});
 
 	test("ignore switcher", (id, state) => {
@@ -94,7 +94,7 @@ import Observer from '../Observer.js';
 		state.b++;
 		state.c++;
 
-		expect(events).to.deep.equal(['a', 'b', 'c', '', 'b', 'c', '', 'a', 'c', '', 'a', 'b']);
+		assert.deepStrictEqual(events, ['a', 'b', 'c', '', 'b', 'c', '', 'a', 'c', '', 'a', 'b']);
 	});
 
 	test("switcher and path", (sw, obj) => {
@@ -126,7 +126,7 @@ import Observer from '../Observer.js';
 		obj.d.path = 1;
 		obj.d.other = 1;
 
-		expect(events).to.deep.equal([['a', 'path'], [], ['b', 'path'], [], [], ['d'], ['d', 'path']]);
+		assert.deepStrictEqual(events, [['a', 'path'], [], ['b', 'path'], [], [], ['d'], ['d', 'path']]);
 	});
 
 	test("ignore switcher and path", (sw, obj) => {
@@ -171,7 +171,6 @@ import Observer from '../Observer.js';
 		obj.d.path = 1;
 		obj.d.other = 1;
 
-		expect(events).to.deep.equal([['b', 'path'], ['c'], [], ['a', 'path'], ['c'], [], ['b', 'path'], ['c'], [], ['a', 'path'], ['b', 'path'], ['c']]);
+		assert.deepStrictEqual(events, [['b', 'path'], ['c'], [], ['a', 'path'], ['c'], [], ['b', 'path'], ['c'], [], ['a', 'path'], ['b', 'path'], ['c']]);
 	});
 });
-

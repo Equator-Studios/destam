@@ -1,5 +1,5 @@
 import OObject from '../Object.js';
-import {expect} from 'chai';
+import assert from 'node:assert/strict';
 import test from 'node:test';
 import Observer from '../Observer.js';
 
@@ -30,7 +30,7 @@ const createTest = (createObs1, createObs2) => () => {
 	});
 
 	createState(state, 4);
-	expect(states1).to.deep.equal(states2);
+	assert.deepStrictEqual(states1, states2);
 };
 
 test("governor identities skip", createTest(

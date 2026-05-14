@@ -1,4 +1,4 @@
-import {expect} from 'chai';
+import assert from 'node:assert/strict';
 import test from 'node:test';
 import OObject from '../Object.js';
 import OArray, {indexPosition} from '../Array.js';
@@ -20,7 +20,7 @@ import { stringify, parse, clone } from './clone.js';
 
 		callback(object, object2);
 
-		expect(object).to.deep.equal(object2);
+		assert.deepStrictEqual(object, object2);
 		network.remove();
 	}),
 	(name, callback) => test("forward commit" + name, () => {
@@ -34,7 +34,7 @@ import { stringify, parse, clone } from './clone.js';
 
 		callback(object, object2);
 
-		expect(object).to.deep.equal(object2);
+		assert.deepStrictEqual(object, object2);
 		network.remove();
 	}),
 	(name, callback) => test("invert " + name, () => {
@@ -59,7 +59,7 @@ import { stringify, parse, clone } from './clone.js';
 			network.apply([events[i].inverse]);
 		}
 
-		expect(object2).to.deep.equal(OObject());
+		assert.deepStrictEqual(object2, OObject());
 		network.remove();
 	}),
 	(name, callback) => test("invert commit" + name, () => {
@@ -84,7 +84,7 @@ import { stringify, parse, clone } from './clone.js';
 			network.apply(events[i].map(d => d.inverse));
 		}
 
-		expect(object2).to.deep.equal(OObject());
+		assert.deepStrictEqual(object2, OObject());
 		network.remove();
 	}),
 ].forEach(test => {
@@ -184,7 +184,7 @@ import { stringify, parse, clone } from './clone.js';
 
 		watcher();
 
-		expect(paths).to.deep.equal([[0], [1], [2], [3], [4], [2], [2, 'hello'], [2, 'hello'], [2, 'hello']]);
+		assert.deepStrictEqual(paths, [[0], [1], [2], [3], [4], [2], [2, 'hello'], [2, 'hello'], [2, 'hello']]);
 	});
 
 	test("network remove then add back", (object) => {
@@ -291,7 +291,7 @@ test("network crazy", () => {
 
 	network.remove();
 
-	expect(object.map.delete(elem.id)).to.equal(true);
+	assert.strictEqual(object.map.delete(elem.id), true);
 
 	network2.remove();
 
@@ -312,7 +312,7 @@ test("basic object network child insert", () => {
 	object.dude.one = 'one';
 	object.dude.two = 'two';
 
-	expect(object.dude).to.deep.equal(object2);
+	assert.deepStrictEqual(object.dude, object2);
 	network.remove();
 });
 
@@ -327,9 +327,9 @@ test("duplicate insert event object", () => {
 		network.apply(cloned);
 	});
 
-	expect (() => {
+	assert.throws(() => {
 		object.event = 'event';
-	}).to.throw();
+	});
 
 	network.remove();
 });
@@ -350,7 +350,7 @@ test("network operate from event", () => {
 
 	object.push('one');
 
-	expect(object).to.deep.equal(object2);
+	assert.deepStrictEqual(object, object2);
 
 	network.remove();
 });
@@ -371,7 +371,7 @@ test("network operate from event 2", () => {
 
 	object.push('one');
 
-	expect(object).to.deep.equal(object2);
+	assert.deepStrictEqual(object, object2);
 
 	network.remove();
 });
@@ -387,9 +387,9 @@ test("duplicate insert event array", () => {
 		network.apply(cloned);
 	});
 
-	expect (() => {
+	assert.throws(() => {
 		object.push('event');
-	}).to.throw();
+	});
 
 	network.remove();
 });
@@ -401,13 +401,13 @@ test("try to operate network on a different tree if nested", () => {
 
 	object.nested = OObject();
 
-	expect(() => {
+	assert.throws(() => {
 		object.observer.watch(event => {
 			network.apply([clone(event)]);
 		});
 
 		object.nested.hello = 'world';
-	}).to.throw();
+	});
 
 	network.remove();
 });
@@ -433,8 +433,8 @@ test("network delete", () => {
 	nested.hello = 'edited';
 	delete nested.hello;
 
-	expect({...object}).to.deep.equal({...object2});
-	expect(paths).to.deep.equal([['nested'], ['nested', 'hello'], ['nested', 'hello'], ['nested', 'hello']]);
+	assert.deepStrictEqual({...object}, {...object2});
+	assert.deepStrictEqual(paths, [['nested'], ['nested', 'hello'], ['nested', 'hello'], ['nested', 'hello']]);
 
 	network.remove();
 });
@@ -452,8 +452,8 @@ test("only apply events to a child", () => {
 	base.remove();
 	base = createNetwork(object2.object.observer);
 
-	expect(() => object.next = 'next').to.throw();
-	expect(object2.next).to.equal(undefined);
+	assert.throws(() => object.next = 'next');
+	assert.strictEqual(object2.next, undefined);
 
 	base.remove();
 });
@@ -470,7 +470,7 @@ test("non root", () => {
 	});
 
 	object.nested.whatever = 'hello';
-	expect(object.nested.whatever).to.equal(object2.whatever);
+	assert.strictEqual(object.nested.whatever, object2.whatever);
 	network.remove();
 });
 
@@ -486,8 +486,8 @@ test("non root through path", () => {
 	});
 
 	object.nested.whatever = 'hello';
-	expect(object.nested.whatever).to.equal('hello');
-	expect(object2.whatever).to.equal(undefined);
+	assert.strictEqual(object.nested.whatever, 'hello');
+	assert.strictEqual(object2.whatever, undefined);
 	network.remove();
 });
 
@@ -506,7 +506,7 @@ test("duplicate ids", () => {
 	object.push("hello");
 	object.push("world");
 
-	expect(object2.length).to.equal(2);
+	assert.strictEqual(object2.length, 2);
 	network.remove();
 });
 
@@ -528,7 +528,7 @@ test("conflicting ids array", () => {
 
 	object.push(thing);
 
-	expect(object2.length).to.equal(1);
+	assert.strictEqual(object2.length, 1);
 	network.remove();
 });
 
@@ -542,12 +542,12 @@ test("conflicting ids object", () => {
 
 	object.observer.watch(event => {
 		network.apply([clone(event)]);
-		expect(() => network.apply([clone(event)])).to.throw();
+		assert.throws(() => network.apply([clone(event)]));
 	});
 
 	object.thing = thing;
 
-	expect(Object.keys(object2)).to.deep.equal(['thing']);
+	assert.deepStrictEqual(Object.keys(object2), ['thing']);
 	network.remove();
 });
 
@@ -560,7 +560,7 @@ test("conflicting ids omap", () => {
 
 	object.observer.watch(event => {
 		network.apply([clone(event)]);
-		expect(() => network.apply([clone(event)])).to.throw();
+		assert.throws(() => network.apply([clone(event)]));
 	});
 
 	let id = UUID();
@@ -581,7 +581,7 @@ test("network digest timeout", async () => {
 	obj.two = 2;
 
 	await new Promise(ok => setTimeout(ok, 10));
-	expect(called).to.equal(true);
+	assert.strictEqual(called, true);
 });
 
 test("network digest timeout flush anyway", async () => {
@@ -597,5 +597,5 @@ test("network digest timeout flush anyway", async () => {
 	obj.two = 2;
 	await net.flush();
 
-	expect(called).to.equal(true);
+	assert.strictEqual(called, true);
 });

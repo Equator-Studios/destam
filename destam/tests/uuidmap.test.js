@@ -1,4 +1,4 @@
-import {expect} from 'chai';
+import assert from 'node:assert/strict';
 import test from 'node:test';
 import OObject from '../Object.js';
 import OMap from '../UUIDMap.js';
@@ -7,7 +7,7 @@ import UUID from '../UUID.js';
 test("omap instanceof", () => {
 	const map = OMap();
 
-	expect(map instanceof OMap).to.equal(true);
+	assert.strictEqual(map instanceof OMap, true);
 });
 
 test("omap insert", () => {
@@ -16,7 +16,7 @@ test("omap insert", () => {
 	let id = UUID();
 	map.set(id, 'hello');
 
-	expect(map.get(id)).to.equal('hello');
+	assert.strictEqual(map.get(id), 'hello');
 });
 
 test("omap modify", () => {
@@ -26,7 +26,7 @@ test("omap modify", () => {
 	map.set(id, 'hello');
 	map.set(id, 'world');
 
-	expect(map.get(id)).to.equal('world');
+	assert.strictEqual(map.get(id), 'world');
 });
 
 test("omap delete", () => {
@@ -36,7 +36,7 @@ test("omap delete", () => {
 	map.set(id, 'hello');
 	map.delete(id);
 
-	expect(map.has(id)).to.equal(false);
+	assert.strictEqual(map.has(id), false);
 });
 
 test("omap ignore duplicate element", () => {
@@ -50,8 +50,8 @@ test("omap ignore duplicate element", () => {
 
 	map.setElement(elem);
 
-	expect(map.has(elem.id)).to.equal(true);
-	expect(events).to.have.members([]);
+	assert.strictEqual(map.has(elem.id), true);
+	assert.deepStrictEqual(events, []);
 });
 
 test("omap modify atomic", () => {
@@ -67,7 +67,7 @@ test("omap modify atomic", () => {
 
 	map.setElement(elem);
 
-	expect(events).to.have.members([elem]);
+	assert.deepStrictEqual(events, [elem]);
 });
 
 test("omap modify value", () => {
@@ -83,7 +83,7 @@ test("omap modify value", () => {
 
 	map.setElement(elem);
 
-	expect(events).to.have.members([]);
+	assert.deepStrictEqual(events, []);
 });
 
 test("omap delete event actually deleted", () => {
@@ -93,7 +93,7 @@ test("omap delete event actually deleted", () => {
 	map.set(thing, true);
 
 	map.observer.watch(state => {
-		expect(map.has(thing)).to.equal(false);
+		assert.strictEqual(map.has(thing), false);
 	});
 
 	map.delete(thing);
@@ -106,7 +106,7 @@ test("omap delete event previous", () => {
 	map.setElement(thing);
 
 	map.observer.watch(state => {
-		expect(state.prev).to.equal(thing);
+		assert.strictEqual(state.prev, thing);
 	});
 
 	map.deleteElement(thing);
@@ -120,13 +120,13 @@ test("omap uuid path getter", () => {
 
 	const obs = map.observer.path(id);
 
-	expect(obs.get().value).to.equal(map.get(id));
+	assert.strictEqual(obs.get().value, map.get(id));
 });
 
 test("omap delete noexist", () => {
 	const map = OMap();
 
-	expect(map.delete(UUID())).to.equal(false);
+	assert.strictEqual(map.delete(UUID()), false);
 });
 
 test("omap delete noexist with values", () => {
@@ -136,7 +136,7 @@ test("omap delete noexist with values", () => {
 		map.set(UUID(), true);
 	}
 
-	expect(map.delete(UUID())).to.equal(false);
+	assert.strictEqual(map.delete(UUID()), false);
 });
 
 test("omap clear delta consistentcy", () => {
@@ -146,7 +146,7 @@ test("omap clear delta consistentcy", () => {
 	map.set(id, {});
 
 	map.observer.watch(delta => {
-		expect(map.has(id)).to.equal(false);
+		assert.strictEqual(map.has(id), false);
 	});
 
 	map.clear();
@@ -159,5 +159,5 @@ test("omap set element from observer", () => {
 	map.observer.path(id).set(OObject({
 		id
 	}));
-	expect(map.has(id)).to.equal(true);
+	assert.strictEqual(map.has(id), true);
 });

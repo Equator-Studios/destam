@@ -1,4 +1,4 @@
-import {expect} from 'chai';
+import assert from 'node:assert/strict';
 import test from 'node:test';
 import Observer from '../Observer.js';
 import OObject from '../Object.js';
@@ -7,14 +7,14 @@ import OArray from '../Array.js';
 test("Observer.mutable getter", () => {
 	const value = Observer.mutable('hello');
 
-	expect(value.get()).to.equal('hello');
+	assert.strictEqual(value.get(), 'hello');
 });
 
 test("Observer.mutable getter and setter", () => {
 	const value = Observer.mutable('hello');
 	value.set('world');
 
-	expect(value.get()).to.equal('world');
+	assert.strictEqual(value.get(), 'world');
 });
 
 test("Observer.mutable events", () => {
@@ -28,8 +28,8 @@ test("Observer.mutable events", () => {
 	value.set('previous');
 	value.set('world');
 
-	expect(value.get()).to.equal('world');
-	expect(events).to.deep.equal(['previous', 'world']);
+	assert.strictEqual(value.get(), 'world');
+	assert.deepStrictEqual(events, ['previous', 'world']);
 });
 
 test("Observer.mutable event order", () => {
@@ -47,7 +47,7 @@ test("Observer.mutable event order", () => {
 
 	value.set(0);
 
-	expect(events).to.deep.equal([0, 1, 0, 1]);
+	assert.deepStrictEqual(events, [0, 1, 0, 1]);
 });
 
 test("Observer.mutable event nested remove", () => {
@@ -69,7 +69,7 @@ test("Observer.mutable event nested remove", () => {
 
 	value.set(0);
 
-	expect(events).to.deep.equal([0, 1, 2]);
+	assert.deepStrictEqual(events, [0, 1, 2]);
 });
 
 test("Observer.mutable event nested remove", () => {
@@ -87,14 +87,14 @@ test("Observer.mutable event nested remove", () => {
 
 	value.set(0);
 
-	expect(events).to.deep.equal([0, 1]);
+	assert.deepStrictEqual(events, [0, 1]);
 });
 
 test("Observer.mutable event remove value", () => {
 	const value = Observer.mutable();
 	const watcher = value.watch(event => {});
 
-	expect(watcher()).to.equal(undefined);
+	assert.strictEqual(watcher(), undefined);
 });
 
 test("Observer.mutable event opposite order", () => {
@@ -112,7 +112,7 @@ test("Observer.mutable event opposite order", () => {
 
 	value.set(0);
 
-	expect(events).to.deep.equal([0, 1, 0, 1]);
+	assert.deepStrictEqual(events, [0, 1, 0, 1]);
 });
 
 test("Observer.mutable event throw", () => {
@@ -128,8 +128,8 @@ test("Observer.mutable event throw", () => {
 		events.push(1);
 	});
 
-	expect(() => value.set(0)).to.throw();
-	expect(events).to.deep.equal([0, 1]);
+	assert.throws(() => value.set(0));
+	assert.deepStrictEqual(events, [0, 1]);
 });
 
 test("Observer.mutable event throw opposite", () => {
@@ -145,8 +145,8 @@ test("Observer.mutable event throw opposite", () => {
 		throw new Error("oops");
 	});
 
-	expect(() => value.set(0)).to.throw();
-	expect(events).to.deep.equal([0, 1]);
+	assert.throws(() => value.set(0));
+	assert.deepStrictEqual(events, [0, 1]);
 });
 
 test("Observer.mutable memo event order", () => {
@@ -164,7 +164,7 @@ test("Observer.mutable memo event order", () => {
 
 	value.set(0);
 
-	expect(events).to.deep.equal([0, 1, 0, 1]);
+	assert.deepStrictEqual(events, [0, 1, 0, 1]);
 });
 
 test("Observer.mutable memo event opposite order", () => {
@@ -182,7 +182,7 @@ test("Observer.mutable memo event opposite order", () => {
 
 	value.set(0);
 
-	expect(events).to.deep.equal([0, 1, 0, 1]);
+	assert.deepStrictEqual(events, [0, 1, 0, 1]);
 });
 
 test("Observer.mutable memo event throw", () => {
@@ -198,8 +198,8 @@ test("Observer.mutable memo event throw", () => {
 		events.push(1);
 	});
 
-	expect(() => value.set(0)).to.throw();
-	expect(events).to.deep.equal([0, 1]);
+	assert.throws(() => value.set(0));
+	assert.deepStrictEqual(events, [0, 1]);
 });
 
 test("Observer.mutable memo event throw opposite", () => {
@@ -215,8 +215,8 @@ test("Observer.mutable memo event throw opposite", () => {
 		throw new Error("oops");
 	});
 
-	expect(() => value.set(0)).to.throw();
-	expect(events).to.deep.equal([0, 1]);
+	assert.throws(() => value.set(0));
+	assert.deepStrictEqual(events, [0, 1]);
 });
 
 test ("observer def", () => {
@@ -234,7 +234,7 @@ test ("observer def", () => {
 
 	watcher();
 
-	expect(states).to.deep.equal(['default', '1', '2', 'default', '3']);
+	assert.deepStrictEqual(states, ['default', '1', '2', 'default', '3']);
 });
 
 test ("observer def mutable", () => {
@@ -254,7 +254,7 @@ test ("observer def mutable", () => {
 
 	watcher();
 
-	expect(states).to.deep.equal(['default', '1', '2', 'second', 'third']);
+	assert.deepStrictEqual(states, ['default', '1', '2', 'second', 'third']);
 });
 
 test ("default observable value", () => {
@@ -277,7 +277,7 @@ test ("default observable value", () => {
 
 	watcher();
 
-	expect(states).to.deep.equal(['default', 'other default', '1', '2', 'other default', '3']);
+	assert.deepStrictEqual(states, ['default', 'other default', '1', '2', 'other default', '3']);
 });
 
 test("observer all", () => {
@@ -293,12 +293,12 @@ test("observer all", () => {
 	object.value = 100;
 
 	observer.set(["hello", "world"]);
-	expect(observer.get()).to.deep.equal(["hello", "world"]);
-	expect(() => observer.set([1, 2, 3])).to.throw();
+	assert.deepStrictEqual(observer.get(), ["hello", "world"]);
+	assert.throws(() => observer.set([1, 2, 3]));
 
 	watcher();
 
-	expect(values).to.deep.equal([[0, 0], [10, 0], [10, 100], [100, 100], ["hello", 100], ["hello", "world"]]);
+	assert.deepStrictEqual(values, [[0, 0], [10, 0], [10, 100], [100, 100], ["hello", 100], ["hello", "world"]]);
 });
 
 test("observer all with map", () => {
@@ -317,7 +317,7 @@ test("observer all with map", () => {
 
 	watcher();
 
-	expect(values).to.deep.equal([10, 110, 200]);
+	assert.deepStrictEqual(values, [10, 110, 200]);
 });
 
 test("observer with observer dependiences", () => {
@@ -343,7 +343,7 @@ test("observer with observer dependiences", () => {
 	one.set(false);
 	two.set(true);
 
-	expect(vals).to.deep.equal([[false, false], [true, false], [true, true], [false, true], []]);
+	assert.deepStrictEqual(vals, [[false, false], [true, false], [true, true], [false, true], []]);
 });
 
 test("observer.all set", () => {
@@ -353,8 +353,8 @@ test("observer.all set", () => {
 
 	all.set([1, 2]);
 
-	expect(one.get()).to.equal(1);
-	expect(two.get()).to.equal(2);
+	assert.strictEqual(one.get(), 1);
+	assert.strictEqual(two.get(), 2);
 });
 
 test("observer.all set invalid array", () => {
@@ -362,9 +362,9 @@ test("observer.all set invalid array", () => {
 	const two = Observer.mutable(0);
 	const all = Observer.all([one, two]);
 
-	expect(() => {
+	assert.throws(() => {
 		all.set([1]);
-	}).to.throw();
+	});
 });
 
 test("observer.all set variable array", () => {
@@ -379,9 +379,9 @@ test("observer.all set variable array", () => {
 
 	all.set([1, 2, 3]);
 
-	expect(one.get()).to.equal(1);
-	expect(two.get()).to.equal(2);
-	expect(three.get()).to.equal(3);
+	assert.strictEqual(one.get(), 1);
+	assert.strictEqual(two.get(), 2);
+	assert.strictEqual(three.get(), 3);
 });
 
 test("observer.all set variable array remove", () => {
@@ -402,7 +402,7 @@ test("observer.all set variable array remove", () => {
 
 	all.set([1, 2, 3]);
 
-	expect(stuff).to.deep.equal([
+	assert.deepStrictEqual(stuff, [
 		[0, 0, 0],
 	]);
 });
@@ -417,9 +417,9 @@ test("observer.all set variable array invalid array", () => {
 
 	arr.set([one, two, three]);
 
-	expect(() => {
+	assert.throws(() => {
 		all.set([1, 2]);
-	}).to.throw();
+	});
 });
 
 test("observer memo", () => {
@@ -445,8 +445,8 @@ test("observer memo", () => {
 
 	watcher();
 
-	expect(vals).to.deep.equal(["dude", "hello"]);
-	expect(vals2).to.deep.equal([]);
+	assert.deepStrictEqual(vals, ["dude", "hello"]);
+	assert.deepStrictEqual(vals2, []);
 });
 
 test("observer memo multiple", () => {
@@ -469,16 +469,16 @@ test("observer memo multiple", () => {
 
 	obs.set("dude");
 
-	expect(vals).to.deep.equal(["one-dude", "two-dude", "three-dude"]);
+	assert.deepStrictEqual(vals, ["one-dude", "two-dude", "three-dude"]);
 });
 
 test("observer immutable", () => {
 	const obs = Observer.immutable('hello');
 
-	expect(obs.isImmutable()).to.equal(true);
+	assert.strictEqual(obs.isImmutable(), true);
 
-	expect(obs.get()).to.equal("hello");
-	expect(() => obs.set("new value")).to.throw();
+	assert.strictEqual(obs.get(), "hello");
+	assert.throws(() => obs.set("new value"));
 });
 
 test("observer immutable assign and remove listener", () => {
@@ -492,10 +492,10 @@ test("observer immutable of other observer", () => {
 	const obs = Observer.mutable("hello");
 	const imm = Observer.immutable(obs);
 
-	expect(imm.isImmutable()).to.equal(true);
+	assert.strictEqual(imm.isImmutable(), true);
 
-	expect(imm.get()).to.equal("hello");
-	expect(() => imm.set("new value")).to.throw();
+	assert.strictEqual(imm.get(), "hello");
+	assert.throws(() => imm.set("new value"));
 
 	const vals = [];
 	imm.watch(delta => {
@@ -503,18 +503,18 @@ test("observer immutable of other observer", () => {
 	});
 
 	obs.set("value");
-	expect(imm.get()).to.equal("value");
-	expect(vals).to.deep.equal(["value"]);
+	assert.strictEqual(imm.get(), "value");
+	assert.deepStrictEqual(vals, ["value"]);
 });
 
 test("observer setter", () => {
 	const obs = Observer.mutable('hello').setter((val, set) => val !== 'ignore' && set(val));
 
-	expect(obs.get()).to.equal("hello");
+	assert.strictEqual(obs.get(), "hello");
 	obs.set("ignore");
-	expect(obs.get()).to.equal("hello");
+	assert.strictEqual(obs.get(), "hello");
 	obs.set("other");
-	expect(obs.get()).to.equal("other");
+	assert.strictEqual(obs.get(), "other");
 });
 
 test("observer event", () => {
@@ -530,7 +530,7 @@ test("observer event", () => {
 		removeEventListener: (type, cb, options) => {
 			events.push(type, options);
 
-			expect(cb).to.equal(callback);
+			assert.strictEqual(cb, callback);
 		},
 	}, "event", options);
 
@@ -545,9 +545,9 @@ test("observer event", () => {
 
 	watcher();
 
-	expect(obs.get()).to.equal('world');
-	expect(events).to.have.ordered.members(["event", options, "event", options]);
-	expect(vals).to.have.ordered.members(["hello", "world"]);
+	assert.strictEqual(obs.get(), 'world');
+	assert.deepStrictEqual(events, ["event", options, "event", options]);
+	assert.deepStrictEqual(vals, ["hello", "world"]);
 });
 
 test("observer tree", () => {
@@ -576,23 +576,23 @@ test("observer tree", () => {
 	tree.children[0].children[0].hello = "hello";
 	tree.children[0].children[0].val = "val 4";
 
-	expect(vals).to.deep.equal(["val", "val 2", "val 3", "val 4"]);
+	assert.deepStrictEqual(vals, ["val", "val 2", "val 3", "val 4"]);
 });
 
 test("observer unwrap", () => {
 	let obs = Observer.mutable("hello").unwrap();
 
-	expect(obs.get()).to.equal("hello");
+	assert.strictEqual(obs.get(), "hello");
 	obs.set("other val");
-	expect(obs.get()).to.equal("other val");
+	assert.strictEqual(obs.get(), "other val");
 	let second = Observer.mutable("second");
 	obs.set(second);
-	expect(obs.get()).to.equal("second");
+	assert.strictEqual(obs.get(), "second");
 	second.set("mutated second");
-	expect(obs.get()).to.equal("mutated second");
+	assert.strictEqual(obs.get(), "mutated second");
 	obs.set("from obs");
-	expect(second.get()).to.equal("from obs");
-	expect(obs.get()).to.equal("from obs");
+	assert.strictEqual(second.get(), "from obs");
+	assert.strictEqual(obs.get(), "from obs");
 });
 
 test("observer unwrap events", () => {
@@ -615,8 +615,8 @@ test("observer unwrap events", () => {
 	second.set("after");
 
 	watcher();
-	expect(second.get()).to.equal("after");
-	expect(vals).to.deep.equal(["second", "hello", third, "reset"]);
+	assert.strictEqual(second.get(), "after");
+	assert.deepStrictEqual(vals, ["second", "hello", third, "reset"]);
 });
 
 test("observer unwrap watcher remove", () => {
@@ -633,12 +633,12 @@ test("observer map", () => {
 	let orig = Observer.mutable(1);
 	let obs = orig.map(x => x * 2);
 
-	expect(obs.isImmutable()).to.equal(true);
+	assert.strictEqual(obs.isImmutable(), true);
 
-	expect(obs.get()).to.equal(2);
+	assert.strictEqual(obs.get(), 2);
 	orig.set(4);
-	expect(obs.get()).to.equal(8);
-	expect(() => obs.set(8)).to.throw();
+	assert.strictEqual(obs.get(), 8);
+	assert.throws(() => obs.set(8));
 });
 
 test("observer map call frequency", () => {
@@ -656,15 +656,15 @@ test("observer map call frequency", () => {
 
 	orig.set(2);
 
-	expect(calls).to.equal(1);
-	expect(val).to.equal(4);
+	assert.strictEqual(calls, 1);
+	assert.strictEqual(val, 4);
 });
 
 test("observer double map", () => {
 	let orig = Observer.mutable(false);
 	let obs = orig.map(x => !x).map(x => !x);
 
-	expect(obs.isImmutable()).to.equal(true);
+	assert.strictEqual(obs.isImmutable(), true);
 
 	const vals = [];
 	obs.watch(state => {
@@ -674,7 +674,7 @@ test("observer double map", () => {
 	orig.set(true);
 	orig.set(false);
 
-	expect(vals).to.deep.equal([true, false]);
+	assert.deepStrictEqual(vals, [true, false]);
 });
 
 test("observer map and memo duplicate value", () => {
@@ -691,7 +691,7 @@ test("observer map and memo duplicate value", () => {
 	orig.set(4);
 	orig.set(5);
 
-	expect(vals).to.deep.equal([1, 2]);
+	assert.deepStrictEqual(vals, [1, 2]);
 });
 
 test("observer mutable map and memo", () => {
@@ -719,8 +719,8 @@ test("observer mutable map and memo", () => {
 	watcher();
 	watcher2();
 
-	expect(vals).to.deep.equal([0, 2, 4, 8, 4, 2]);
-	expect(vals2).to.deep.equal([0, 2, 4, 8, 4, 2]);
+	assert.deepStrictEqual(vals, [0, 2, 4, 8, 4, 2]);
+	assert.deepStrictEqual(vals2, [0, 2, 4, 8, 4, 2]);
 });
 
 test("observer skip", () => {
@@ -751,7 +751,7 @@ test("observer skip", () => {
 
 	watcher();
 
-	expect(vals).to.deep.equal(["hello", "world", "hello 2", "hello 3"]);
+	assert.deepStrictEqual(vals, ["hello", "world", "hello 2", "hello 3"]);
 });
 
 test("observer skip multiple", () => {
@@ -782,7 +782,7 @@ test("observer skip multiple", () => {
 
 	watcher();
 
-	expect(vals).to.deep.equal(["hello", "world", "hello 2", "world 2", "hello 3", "world 3", "hello 4"]);
+	assert.deepStrictEqual(vals, ["hello", "world", "hello 2", "world 2", "hello 3", "world 3", "hello 4"]);
 });
 
 test("observer throttle", async () => {
@@ -805,7 +805,7 @@ test("observer throttle", async () => {
 
 	watcher();
 
-	expect(vals).to.deep.equal([1, 3, 6]);
+	assert.deepStrictEqual(vals, [1, 3, 6]);
 });
 
 test("observer throttle remove while watching", async () => {
@@ -820,7 +820,7 @@ test("observer throttle remove while watching", async () => {
 	obs.set(2);
 	watcher();
 
-	expect(vals).to.deep.equal([1, 2]);
+	assert.deepStrictEqual(vals, [1, 2]);
 });
 
 test("observer wait", async () => {
@@ -846,7 +846,7 @@ test("observer wait", async () => {
 	obs.set(7);
 	watcher();
 
-	expect(vals).to.deep.equal([4, 6, 7]);
+	assert.deepStrictEqual(vals, [4, 6, 7]);
 });
 
 test("observer wait immediate remove", async () => {
@@ -858,7 +858,7 @@ test("observer wait immediate remove", async () => {
 
 test("observer timer", async () => {
 	const timer = Observer.timer(10);
-	expect(timer.get()).to.equal(0);
+	assert.strictEqual(timer.get(), 0);
 
 	const vals = [];
 	const watcher = timer.watch(delta => {
@@ -868,15 +868,15 @@ test("observer timer", async () => {
 	await new Promise(ok => setTimeout(ok, 25));
 	watcher();
 
-	expect(vals).to.deep.equal([1, 2]);
-	expect(timer.get()).to.equal(2);
+	assert.deepStrictEqual(vals, [1, 2]);
+	assert.strictEqual(timer.get(), 2);
 });
 
 test("observer watch non function", () => {
 	const obs = Observer.mutable();
 
-	expect(() => obs.watch(1)).to.throw();
-	expect(() => obs.watchCommit(1)).to.throw();
+	assert.throws(() => obs.watch(1));
+	assert.throws(() => obs.watchCommit(1));
 });
 
 test("observer timer in map and unwrap", async () => {
@@ -890,7 +890,7 @@ test("observer timer in map and unwrap", async () => {
 	await new Promise(ok => setTimeout(ok, 25));
 	remove();
 
-	expect(states).to.deep.equal(['not-activated', 0, 1, 2]);
+	assert.deepStrictEqual(states, ['not-activated', 0, 1, 2]);
 });
 
 test("observer selector", () => {
@@ -900,17 +900,17 @@ test("observer selector", () => {
 	const one = selector(1);
 	const two = selector(2);
 
-	expect(one.get()).to.equal(false);
-	expect(two.get()).to.equal(false);
+	assert.strictEqual(one.get(), false);
+	assert.strictEqual(two.get(), false);
 	selected.set(1);
-	expect(one.get()).to.equal(true);
-	expect(two.get()).to.equal(false);
+	assert.strictEqual(one.get(), true);
+	assert.strictEqual(two.get(), false);
 	selected.set(2);
-	expect(one.get()).to.equal(false);
-	expect(two.get()).to.equal(true);
+	assert.strictEqual(one.get(), false);
+	assert.strictEqual(two.get(), true);
 	selected.set(null);
-	expect(one.get()).to.equal(false);
-	expect(two.get()).to.equal(false);
+	assert.strictEqual(one.get(), false);
+	assert.strictEqual(two.get(), false);
 });
 
 test("observer selector set selected", () => {
@@ -920,14 +920,14 @@ test("observer selector set selected", () => {
 	const one = selector(1);
 	const two = selector(2);
 
-	expect(one.get()).to.equal(false);
-	expect(two.get()).to.equal(false);
+	assert.strictEqual(one.get(), false);
+	assert.strictEqual(two.get(), false);
 	one.set(true);
-	expect(one.get()).to.equal(true);
-	expect(two.get()).to.equal(false);
+	assert.strictEqual(one.get(), true);
+	assert.strictEqual(two.get(), false);
 	two.set(true);
-	expect(one.get()).to.equal(false);
-	expect(two.get()).to.equal(true);
+	assert.strictEqual(one.get(), false);
+	assert.strictEqual(two.get(), true);
 });
 
 test("observer selector deselect by setting defValue", () => {
@@ -938,12 +938,12 @@ test("observer selector deselect by setting defValue", () => {
 	const two = selector(2);
 
 	one.set(true);
-	expect(one.get()).to.equal(true);
-	expect(two.get()).to.equal(false);
+	assert.strictEqual(one.get(), true);
+	assert.strictEqual(two.get(), false);
 	one.set(false);
-	expect(one.get()).to.equal(false);
-	expect(two.get()).to.equal(false);
-	expect(selected.get()).to.equal(null);
+	assert.strictEqual(one.get(), false);
+	assert.strictEqual(two.get(), false);
+	assert.strictEqual(selected.get(), null);
 });
 
 test("observer selector set selected custom values", () => {
@@ -953,14 +953,14 @@ test("observer selector set selected custom values", () => {
 	const one = selector(1);
 	const two = selector(2);
 
-	expect(one.get()).to.equal('two');
-	expect(two.get()).to.equal('two');
+	assert.strictEqual(one.get(), 'two');
+	assert.strictEqual(two.get(), 'two');
 	one.set('one');
-	expect(one.get()).to.equal('one');
-	expect(two.get()).to.equal('two');
+	assert.strictEqual(one.get(), 'one');
+	assert.strictEqual(two.get(), 'two');
 	two.set('one');
-	expect(one.get()).to.equal('two');
-	expect(two.get()).to.equal('one');
+	assert.strictEqual(one.get(), 'two');
+	assert.strictEqual(two.get(), 'one');
 });
 
 test("observer selector custom values", () => {
@@ -970,17 +970,17 @@ test("observer selector custom values", () => {
 	const one = selector(1);
 	const two = selector(2);
 
-	expect(one.get()).to.equal('no');
-	expect(two.get()).to.equal('no');
+	assert.strictEqual(one.get(), 'no');
+	assert.strictEqual(two.get(), 'no');
 	selected.set(1);
-	expect(one.get()).to.equal('yes');
-	expect(two.get()).to.equal('no');
+	assert.strictEqual(one.get(), 'yes');
+	assert.strictEqual(two.get(), 'no');
 	selected.set(2);
-	expect(one.get()).to.equal('no');
-	expect(two.get()).to.equal('yes');
+	assert.strictEqual(one.get(), 'no');
+	assert.strictEqual(two.get(), 'yes');
 	selected.set(null);
-	expect(one.get()).to.equal('no');
-	expect(two.get()).to.equal('no');
+	assert.strictEqual(one.get(), 'no');
+	assert.strictEqual(two.get(), 'no');
 });
 
 test("observer duplicate selector", () => {
@@ -990,14 +990,14 @@ test("observer duplicate selector", () => {
 	const one = selector(1);
 	const two = selector(1);
 
-	expect(one.get()).to.equal(false);
-	expect(two.get()).to.equal(false);
+	assert.strictEqual(one.get(), false);
+	assert.strictEqual(two.get(), false);
 	selected.set(1);
-	expect(one.get()).to.equal(true);
-	expect(two.get()).to.equal(true);
+	assert.strictEqual(one.get(), true);
+	assert.strictEqual(two.get(), true);
 	selected.set(null);
-	expect(one.get()).to.equal(false);
-	expect(two.get()).to.equal(false);
+	assert.strictEqual(one.get(), false);
+	assert.strictEqual(two.get(), false);
 });
 
 test("observer selector events", () => {
@@ -1015,7 +1015,7 @@ test("observer selector events", () => {
 	selected.set(2);
 	selected.set(null);
 
-	expect(events).to.deep.equal([1, true, 1, false, 2, true, 2, false]);
+	assert.deepStrictEqual(events, [1, true, 1, false, 2, true, 2, false]);
 });
 
 test("observer selector events double remove", () => {
@@ -1030,7 +1030,7 @@ test("observer selector events double remove", () => {
 	watcher();
 	watcher();
 
-	expect(events).to.deep.equal([]);
+	assert.deepStrictEqual(events, []);
 });
 
 test("observer duplicate selector events", () => {
@@ -1047,7 +1047,7 @@ test("observer duplicate selector events", () => {
 	selected.set(1);
 	selected.set(null);
 
-	expect(events).to.deep.equal([1, true, 1, true, 1, false, 1, false]);
+	assert.deepStrictEqual(events, [1, true, 1, true, 1, false, 1, false]);
 });
 
 test("observer duplicate selector events remove first", () => {
@@ -1066,7 +1066,7 @@ test("observer duplicate selector events remove first", () => {
 	selected.set(1);
 	selected.set(null);
 
-	expect(events).to.deep.equal([1, true, 1, false]);
+	assert.deepStrictEqual(events, [1, true, 1, false]);
 });
 
 test("observer duplicate selector events remove second", () => {
@@ -1085,7 +1085,7 @@ test("observer duplicate selector events remove second", () => {
 	selected.set(1);
 	selected.set(null);
 
-	expect(events).to.deep.equal([1, true, 1, false]);
+	assert.deepStrictEqual(events, [1, true, 1, false]);
 });
 
 test("observer duplicate selector 3 events remove first", () => {
@@ -1106,7 +1106,7 @@ test("observer duplicate selector 3 events remove first", () => {
 	selected.set(1);
 	selected.set(null);
 
-	expect(events).to.deep.equal([1, true, 1, true, 1, false, 1, false]);
+	assert.deepStrictEqual(events, [1, true, 1, true, 1, false, 1, false]);
 });
 
 test("observer duplicate selector 3 events remove second", () => {
@@ -1127,7 +1127,7 @@ test("observer duplicate selector 3 events remove second", () => {
 	selected.set(1);
 	selected.set(null);
 
-	expect(events).to.deep.equal([1, true, 1, true, 1, false, 1, false]);
+	assert.deepStrictEqual(events, [1, true, 1, true, 1, false, 1, false]);
 });
 
 test("observer duplicate selector 3 events remove third", () => {
@@ -1148,7 +1148,7 @@ test("observer duplicate selector 3 events remove third", () => {
 	selected.set(1);
 	selected.set(null);
 
-	expect(events).to.deep.equal([1, true, 1, true, 1, false, 1, false]);
+	assert.deepStrictEqual(events, [1, true, 1, true, 1, false, 1, false]);
 });
 
 test("observer duplicate selector events multiple listeners", () => {
@@ -1164,7 +1164,7 @@ test("observer duplicate selector events multiple listeners", () => {
 	selected.set(1);
 	selected.set(null);
 
-	expect(events).to.deep.equal([1, true, 1, true, 1, false, 1, false]);
+	assert.deepStrictEqual(events, [1, true, 1, true, 1, false, 1, false]);
 });
 
 test("observer selector cleanup", () => {
@@ -1182,8 +1182,8 @@ test("observer selector cleanup", () => {
 	one();
 	two();
 
-	expect(registers).to.equal(1);
-	expect(removes).to.equal(1);
+	assert.strictEqual(registers, 1);
+	assert.strictEqual(removes, 1);
 });
 
 test("observer selector cleanup multiple listeners", () => {
@@ -1202,8 +1202,8 @@ test("observer selector cleanup multiple listeners", () => {
 	one();
 	two();
 
-	expect(registers).to.equal(1);
-	expect(removes).to.equal(1);
+	assert.strictEqual(registers, 1);
+	assert.strictEqual(removes, 1);
 });
 
 test("observer selector initial selector", () => {
@@ -1213,11 +1213,11 @@ test("observer selector initial selector", () => {
 	const one = selector(1);
 	const two = selector(2);
 
-	expect(one.get()).to.equal(true);
-	expect(two.get()).to.equal(false);
+	assert.strictEqual(one.get(), true);
+	assert.strictEqual(two.get(), false);
 	selected.set(null);
-	expect(one.get()).to.equal(false);
-	expect(two.get()).to.equal(false);
+	assert.strictEqual(one.get(), false);
+	assert.strictEqual(two.get(), false);
 });
 
 test("observer selector initial selector events", () => {
@@ -1232,7 +1232,7 @@ test("observer selector initial selector events", () => {
 	two.watch(delta => events.push(2, two.get()));
 
 	selected.set(2);
-	expect(events).to.deep.equal([1, false, 2, true]);
+	assert.deepStrictEqual(events, [1, false, 2, true]);
 });
 
 test("observer effect", () => {
@@ -1248,7 +1248,7 @@ test("observer effect", () => {
 
 	effect();
 
-	expect(vals).to.deep.equal([1, 2, 3]);
+	assert.deepStrictEqual(vals, [1, 2, 3]);
 });
 
 test("observer effect cleanup", () => {
@@ -1269,7 +1269,7 @@ test("observer effect cleanup", () => {
 
 	effect();
 
-	expect(vals).to.deep.equal([]);
+	assert.deepStrictEqual(vals, []);
 });
 
 test("observer effect self modify", () => {
@@ -1297,13 +1297,13 @@ test("observer effect cleanup once", () => {
 
 	effect();
 
-	expect(vals).to.deep.equal([]);
+	assert.deepStrictEqual(vals, []);
 });
 
 test("observer empty path", () => {
 	const obs = Observer.mutable();
 
-	expect(obs).to.deep.equal(obs.path([]));
+	assert.deepStrictEqual(obs, obs.path([]));
 });
 
 test("Observer lifetimes null remove", () => {
@@ -1317,7 +1317,7 @@ test("Observer lifetimes null remove", () => {
 	obs.watch(() => {});
 	obs.watch(() => {});
 
-	expect(count).to.equal(1);
+	assert.strictEqual(count, 1);
 });
 
 test("Observer lifetimes", () => {
@@ -1338,7 +1338,7 @@ test("Observer lifetimes", () => {
 	one();
 	two();
 
-	expect(count).to.equal(0);
+	assert.strictEqual(count, 0);
 });
 
 test("Observer lifetimes double free", () => {
@@ -1361,7 +1361,7 @@ test("Observer lifetimes double free", () => {
 	one();
 	two();
 
-	expect(count).to.equal(0);
+	assert.strictEqual(count, 0);
 });
 
 test("Observer lifetimes multiple null remove", () => {
@@ -1378,7 +1378,7 @@ test("Observer lifetimes multiple null remove", () => {
 	let two = obs.watch(() => {});
 	two();
 
-	expect(count).to.equal(2);
+	assert.strictEqual(count, 2);
 });
 
 test("Observer lifetimes multiple", () => {
@@ -1400,8 +1400,8 @@ test("Observer lifetimes multiple", () => {
 	let two = obs.watch(() => {});
 	two();
 
-	expect(count).to.equal(2);
-	expect(removeCount).to.equal(2);
+	assert.strictEqual(count, 2);
+	assert.strictEqual(removeCount, 2);
 });
 
 test("observer lifetimes reentrant", () => {
@@ -1424,13 +1424,13 @@ test("observer lifetimes reentrant", () => {
 
 	remove();
 
-	expect(states).to.deep.equal([0, 1, 2, 3]);
-	expect(removed).to.equal(true);
+	assert.deepStrictEqual(states, [0, 1, 2, 3]);
+	assert.strictEqual(removed, true);
 });
 
 test("observer NULL", () => {
 	const nil = Observer.NULL;
-	expect(nil.get()).to.equal(undefined);
+	assert.strictEqual(nil.get(), undefined);
 });
 
 test("observer NULL register listener", () => {
@@ -1441,7 +1441,7 @@ test("observer NULL register listener", () => {
 
 test("immutability after shallow", () => {
 	const obj = Observer.immutable().shallow();
-	expect(obj.isImmutable()).to.equal(true);
+	assert.strictEqual(obj.isImmutable(), true);
 });
 
 test("map set to undefined", () => {
@@ -1455,14 +1455,14 @@ test("map set to undefined", () => {
 
 	obs.set(undefined);
 
-	expect(vals).to.deep.equal([undefined]);
+	assert.deepStrictEqual(vals, [undefined]);
 });
 
 test("map no cache", () => {
 	const obs = Observer.mutable(1)
 
 	const map = obs.map(a => a);
-	expect(map.get()).to.equal(1);
+	assert.strictEqual(map.get(), 1);
 });
 
 test("mutable recursion", () => {
@@ -1473,7 +1473,7 @@ test("mutable recursion", () => {
 		obs.set(num + 1);
 	});
 
-	expect(obs.get()).to.equal(10);
+	assert.strictEqual(obs.get(), 10);
 });
 
 test("unwrap mutable recursion", () => {
@@ -1484,7 +1484,7 @@ test("unwrap mutable recursion", () => {
 		obs.set(num + 1);
 	});
 
-	expect(obs.get()).to.equal(10);
+	assert.strictEqual(obs.get(), 10);
 });
 
 test("bool coerse", () => {
@@ -1499,7 +1499,7 @@ test("bool coerse", () => {
 	val.set(2);
 	val.set(0);
 
-	expect(stuff).to.deep.equal([false, true, false]);
+	assert.deepStrictEqual(stuff, [false, true, false]);
 });
 
 test("bool values", () => {
@@ -1514,7 +1514,7 @@ test("bool values", () => {
 	val.set(2);
 	val.set(0);
 
-	expect(stuff).to.deep.equal(['no', 'yes', 'no']);
+	assert.deepStrictEqual(stuff, ['no', 'yes', 'no']);
 });
 
 test("get after map remove", () => {
@@ -1525,11 +1525,11 @@ test("get after map remove", () => {
 	const listener = map.effect(() => {});
 	listener();
 
-	expect(map.get()).to.equal(0);
+	assert.strictEqual(map.get(), 0);
 	val.set(2);
-	expect(map.get()).to.equal(2);
+	assert.strictEqual(map.get(), 2);
 	val.set(3);
-	expect(map.get()).to.equal(3);
+	assert.strictEqual(map.get(), 3);
 });
 
 test("recursive get in map", () => {
@@ -1548,7 +1548,7 @@ test("recursive get in map", () => {
 	val.set(0);
 	val.set(5);
 
-	expect(vals).to.deep.equal([undefined, 1, 2, 5]);
+	assert.deepStrictEqual(vals, [undefined, 1, 2, 5]);
 });
 
 test("recursive get in map call freq", () => {
@@ -1569,7 +1569,7 @@ test("recursive get in map call freq", () => {
 	val.set(0);
 	val.set(5);
 
-	expect(freq).to.equal(5);
+	assert.strictEqual(freq, 5);
 });
 
 test("recursive get in map call freq 2", () => {
@@ -1590,7 +1590,7 @@ test("recursive get in map call freq 2", () => {
 	val.set(0);
 	val.set(5);
 
-	expect(freq).to.equal(4);
+	assert.strictEqual(freq, 4);
 });
 
 test("recursive get in map call freq 3", () => {
@@ -1611,7 +1611,7 @@ test("recursive get in map call freq 3", () => {
 	val.set(0);
 	val.set(5);
 
-	expect(freq).to.equal(4);
+	assert.strictEqual(freq, 4);
 });
 
 test("recursive get in map and unwrap", () => {
@@ -1635,7 +1635,7 @@ test("recursive get in map and unwrap", () => {
 	val.set(0);
 	val.set(5);
 
-	expect(vals).to.deep.equal([0, 1, 2, 5]);
+	assert.deepStrictEqual(vals, [0, 1, 2, 5]);
 });
 
 test("recursive get in map and unwrap 2", () => {
@@ -1660,7 +1660,7 @@ test("recursive get in map and unwrap 2", () => {
 	val.set(0);
 	val.set(5);
 
-	expect(vals).to.deep.equal([1, 2, 5]);
+	assert.deepStrictEqual(vals, [1, 2, 5]);
 });
 
 test("recursive get in map and unwrap 3", () => {
@@ -1685,7 +1685,7 @@ test("recursive get in map and unwrap 3", () => {
 	val.set(0);
 	val.set(5);
 
-	expect(vals).to.deep.equal([2, 5]);
+	assert.deepStrictEqual(vals, [2, 5]);
 });
 
 test("throwing map get twice", () => {
@@ -1693,8 +1693,8 @@ test("throwing map get twice", () => {
 		throw new Error("Oh no");
 	});
 
-	expect(() => val.get()).to.throw();
-	expect(() => val.get()).to.throw();
+	assert.throws(() => val.get());
+	assert.throws(() => val.get());
 });
 
 test("throwing map get twice with watch", () => {
@@ -1704,8 +1704,8 @@ test("throwing map get twice with watch", () => {
 
 	val.watch(() => {});
 
-	expect(() => val.get()).to.throw();
-	expect(() => val.get()).to.throw();
+	assert.throws(() => val.get());
+	assert.throws(() => val.get());
 });
 
 test("throwing map set twice", () => {
@@ -1716,8 +1716,8 @@ test("throwing map set twice", () => {
 
 	val.watch(() => {});
 
-	expect(() => base.set(2)).to.throw();
-	expect(() => base.set(3)).to.throw();
+	assert.throws(() => base.set(2));
+	assert.throws(() => base.set(3));
 });
 
 test("throwing map set then get", () => {
@@ -1728,6 +1728,6 @@ test("throwing map set then get", () => {
 
 	val.watch(() => {});
 
-	expect(() => base.set(2)).to.throw();
-	expect(() => val.get()).to.throw();
+	assert.throws(() => base.set(2));
+	assert.throws(() => val.get());
 });

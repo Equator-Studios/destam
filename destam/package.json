@@ -16,8 +16,5 @@
     "type": "git",
     "url": "git+https://github.com/Equator-Studios/destam.git",
     "directory": "destam"
-  },
-  "devDependencies": {
-    "chai": "^5.0.0"
   }
 }

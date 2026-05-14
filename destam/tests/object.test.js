@@ -1,4 +1,4 @@
-import {expect} from 'chai';
+import assert from 'node:assert/strict';
 import test from 'node:test';
 import OObject from '../Object.js';
 import {Insert} from '../Events.js';
@@ -7,7 +7,7 @@ import Observer from '../Observer.js';
 test("should be instanceof itself", () => {
 	let arr = OObject();
 
-	expect(arr).to.be.an.instanceOf(OObject);
+	assert.ok(arr instanceof OObject);
 });
 
 test("object hasOwnProperty", () => {
@@ -15,7 +15,7 @@ test("object hasOwnProperty", () => {
 		"hello": true
 	});
 
-	expect(arr.hasOwnProperty("hello")).to.equal(true);
+	assert.strictEqual(arr.hasOwnProperty("hello"), true);
 });
 
 const testin = (ret, exp) => {
@@ -72,24 +72,24 @@ test("object prototype", () => {
 	cons.prototype.constructor = cons;
 
 	const obj = OObject(cons());
-	expect(obj).to.be.an.instanceOf(OObject);
-	expect(obj).to.be.an.instanceOf(cons);
+	assert.ok(obj instanceof OObject);
+	assert.ok(obj instanceof cons);
 });
 
 test("reading keys", () => {
 	let object = OObject({ one: '1', two: '2', three: '3' });
 
-	expect (Object.keys(object)).to.have.members(['one', 'two', 'three']);
-	expect (object.two).to.equal('2');
-	expect (object.three).to.equal('3');
+	assert.deepStrictEqual(new Set(Object.keys(object)), new Set(['one', 'two', 'three']));
+	assert.strictEqual(object.two, '2');
+	assert.strictEqual(object.three, '3');
 });
 
 test("reading properties from an object observer", () => {
 	let object = OObject({ one: '1', two: '2', three: '3' });
 
-	expect (object.one).to.equal('1');
-	expect (object.two).to.equal('2');
-	expect (object.three).to.equal('3');
+	assert.strictEqual(object.one, '1');
+	assert.strictEqual(object.two, '2');
+	assert.strictEqual(object.three, '3');
 });
 
 test("reading keys", () => {
@@ -98,35 +98,35 @@ test("reading keys", () => {
 	object.two = '2';
 	object.three = '3';
 
-	expect (Object.keys(object)).to.have.members(['one', 'two', 'three']);
-	expect (object.one).to.equal('1');
-	expect (object.two).to.equal('2');
-	expect (object.three).to.equal('3');
+	assert.deepStrictEqual(new Set(Object.keys(object)), new Set(['one', 'two', 'three']));
+	assert.strictEqual(object.one, '1');
+	assert.strictEqual(object.two, '2');
+	assert.strictEqual(object.three, '3');
 });
 
 test("deleting keys", () => {
 	let object = OObject({ one: '1', two: '2', three: '3' });
 
-	expect (Object.keys(object)).to.have.members(['one', 'two', 'three']);
-	expect (object.one).to.equal('1');
-	expect (object.two).to.equal('2');
-	expect (object.three).to.equal('3');
+	assert.deepStrictEqual(new Set(Object.keys(object)), new Set(['one', 'two', 'three']));
+	assert.strictEqual(object.one, '1');
+	assert.strictEqual(object.two, '2');
+	assert.strictEqual(object.three, '3');
 
 	delete object.one;
 	delete object.two;
 	delete object.three;
 
-	expect (Object.keys(object)).to.have.members([]);
-	expect (object.one).to.equal(undefined);
-	expect (object.two).to.equal(undefined);
-	expect (object.three).to.equal(undefined);
+	assert.deepStrictEqual(new Set(Object.keys(object)), new Set([]));
+	assert.strictEqual(object.one, undefined);
+	assert.strictEqual(object.two, undefined);
+	assert.strictEqual(object.three, undefined);
 });
 
 test("this keyword must be the value of the observer in a called function", () => {
 	let arr = OObject();
 
 	arr.call = function () {
-		expect (this).to.equal(arr);
+		assert.strictEqual(this, arr);
 	};
 
 	arr.call();
@@ -135,7 +135,7 @@ test("this keyword must be the value of the observer in a called function", () =
 test("this keyword must be the value of the observer in a called function in a prototype", () => {
 	let arr = OObject(Object.create({
 		call () {
-			expect (this).to.equal(arr);
+			assert.strictEqual(this, arr);
 		}
 	}));
 
@@ -153,11 +153,11 @@ test("object basic events", () => {
 	object.two = '2';
 	object.three = '3';
 
-	expect (Object.keys(object)).to.have.members(['one', 'two', 'three']);
-	expect (object.one).to.equal('1');
-	expect (object.two).to.equal('2');
-	expect (object.three).to.equal('3');
-	expect (events).to.deep.equal(['1', '2', '3']);
+	assert.deepStrictEqual(new Set(Object.keys(object)), new Set(['one', 'two', 'three']));
+	assert.strictEqual(object.one, '1');
+	assert.strictEqual(object.two, '2');
+	assert.strictEqual(object.three, '3');
+	assert.deepStrictEqual(events, ['1', '2', '3']);
 });
 
 test("object basic events with memo", () => {
@@ -171,11 +171,11 @@ test("object basic events with memo", () => {
 	object.two = '2';
 	object.three = '3';
 
-	expect (Object.keys(object)).to.have.members(['one', 'two', 'three']);
-	expect (object.one).to.equal('1');
-	expect (object.two).to.equal('2');
-	expect (object.three).to.equal('3');
-	expect (events).to.deep.equal(['1', '2', '3']);
+	assert.deepStrictEqual(new Set(Object.keys(object)), new Set(['one', 'two', 'three']));
+	assert.strictEqual(object.one, '1');
+	assert.strictEqual(object.two, '2');
+	assert.strictEqual(object.three, '3');
+	assert.deepStrictEqual(events, ['1', '2', '3']);
 });
 
 test("remove event before setting values", () => {
@@ -191,11 +191,11 @@ test("remove event before setting values", () => {
 	object.two = '2';
 	object.three = '3';
 
-	expect (Object.keys(object)).to.have.members(['one', 'two', 'three']);
-	expect (object.one).to.equal('1');
-	expect (object.two).to.equal('2');
-	expect (object.three).to.equal('3');
-	expect (events).to.deep.equal([]);
+	assert.deepStrictEqual(new Set(Object.keys(object)), new Set(['one', 'two', 'three']));
+	assert.strictEqual(object.one, '1');
+	assert.strictEqual(object.two, '2');
+	assert.strictEqual(object.three, '3');
+	assert.deepStrictEqual(events, []);
 });
 
 test("remove after unlink", () => {
@@ -218,7 +218,7 @@ test("remove after unlink", () => {
 	nestedEvent();
 	nested.three = 3;
 
-	expect (events).to.have.ordered.members([nested, 1, 1, 2]);
+	assert.deepStrictEqual(events, [nested, 1, 1, 2]);
 });
 
 test("remove event after setting values", () => {
@@ -238,11 +238,11 @@ test("remove event after setting values", () => {
 	object.two = '5';
 	object.three = '6';
 
-	expect (Object.keys(object)).to.have.members(['one', 'two', 'three']);
-	expect (object.one).to.equal('4');
-	expect (object.two).to.equal('5');
-	expect (object.three).to.equal('6');
-	expect (events).to.deep.equal(['1', '2', '3']);
+	assert.deepStrictEqual(new Set(Object.keys(object)), new Set(['one', 'two', 'three']));
+	assert.strictEqual(object.one, '4');
+	assert.strictEqual(object.two, '5');
+	assert.strictEqual(object.three, '6');
+	assert.deepStrictEqual(events, ['1', '2', '3']);
 });
 
 test("reset keys", () => {
@@ -264,11 +264,11 @@ test("reset keys", () => {
 	object.two = '2';
 	object.three = '3';
 
-	expect (Object.keys(object)).to.have.members(['one', 'two', 'three']);
-	expect (object.one).to.equal('1');
-	expect (object.two).to.equal('2');
-	expect (object.three).to.equal('3');
-	expect (events).to.deep.equal(['1', '2', '3', '4', '5', '6', '1', '2', '3']);
+	assert.deepStrictEqual(new Set(Object.keys(object)), new Set(['one', 'two', 'three']));
+	assert.strictEqual(object.one, '1');
+	assert.strictEqual(object.two, '2');
+	assert.strictEqual(object.three, '3');
+	assert.deepStrictEqual(events, ['1', '2', '3', '4', '5', '6', '1', '2', '3']);
 });
 
 test("prototype not linking", () => {
@@ -285,7 +285,7 @@ test("prototype not linking", () => {
 
 	arr.value = 'linked';
 
-	expect(events).to.deep.equal(['linked']);
+	assert.deepStrictEqual(events, ['linked']);
 });
 
 test("object pathing", () => {
@@ -300,7 +300,7 @@ test("object pathing", () => {
 	object.two = '2';
 	object.three = '3';
 
-	expect(paths).to.deep.equal([['one'], ['two'], ['three']]);
+	assert.deepStrictEqual(paths, [['one'], ['two'], ['three']]);
 });
 
 test("shallow query with a path", () => {
@@ -329,7 +329,7 @@ test("shallow query with a path", () => {
 	object.two = '2';
 	object.three = '3';
 
-	expect(paths).to.deep.equal([['next'], ['next', 'one'], ['next', 'two'], ['next', 'three'], ['next', 'next']]);
+	assert.deepStrictEqual(paths, [['next'], ['next', 'one'], ['next', 'two'], ['next', 'three'], ['next', 'next']]);
 });
 
 test("shallow query with a path and memo", () => {
@@ -344,7 +344,7 @@ test("shallow query with a path and memo", () => {
 	object.next = object2;
 	object2.thing = 'thing';
 
-	expect(paths).to.deep.equal([['next']]);
+	assert.deepStrictEqual(paths, [['next']]);
 });
 
 test("oobject path after memo", () => {
@@ -363,7 +363,7 @@ test("oobject path after memo", () => {
 	object.nested.hello = 2;
 	object.nested.world = 2;
 
-	expect(paths).to.deep.equal([['nested', 'hello']]);
+	assert.deepStrictEqual(paths, [['nested', 'hello']]);
 });
 
 test("oobject memo path", () => {
@@ -378,7 +378,7 @@ test("oobject memo path", () => {
 
 	object.hello = 2;
 
-	expect(paths).to.deep.equal([['hello']]);
+	assert.deepStrictEqual(paths, [['hello']]);
 });
 
 test("oobject double memo path", () => {
@@ -393,7 +393,7 @@ test("oobject double memo path", () => {
 
 	object.hello = 2;
 
-	expect(paths).to.deep.equal([['hello']]);
+	assert.deepStrictEqual(paths, [['hello']]);
 });
 
 test("oobject skip memo", () => {
@@ -401,9 +401,9 @@ test("oobject skip memo", () => {
 		other: OObject(),
 	});
 
-	expect(() => {
+	assert.throws(() => {
 		object.observer.skip().memo().path('hello').watch(event => {});
-	}).to.throw();
+	});
 });
 
 test("oobject tree memo", () => {
@@ -411,9 +411,9 @@ test("oobject tree memo", () => {
 		other: OObject(),
 	});
 
-	expect(() => {
+	assert.throws(() => {
 		object.observer.tree('children').memo().path('hello').watch(event => {});
-	}).to.throw();
+	});
 });
 
 test("oobject skip get", () => {
@@ -421,9 +421,9 @@ test("oobject skip get", () => {
 		other: OObject(),
 	});
 
-	expect(() => {
+	assert.throws(() => {
 		object.observer.skip().get();
-	}).to.throw();
+	});
 });
 
 test("oobject tree get", () => {
@@ -431,9 +431,9 @@ test("oobject tree get", () => {
 		other: OObject(),
 	});
 
-	expect(() => {
+	assert.throws(() => {
 		object.observer.tree('children').get();
-	}).to.throw();
+	});
 });
 
 test("oobject skip set", () => {
@@ -441,9 +441,9 @@ test("oobject skip set", () => {
 		other: OObject(),
 	});
 
-	expect(() => {
+	assert.throws(() => {
 		object.observer.skip().set('value');
-	}).to.throw();
+	});
 });
 
 test("oobject tree set", () => {
@@ -451,9 +451,9 @@ test("oobject tree set", () => {
 		other: OObject(),
 	});
 
-	expect(() => {
+	assert.throws(() => {
 		object.observer.tree('children').set('value');
-	}).to.throw();
+	});
 });
 
 test("shallow query with a path and ordered memo", () => {
@@ -474,7 +474,7 @@ test("shallow query with a path and ordered memo", () => {
 	object.next = object2;
 	object2.thing = 'thing';
 
-	expect(paths).to.deep.equal([['next'], ['next'], ['next', 'thing']]);
+	assert.deepStrictEqual(paths, [['next'], ['next'], ['next', 'thing']]);
 });
 
 test("object switch selector", () => {
@@ -495,7 +495,7 @@ test("object switch selector", () => {
 		val: 1,
 	});
 
-	expect(paths).to.deep.equal([]);
+	assert.deepStrictEqual(paths, []);
 });
 
 test("shallow query with a path and memo predefine", () => {
@@ -511,7 +511,7 @@ test("shallow query with a path and memo predefine", () => {
 
 	object2.thing = 'thing';
 
-	expect(paths).to.deep.equal([]);
+	assert.deepStrictEqual(paths, []);
 });
 
 test("double path", () => {
@@ -527,7 +527,7 @@ test("double path", () => {
 	object2.thing = 'thing';
 	object2.thing2 = 'thing';
 
-	expect(paths).to.deep.equal([['next'], ['next', 'thing']]);
+	assert.deepStrictEqual(paths, [['next'], ['next', 'thing']]);
 });
 
 test("double path and memo", () => {
@@ -543,7 +543,7 @@ test("double path and memo", () => {
 	object2.thing = 'thing';
 	object2.thing2 = 'thing';
 
-	expect(paths).to.deep.equal([['next'], ['next', 'thing']]);
+	assert.deepStrictEqual(paths, [['next'], ['next', 'thing']]);
 });
 
 test("double path and memo predefine", () => {
@@ -560,7 +560,7 @@ test("double path and memo predefine", () => {
 	object2.thing = 'thing';
 	object2.thing2 = 'thing';
 
-	expect(paths).to.deep.equal([['next', 'thing']]);
+	assert.deepStrictEqual(paths, [['next', 'thing']]);
 });
 
 test("try to query an object path that doesn't have a path", () => {
@@ -579,7 +579,7 @@ test("try to query an object path that doesn't have a path", () => {
 	object2.two = '2';
 	object2.three = '3';
 
-	expect(paths).to.deep.equal([['next']]);
+	assert.deepStrictEqual(paths, [['next']]);
 });
 
 test("test parent object getter", () => {
@@ -597,7 +597,7 @@ test("test parent object getter", () => {
 	object.two = '2';
 	object2.three = '3';
 
-	expect(paths).to.have.ordered.members([object, object2, object, object2]);
+	assert.deepStrictEqual(paths, [object, object2, object, object2]);
 });
 
 test("exists promise on already existing object", async () => {
@@ -629,10 +629,10 @@ test("exists promise on not existing object", async () => {
 	promise.then(() => resolved = true);
 
 	object.hello = 'hello';
-	expect(resolved).to.equal(false);
+	assert.strictEqual(resolved, false);
 
 	object.hello = 'world';
-	expect(resolved).to.equal(false);
+	assert.strictEqual(resolved, false);
 });
 
 test("exists promise on not existing object", () => {
@@ -643,7 +643,7 @@ test("exists promise on not existing object", () => {
 		called = true;
 	});
 
-	expect(called).to.equal(false);
+	assert.strictEqual(called, false);
 });
 
 test("path to hidden", () => {
@@ -664,7 +664,7 @@ test("path to hidden", () => {
 	object2.b = '2';
 	object2.c = '3';
 
-	expect(paths).to.deep.equal([['_hidden'], ['_hidden', 'a'], ['_hidden', 'b'], ['_hidden', 'c']]);
+	assert.deepStrictEqual(paths, [['_hidden'], ['_hidden', 'a'], ['_hidden', 'b'], ['_hidden', 'c']]);
 });
 
 test("path to hidden with shallow", () => {
@@ -685,7 +685,7 @@ test("path to hidden with shallow", () => {
 	object2.b = '2';
 	object2.c = '3';
 
-	expect(paths).to.deep.equal([['_hidden']]);
+	assert.deepStrictEqual(paths, [['_hidden']]);
 });
 
 test("object relinking", () => {
@@ -701,7 +701,7 @@ test("object relinking", () => {
 	object.value = OObject();
 	object.value.property = 'property';
 
-	expect(events).to.deep.equal([['value'], ['value'], ['value', 'property']]);
+	assert.deepStrictEqual(events, [['value'], ['value'], ['value', 'property']]);
 });
 
 test("pathing for deleted objects", () => {
@@ -716,7 +716,7 @@ test("pathing for deleted objects", () => {
 
 	delete object.value;
 
-	expect(events).to.deep.equal([['value'], ['value']]);
+	assert.deepStrictEqual(events, [['value'], ['value']]);
 });
 
 test("parent for deleted objects", () => {
@@ -730,7 +730,7 @@ test("parent for deleted objects", () => {
 	object.value = 'initialize';
 	delete object.value;
 
-	expect(events).to.have.ordered.members([object, object]);
+	assert.deepStrictEqual(events, [object, object]);
 });
 
 test("chained path", () => {
@@ -745,7 +745,7 @@ test("chained path", () => {
 
 	object.nested.value = 'hello';
 
-	expect(events).to.deep.equal(['hello']);
+	assert.deepStrictEqual(events, ['hello']);
 });
 
 test("chained path and ignore", () => {
@@ -761,7 +761,7 @@ test("chained path and ignore", () => {
 	object.nested.value = 'hello';
 	object.nested.second = 'second';
 
-	expect(events).to.deep.equal(['second']);
+	assert.deepStrictEqual(events, ['second']);
 });
 
 test("parent changing value", () => {
@@ -782,7 +782,7 @@ test("parent changing value", () => {
 	object.nested.dude = 'dude';
 	object.nested = 'changed';
 
-	expect(events).to.deep.equal(['hello', 'changed']);
+	assert.deepStrictEqual(events, ['hello', 'changed']);
 });
 
 test("circle network", () => {
@@ -802,7 +802,7 @@ test("circle network", () => {
 	object.nested = null;
 	object.nested2.changed = 'again';
 
-	expect(events).to.deep.equal([['nested', 'changed'], ['nested2'], ['nested'], ['nested2', 'changed']]);
+	assert.deepStrictEqual(events, [['nested', 'changed'], ['nested2'], ['nested'], ['nested2', 'changed']]);
 });
 
 test("usage of unlinked network", () => {
@@ -826,8 +826,8 @@ test("usage of unlinked network", () => {
 	object.other = null;
 	object2.whatever = 'else';
 
-	expect(events).to.deep.equal([['other'], ['other', 'whatever'], ['other']]);
-	expect(events2).to.deep.equal([['whatever'], ['whatever']]);
+	assert.deepStrictEqual(events, [['other'], ['other', 'whatever'], ['other']]);
+	assert.deepStrictEqual(events2, [['whatever'], ['whatever']]);
 });
 
 test("usage of unlinked network with a circle", () => {
@@ -855,8 +855,8 @@ test("usage of unlinked network with a circle", () => {
 	object.other = null;
 	object2.whatever = 'else';
 
-	expect(events).to.deep.equal([['other'], ['other', 'whatever'], ['other']]);
-	expect(events2).to.deep.equal([['whatever'], ['whatever']]);
+	assert.deepStrictEqual(events, [['other'], ['other', 'whatever'], ['other']]);
+	assert.deepStrictEqual(events2, [['whatever'], ['whatever']]);
 });
 
 test("usage of unlinked network with a circle of parent", () => {
@@ -884,8 +884,8 @@ test("usage of unlinked network with a circle of parent", () => {
 	object.other = null;
 	object2.whatever = 'else';
 
-	expect(events).to.deep.equal([['other'], ['other', 'whatever'], ['other']]);
-	expect(events2).to.deep.equal([['whatever'], ['whatever']]);
+	assert.deepStrictEqual(events, [['other'], ['other', 'whatever'], ['other']]);
+	assert.deepStrictEqual(events2, [['whatever'], ['whatever']]);
 });
 
 test("unlinking then relinking", () => {
@@ -912,8 +912,8 @@ test("nested events", () => {
 
 	object.thing = OObject();
 
-	expect(object.thing.thing).to.equal('thing');
-	expect(events).to.deep.equal([['thing'], ['thing', 'thing']]);
+	assert.strictEqual(object.thing.thing, 'thing');
+	assert.deepStrictEqual(events, [['thing'], ['thing', 'thing']]);
 });
 
 test("event masking pre", () => {
@@ -930,7 +930,7 @@ test("event masking pre", () => {
 
 	object.thing = OObject();
 
-	expect(events).to.deep.equal([['thing']]);
+	assert.deepStrictEqual(events, [['thing']]);
 });
 
 test("event masking post", () => {
@@ -947,7 +947,7 @@ test("event masking post", () => {
 
 	object.thing = OObject();
 
-	expect(events).to.deep.equal([['thing']]);
+	assert.deepStrictEqual(events, [['thing']]);
 });
 
 test("nested events of parents", () => {
@@ -964,7 +964,7 @@ test("nested events of parents", () => {
 
 	object.thing = OObject();
 
-	expect(events).to.have.ordered.members([object, object.thing]);
+	assert.deepStrictEqual(events, [object, object.thing]);
 });
 
 test("skip and path", () => {
@@ -987,7 +987,7 @@ test("skip and path", () => {
 	object.three.value = 'value';
 	object.three.other = 'value';
 
-	expect(events).to.deep.equal([['one', 'value'], ['two', 'value'], ['three', 'value']]);
+	assert.deepStrictEqual(events, [['one', 'value'], ['two', 'value'], ['three', 'value']]);
 });
 
 test("register hidden then public", () => {
@@ -1003,7 +1003,7 @@ test("register hidden then public", () => {
 	object.public = object._hidden;
 	object.public.thing2 = 'thing2';
 
-	expect(events).to.deep.equal([['public'], ['public', 'thing2']]);
+	assert.deepStrictEqual(events, [['public'], ['public', 'thing2']]);
 });
 
 test("skip and path and shallow", () => {
@@ -1031,7 +1031,7 @@ test("skip and path and shallow", () => {
 	object.three.other = OObject();
 	object.three.other.nested = 'nested';
 
-	expect(events).to.deep.equal([['one', 'value'], ['two', 'value'], ['three', 'value']]);
+	assert.deepStrictEqual(events, [['one', 'value'], ['two', 'value'], ['three', 'value']]);
 });
 
 test("shallow listener on observer mutating to null", () => {
@@ -1047,7 +1047,7 @@ test("shallow listener on observer mutating to null", () => {
 
 	object.hello = null;
 
-	expect(events).to.deep.equal([['hello'], ['hello']]);
+	assert.deepStrictEqual(events, [['hello'], ['hello']]);
 });
 
 test("observer map with object", () => {
@@ -1059,10 +1059,10 @@ test("observer map with object", () => {
 	});
 
 	observer.set(10);
-	expect(object.value).to.equal(5);
+	assert.strictEqual(object.value, 5);
 
 	object.value = 50;
-	expect(values).to.deep.equal([10, 100]);
+	assert.deepStrictEqual(values, [10, 100]);
 });
 
 test("object delete check during listener", () => {
@@ -1077,7 +1077,7 @@ test("object delete check during listener", () => {
 
 	delete obj.thing;
 
-	expect(has).to.equal(false);
+	assert.strictEqual(has, false);
 });
 
 test("object observer memo", () => {
@@ -1099,14 +1099,14 @@ test("object observer memo", () => {
 
 	obj.nested = OObject();
 
-	expect(obs.get()).to.equal(obj.nested);
+	assert.strictEqual(obs.get(), obj.nested);
 
 	w2();
 
 	obj.nested.hello = "shouldn't see thins";
 
-	expect(stuff).to.deep.equal([oldNested, oldNested, 'hello', 'hello', 'world', obj.nested]);
-	expect(obs.get()).to.equal(obj.nested);
+	assert.deepStrictEqual(stuff, [oldNested, oldNested, 'hello', 'hello', 'world', obj.nested]);
+	assert.strictEqual(obs.get(), obj.nested);
 });
 
 test("object setter", () => {
@@ -1116,9 +1116,9 @@ test("object setter", () => {
 	obj.observer.path('value2').set("value 2");
 	obj.observer.path('value3').set("value 3");
 
-	expect(obj.observer.path('value').get()).to.equal("value 1");
-	expect(obj.observer.path('value2').get()).to.equal("value 2");
-	expect(obj.observer.path('value3').get()).to.equal("value 3");
+	assert.strictEqual(obj.observer.path('value').get(), "value 1");
+	assert.strictEqual(obj.observer.path('value2').get(), "value 2");
+	assert.strictEqual(obj.observer.path('value3').get(), "value 3");
 });
 
 test("object setter events", () => {
@@ -1133,7 +1133,7 @@ test("object setter events", () => {
 	obj.observer.path('value2').set("value 2");
 	obj.observer.path('value3').set("value 3");
 
-	expect(vals).to.deep.equal(['value 1', 'value 2', 'value 3']);
+	assert.deepStrictEqual(vals, ['value 1', 'value 2', 'value 3']);
 });
 
 test("object events memo late watch", () => {
@@ -1153,12 +1153,12 @@ test("object events memo late watch", () => {
 	obj.val = OObject();
 	obj.val.hello = 'world';
 
-	expect(vals).to.deep.equal([1, 2, obj.val]);
+	assert.deepStrictEqual(vals, [1, 2, obj.val]);
 });
 
 test("oobject immutability after shallow", () => {
 	const obj = OObject().observer.shallow();
-	expect(obj.isImmutable()).to.equal(true);
+	assert.strictEqual(obj.isImmutable(), true);
 });
 
 test("oobject effect on broken chain", () => {
@@ -1171,7 +1171,7 @@ test("oobject effect on broken chain", () => {
 
 	obj.obj = 'obj';
 
-	expect(calls).to.equal(2);
+	assert.strictEqual(calls, 2);
 });
 
 test("oobject effect on broken chain with path", () => {
@@ -1184,7 +1184,7 @@ test("oobject effect on broken chain with path", () => {
 
 	obj.obj.obj = 'obj';
 
-	expect(calls).to.equal(2);
+	assert.strictEqual(calls, 2);
 });
 
 test("oobject map on broken chain with path", () => {
@@ -1196,21 +1196,21 @@ test("oobject map on broken chain with path", () => {
 
 	obj.obj.obj = 'obj';
 
-	expect(obs2.get()).to.equal(1);
+	assert.strictEqual(obs2.get(), 1);
 });
 
 test("oobject Observer.all on broken chain", () => {
 	const obj = OObject();
 	const obs = obj.observer.skip()
 
-	expect(Observer.all([obs]).get()[0]).to.equal(undefined);
+	assert.strictEqual(Observer.all([obs]).get()[0], undefined);
 });
 
 test("oobject Observer.all on broken chain 2", () => {
 	const obj = OObject();
 	const obs = obj.observer.skip()
 
-	expect(Observer.all(Observer.immutable([obs])).get()[0]).to.equal(undefined);
+	assert.strictEqual(Observer.all(Observer.immutable([obs])).get()[0], undefined);
 });
 
 test("oobject map shallow calls", () => {
@@ -1228,7 +1228,7 @@ test("oobject map shallow calls", () => {
 	obj.thing.nested = 1;
 	obj.thing.nested = 1;
 
-	expect(calls).to.equal(1);
+	assert.strictEqual(calls, 1);
 });
 
 test("oobject memo non observable path", () => {
@@ -1244,7 +1244,7 @@ test("oobject memo non observable path", () => {
 	obj.obj = {};
 	obj.obj.thing = 1;
 
-	expect(paths).to.deep.equal([['obj'], ['obj', 'thing'], ['obj']]);
+	assert.deepStrictEqual(paths, [['obj'], ['obj', 'thing'], ['obj']]);
 });
 
 test("oobject default with governor", () => {
@@ -1271,7 +1271,7 @@ test("oobject default with governor", () => {
 	delete def.defNested;
 	delete def.whatever;
 
-	expect(events).to.deep.equal([['defNested'], ['nested'], ['nested', 'defNested'], ['nested'], ['defNested']]);
+	assert.deepStrictEqual(events, [['defNested'], ['nested'], ['nested', 'defNested'], ['nested'], ['defNested']]);
 });
 
 test("oobject open coded default with governor", () => {
@@ -1302,7 +1302,7 @@ test("oobject open coded default with governor", () => {
 	delete def.defNested;
 	delete def.whatever;
 
-	expect(events).to.deep.equal([['defNested'], ['nested'], ['nested', 'defNested'], ['nested'], ['defNested']]);
+	assert.deepStrictEqual(events, [['defNested'], ['nested'], ['nested', 'defNested'], ['nested'], ['defNested']]);
 });
 
 test("oobject open coded default with governor double watch", () => {
@@ -1336,7 +1336,7 @@ test("oobject open coded default with governor double watch", () => {
 	delete def.defNested;
 	delete def.whatever;
 
-	expect(events).to.deep.equal([['defNested'], ['nested'], ['nested', 'defNested'], ['nested'], ['defNested']]);
+	assert.deepStrictEqual(events, [['defNested'], ['nested'], ['nested', 'defNested'], ['nested'], ['defNested']]);
 });
 
 test("oobject unwrap with governor", () => {
@@ -1360,5 +1360,5 @@ test("oobject unwrap with governor", () => {
 	obj.wrapped.get().otherPath = 1;
 	delete obj.wrapped;
 
-	expect(events).to.deep.equal([['wrapped'], ['wrapped'], ['wrapped', 'path'], ['wrapped'], ['path'], ['wrapped']]);
+	assert.deepStrictEqual(events, [['wrapped'], ['wrapped'], ['wrapped', 'path'], ['wrapped'], ['path'], ['wrapped']]);
 });

@@ -1,4 +1,4 @@
-import {expect} from 'chai';
+import assert from 'node:assert/strict';
 import test from 'node:test';
 import OObject from '../Object.js';
 import OArray from '../Array.js';
@@ -55,7 +55,7 @@ const trackers = async (func, n, invert) => {
 	}
 
 	for (let i = 1; i < n; i++) {
-		expect(objects[0]).to.deep.equal(objects[i]);
+		assert.deepStrictEqual(objects[0], objects[i]);
 	}
 
 	for (const net of networks) net.remove();
@@ -295,7 +295,7 @@ const trackers = async (func, n, invert) => {
 			await flush2();
 		}
 
-		expect(two.num).to.equal(10);
+		assert.strictEqual(two.num, 10);
 	});
 
 	test('object replacement', async ([one, two], [flush, flush2]) => {

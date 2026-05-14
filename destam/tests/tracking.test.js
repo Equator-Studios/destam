@@ -1,4 +1,4 @@
-import {expect} from 'chai';
+import assert from 'node:assert/strict';
 import test from 'node:test';
 import OObject from '../Object.js';
 import OArray from '../Array.js';
@@ -23,7 +23,7 @@ import { clone } from './clone.js';
 
 		await func(object, tracking.flush, object2);
 		await tracking.flush();
-		expect(object).to.deep.equal(object2);
+		assert.deepStrictEqual(object, object2);
 
 		network.remove();
 	}),
@@ -183,8 +183,8 @@ import { clone } from './clone.js';
 
 		await flush();
 
-		expect(none).to.equal(obj2[1]);
-		expect(ntwo).to.equal(obj2[0]);
+		assert.strictEqual(none, obj2[1]);
+		assert.strictEqual(ntwo, obj2[0]);
 	});
 
 	test ('tracking of two events', async (obj1, flush) => {
@@ -711,7 +711,7 @@ import { clone } from './clone.js';
 		delete obj1.thing;
 		await flush();
 
-		expect(prevs).to.deep.equal(['hello', 'world']);
+		assert.deepStrictEqual(prevs, ['hello', 'world']);
 	});
 
 	test('array prev', async (obj1, flush, obj2) => {
@@ -732,33 +732,33 @@ import { clone } from './clone.js';
 		arr.splice(0, 1);
 		await flush();
 
-		expect(prevs).to.deep.equal(['hello', 'world']);
+		assert.deepStrictEqual(prevs, ['hello', 'world']);
 	});
 });
 
 test("track non observer", () => {
-	expect(() => createNetwork({})).to.throw();
+	assert.throws(() => createNetwork({}));
 });
 
 test("tracking garbage events object", () => {
 	const obj = OObject();
 	const network = createNetwork(obj.observer);
 
-	expect(() => network.apply([{id: obj.observer.id}])).to.throw();
+	assert.throws(() => network.apply([{id: obj.observer.id}]));
 });
 
 test("tracking garbage events array", () => {
 	const obj = OArray();
 	const network = createNetwork(obj.observer);
 
-	expect(() => network.apply([{id: obj.observer.id}])).to.throw();
+	assert.throws(() => network.apply([{id: obj.observer.id}]));
 });
 
 test("tracking garbage events uuidmap", () => {
 	const obj = OMap();
 	const network = createNetwork(obj.observer);
 
-	expect(() => network.apply([{id: obj.observer.id}])).to.throw();
+	assert.throws(() => network.apply([{id: obj.observer.id}]));
 });
 
 test("tracking remove network with digest", async () => {
@@ -778,7 +778,7 @@ test("tracking remove network with digest", async () => {
 	obj.thing2 = 'thing';
 	await digest.flush();
 
-	expect(events).to.equal(1);
+	assert.strictEqual(events, 1);
 });
 
 test("tracking remove network with multiple digest", async () => {
@@ -804,7 +804,7 @@ test("tracking remove network with multiple digest", async () => {
 	await digest.flush();
 	await digest2.flush();
 
-	expect(events).to.equal(2);
+	assert.strictEqual(events, 2);
 });
 
 test("tracking flush network with digest", async () => {
@@ -822,7 +822,7 @@ test("tracking flush network with digest", async () => {
 	obj.thing2 = 'thing';
 	await network.flush();
 
-	expect(events).to.equal(2);
+	assert.strictEqual(events, 2);
 });
 
 test("tracking flush network with multiple digest", async () => {
@@ -844,7 +844,7 @@ test("tracking flush network with multiple digest", async () => {
 	obj.thing2 = 'thing';
 	await network.flush();
 
-	expect(events).to.equal(4);
+	assert.strictEqual(events, 4);
 });
 
 test("tracking pass flush result back", async () => {
@@ -858,7 +858,7 @@ test("tracking pass flush result back", async () => {
 	});
 
 	obj.thing = 'thing';
-	expect(await digest.flush()).to.equal(value);
+	assert.strictEqual(await digest.flush(), value);
 });
 
 test("tracking pass flush result back from network", async () => {
@@ -872,40 +872,40 @@ test("tracking pass flush result back from network", async () => {
 	});
 
 	obj.thing = 'thing';
-	expect((await network.flush())[0]).to.equal(value);
+	assert.strictEqual((await network.flush())[0], value);
 });
 
 test("tracking oobject ref not a string", () => {
 	const obj = OObject();
 
-	expect(() => {
+	assert.throws(() => {
 		OObject.verify(obj.observer, Insert(null, null, 0));
-	}).to.throw();
+	});
 });
 
 test("tracking oobject already exists", () => {
 	const obj = OObject();
 	obj.thing = 10;
 
-	expect(() => {
+	assert.throws(() => {
 		OObject.verify(obj.observer, Insert(null, 11, 'thing'));
-	}).to.throw();
+	});
 });
 
 test("tracking oobject no exist modify", () => {
 	const obj = OObject();
 
-	expect(() => {
+	assert.throws(() => {
 		OObject.verify(obj.observer, Modify(null, 11, 'thing'));
-	}).to.throw();
+	});
 });
 
 test("tracking oobject no exist delete", () => {
 	const obj = OObject();
 
-	expect(() => {
+	assert.throws(() => {
 		OObject.verify(obj.observer, Delete(null, 11, 'thing'));
-	}).to.throw();
+	});
 });
 
 test("tracking omap already exists", () => {
@@ -913,45 +913,45 @@ test("tracking omap already exists", () => {
 	const id = UUID();
 	obj.set(id, true);
 
-	expect(() => {
+	assert.throws(() => {
 		OMap.verify(obj.observer, Insert(null, OObject({
 			id,
 			value: false,
 		}), id));
-	}).to.throw();
+	});
 });
 
 test("tracking omap no exist modify", () => {
 	const obj = OMap();
 	const id = UUID();
 
-	expect(() => {
+	assert.throws(() => {
 		OMap.verify(obj.observer, Modify(null, OObject({
 			id,
 			value: false,
 		}), id));
-	}).to.throw();
+	});
 });
 
 test("tracking omap no exist delete", () => {
 	const obj = OMap();
 	const id = UUID();
 
-	expect(() => {
+	assert.throws(() => {
 		OMap.verify(obj.observer, Delete(null, OObject({
 			id,
 			value: false,
 		}), id));
-	}).to.throw();
+	});
 });
 
 test("tracking oarray already exists", () => {
 	const obj = OArray();
 	obj.push(1);
 
-	expect(() => {
+	assert.throws(() => {
 		OArray.verify(obj.observer, Insert(null, 2, obj.observer.indexes_[0]));
-	}).to.throw();
+	});
 });
 
 test("tracking oarray no exist exists modify", () => {
@@ -960,9 +960,9 @@ test("tracking oarray no exist exists modify", () => {
 	const index = obj.observer.indexes_[0]; // steal the index
 	obj.pop();
 
-	expect(() => {
+	assert.throws(() => {
 		OArray.verify(obj.observer, Modify(null, 2, index));
-	}).to.throw();
+	});
 });
 
 test("tracking oarray no exist exists delete", () => {
@@ -971,9 +971,9 @@ test("tracking oarray no exist exists delete", () => {
 	const index = obj.observer.indexes_[0]; // steal the index
 	obj.pop();
 
-	expect(() => {
+	assert.throws(() => {
 		OArray.verify(obj.observer, Delete(null, 2, index));
-	}).to.throw();
+	});
 });
 
 test("tracking duplicates", () => {
@@ -981,15 +981,15 @@ test("tracking duplicates", () => {
 	const obj = OObject({});
 	const network = createNetwork(obj.observer);
 
-	expect(network.has(id)).to.equal(false);
+	assert.strictEqual(network.has(id), false);
 	obj.thing = OObject({}, id);
-	expect(network.has(id)).to.equal(true);
+	assert.strictEqual(network.has(id), true);
 	obj.thing2 = OObject({}, id);
-	expect(network.has(id)).to.equal(true);
+	assert.strictEqual(network.has(id), true);
 	obj.thing = null;
-	expect(network.has(id)).to.equal(true);
+	assert.strictEqual(network.has(id), true);
 	obj.thing2 = null;
-	expect(network.has(id)).to.equal(false);
+	assert.strictEqual(network.has(id), false);
 });
 
 test("tracking duplicates 2", () => {
@@ -997,15 +997,15 @@ test("tracking duplicates 2", () => {
 	const obj = OObject({});
 	const network = createNetwork(obj.observer);
 
-	expect(network.has(id)).to.equal(false);
+	assert.strictEqual(network.has(id), false);
 	obj.thing = OObject({}, id);
-	expect(network.has(id)).to.equal(true);
+	assert.strictEqual(network.has(id), true);
 	obj.thing2 = OObject({}, id);
-	expect(network.has(id)).to.equal(true);
+	assert.strictEqual(network.has(id), true);
 	obj.thing2 = null;
-	expect(network.has(id)).to.equal(true);
+	assert.strictEqual(network.has(id), true);
 	obj.thing = null;
-	expect(network.has(id)).to.equal(false);
+	assert.strictEqual(network.has(id), false);
 });
 
 test("tracking duplicates 3", () => {
@@ -1013,15 +1013,15 @@ test("tracking duplicates 3", () => {
 	const obj = OObject({}, id);
 	const network = createNetwork(obj.observer);
 
-	expect(network.has(id)).to.equal(true);
+	assert.strictEqual(network.has(id), true);
 	obj.thing = OObject({}, id);
-	expect(network.has(id)).to.equal(true);
+	assert.strictEqual(network.has(id), true);
 	obj.thing2 = OObject({}, id);
-	expect(network.has(id)).to.equal(true);
+	assert.strictEqual(network.has(id), true);
 	obj.thing2 = null;
-	expect(network.has(id)).to.equal(true);
+	assert.strictEqual(network.has(id), true);
 	obj.thing = null;
-	expect(network.has(id)).to.equal(true);
+	assert.strictEqual(network.has(id), true);
 });
 
 test("tracking network duplicates", () => {
@@ -1033,12 +1033,12 @@ test("tracking network duplicates", () => {
 		Insert(null, true, 'thing', id),
 	]);
 
-	expect(() => {
+	assert.throws(() => {
 		network.apply([
 			Modify(true, false, 'thing', id),
 			Modify(false, true, 'thing', id),
 		]);
-	}).to.throw();
+	});
 });
 
 test("tracking flush mutations during digest", () => new Promise((ok, err) => {
@@ -1053,7 +1053,7 @@ test("tracking flush mutations during digest", () => new Promise((ok, err) => {
 			obj.value2 = 1;
 		} else {
 			try {
-				expect(stuff).to.deep.equal([['value'], ['value2']]);
+				assert.deepStrictEqual(stuff, [['value'], ['value2']]);
 				ok();
 			} catch (e) {
 				err(e);
@@ -1079,7 +1079,7 @@ test("tracking constraint network", async () => {
 	obj.thing.thing = 'thing';
 	await digest.flush();
 
-	expect(stuff).to.deep.equal([[['thing']]]);
+	assert.deepStrictEqual(stuff, [[['thing']]]);
 });
 
 test("tracking constraint network with dummy", async () => {
@@ -1102,5 +1102,5 @@ test("tracking constraint network with dummy", async () => {
 
 	await digest.flush();
 
-	expect(stuff).to.deep.equal([[['thing']]]);
+	assert.deepStrictEqual(stuff, [[['thing']]]);
 });

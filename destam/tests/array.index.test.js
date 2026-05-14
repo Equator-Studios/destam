@@ -1,4 +1,4 @@
-import {expect} from 'chai';
+import assert from 'node:assert/strict';
 import test from 'node:test';
 import {indexLeading, indexCompare, indexAdd} from '../Array.js';
 
@@ -23,27 +23,27 @@ const indexFromSigned = (i) => {
 	return num;
 };
 
-const cmp = (a, b) => expect(indexCompare(a, indexFromSigned(b))).to.equal(0);
+const cmp = (a, b) => assert.strictEqual(indexCompare(a, indexFromSigned(b)), 0);
 
 test("basic numbers", () => {
-	expect(indexFromSigned(-1)).to.deep.equal(indexCreate([255], 0));
-	expect(indexFromSigned(1)).to.deep.equal(indexCreate([1], 0));
-	expect(indexFromSigned(256)).to.deep.equal(indexCreate([0, 1], 0));
-	expect(indexFromSigned(1 << 16)).to.deep.equal(indexCreate([0, 0, 1], 0));
-	expect(indexFromSigned(1 << 24)).to.deep.equal(indexCreate([0, 0, 0, 1], 0));
-	expect(indexFromSigned(-1 << 8)).to.deep.equal(indexCreate([0, 255], 0));
-	expect(indexFromSigned(-1 << 16)).to.deep.equal(indexCreate([0, 0, 255], 0));
+	assert.deepStrictEqual(indexFromSigned(-1), indexCreate([255], 0));
+	assert.deepStrictEqual(indexFromSigned(1), indexCreate([1], 0));
+	assert.deepStrictEqual(indexFromSigned(256), indexCreate([0, 1], 0));
+	assert.deepStrictEqual(indexFromSigned(1 << 16), indexCreate([0, 0, 1], 0));
+	assert.deepStrictEqual(indexFromSigned(1 << 24), indexCreate([0, 0, 0, 1], 0));
+	assert.deepStrictEqual(indexFromSigned(-1 << 8), indexCreate([0, 255], 0));
+	assert.deepStrictEqual(indexFromSigned(-1 << 16), indexCreate([0, 0, 255], 0));
 });
 
 test("compare", () => {
-	expect(indexCompare(indexFromSigned(50000), indexFromSigned(50000))).to.equal(0);
-	expect(indexCompare(indexFromSigned(1), indexFromSigned(50000))).to.equal(-1);
-	expect(indexCompare(indexFromSigned(50000), indexFromSigned(1))).to.equal(1);
-	expect(indexCompare(indexFromSigned(-1000), indexFromSigned(-1001))).to.equal(1);
-	expect(indexCompare(indexFromSigned(-1000), indexFromSigned(1001))).to.equal(-1);
-	expect(indexCompare(indexFromSigned(1000), indexFromSigned(1000))).to.equal(0);
-	expect(indexCompare(indexFromSigned(-1000), indexFromSigned(-1000))).to.equal(0);
-	expect(indexCompare(indexCreate([66, 255], 1), indexCreate([66, 255], 1))).to.equal(0);
+	assert.strictEqual(indexCompare(indexFromSigned(50000), indexFromSigned(50000)), 0);
+	assert.strictEqual(indexCompare(indexFromSigned(1), indexFromSigned(50000)), -1);
+	assert.strictEqual(indexCompare(indexFromSigned(50000), indexFromSigned(1)), 1);
+	assert.strictEqual(indexCompare(indexFromSigned(-1000), indexFromSigned(-1001)), 1);
+	assert.strictEqual(indexCompare(indexFromSigned(-1000), indexFromSigned(1001)), -1);
+	assert.strictEqual(indexCompare(indexFromSigned(1000), indexFromSigned(1000)), 0);
+	assert.strictEqual(indexCompare(indexFromSigned(-1000), indexFromSigned(-1000)), 0);
+	assert.strictEqual(indexCompare(indexCreate([66, 255], 1), indexCreate([66, 255], 1)), 0);
 });
 
 test("add", () => {
@@ -60,16 +60,16 @@ test("add", () => {
 });
 
 test("add with base", () => {
-	expect(indexAdd(indexFromSigned(0), 1, -1)).to.deep.equal(indexFromSigned(1 << 1));
-	expect(indexAdd(indexFromSigned(0), 1, -8)).to.deep.equal(indexFromSigned(1 << 8));
-	expect(indexAdd(indexFromSigned(0), 1, 1)).to.deep.equal(indexCreate([128, 0], 1));
-	expect(indexAdd(indexFromSigned(0), 1, 8)).to.deep.equal(indexCreate([1, 0], 1));
-	expect(indexAdd(indexFromSigned(0), 1, 16)).to.deep.equal(indexCreate([1, 0, 0], 2));
+	assert.deepStrictEqual(indexAdd(indexFromSigned(0), 1, -1), indexFromSigned(1 << 1));
+	assert.deepStrictEqual(indexAdd(indexFromSigned(0), 1, -8), indexFromSigned(1 << 8));
+	assert.deepStrictEqual(indexAdd(indexFromSigned(0), 1, 1), indexCreate([128, 0], 1));
+	assert.deepStrictEqual(indexAdd(indexFromSigned(0), 1, 8), indexCreate([1, 0], 1));
+	assert.deepStrictEqual(indexAdd(indexFromSigned(0), 1, 16), indexCreate([1, 0, 0], 2));
 });
 
 test("leading", () => {
-	expect(indexLeading(indexFromSigned(1), indexFromSigned(0))).to.equal(0);
-	expect(indexLeading(indexAdd(indexFromSigned(0), 1, 1), indexFromSigned(0))).to.equal(-1);
-	expect(indexLeading(indexAdd(indexFromSigned(0), 1, 2), indexFromSigned(0))).to.equal(-2);
-	expect(indexLeading(indexAdd(indexFromSigned(0), 1, 8), indexFromSigned(0))).to.equal(-8);
+	assert.strictEqual(indexLeading(indexFromSigned(1), indexFromSigned(0)), 0);
+	assert.strictEqual(indexLeading(indexAdd(indexFromSigned(0), 1, 1), indexFromSigned(0)), -1);
+	assert.strictEqual(indexLeading(indexAdd(indexFromSigned(0), 1, 2), indexFromSigned(0)), -2);
+	assert.strictEqual(indexLeading(indexAdd(indexFromSigned(0), 1, 8), indexFromSigned(0)), -8);
 });

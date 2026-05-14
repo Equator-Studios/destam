@@ -1,12 +1,12 @@
-import {expect} from 'chai';
+import assert from 'node:assert/strict';
 import test from 'node:test';
 import OObject from '../Object.js';
 import {Insert, Modify, Delete} from '../Events.js';
 
 test("event invert instanceof", () => {
-	expect(Insert().inverse).to.be.an.instanceOf(Delete);
-	expect(Modify().inverse).to.be.an.instanceOf(Modify);
-	expect(Delete().inverse).to.be.an.instanceOf(Insert);
+	assert.ok(Insert().inverse instanceof Delete);
+	assert.ok(Modify().inverse instanceof Modify);
+	assert.ok(Delete().inverse instanceof Insert);
 });
 
 test("recursive events", () => {
@@ -19,7 +19,7 @@ test("recursive events", () => {
 	});
 
 	obj.value = 0;
-	expect(obj.value).to.equal(11);
+	assert.strictEqual(obj.value, 11);
 });
 
 test("recursive events other listeners", () => {
@@ -41,9 +41,9 @@ test("recursive events other listeners", () => {
 	});
 
 	obj.value = 0;
-	expect(obj.value).to.equal(11);
-	expect(before).to.deep.equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
-	expect(after).to.deep.equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
+	assert.strictEqual(obj.value, 11);
+	assert.deepStrictEqual(before, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
+	assert.deepStrictEqual(after, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
 });
 
 test("throw in right context", () => {
@@ -55,7 +55,7 @@ test("throw in right context", () => {
 		if (obj.value === 1) {
 			obj.value++;
 		} else {
-			expect(() => obj.value++).to.throw();
+			assert.throws(() => obj.value++);
 		}
 
 		if (obj.value === 2) {
@@ -64,7 +64,7 @@ test("throw in right context", () => {
 	});
 
 	obj.value = 0;
-	expect(obj.value).to.equal(11);
+	assert.strictEqual(obj.value, 11);
 });
 
 test("throw undefined", () => {
@@ -78,12 +78,10 @@ test("throw undefined", () => {
 	try {
 		obj.value = 0;
 	} catch (e) {
-		// chai's expect(...).to.throw seems to be broken and we can't use it
-		// if we try to throw a falsy value
 		thrown = e;
 	}
 
-	expect(thrown).to.equal(undefined);
+	assert.strictEqual(thrown, undefined);
 });
 
 test("throw 0", () => {
@@ -100,5 +98,5 @@ test("throw 0", () => {
 		thrown = e;
 	}
 
-	expect(thrown).to.equal(0);
+	assert.strictEqual(thrown, 0);
 });

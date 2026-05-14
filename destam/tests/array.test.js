@@ -1,12 +1,12 @@
-import {expect} from 'chai';
+import assert from 'node:assert/strict';
 import test from 'node:test';
 import OArray, {indexPosition, positionIndex} from '../Array.js';
 import {Insert} from '../Events.js';
 
 test("reverse and sort not accessible", () => {
 	let arr = OArray();
-	expect(() => arr.sort()).to.throw()
-	expect(() => arr.reverse()).to.throw()
+	assert.throws(() => arr.sort())
+	assert.throws(() => arr.reverse())
 });
 
 test("array insert single item", () => {
@@ -14,31 +14,31 @@ test("array insert single item", () => {
 
 	arr.push(1);
 
-	expect(arr.length).to.equal(1);
-	expect(arr[0]).to.equal(1);
+	assert.strictEqual(arr.length, 1);
+	assert.strictEqual(arr[0], 1);
 });
 
 test("initialized basic observable array property reads", () => {
 	let arr = OArray([1, 2, 3, 4, 5]);
 
-	expect(arr.length).to.be.equal(5);
-	expect([...arr]).to.be.deep.equal([1, 2, 3, 4, 5]);
+	assert.strictEqual(arr.length, 5);
+	assert.deepStrictEqual([...arr], [1, 2, 3, 4, 5]);
 });
 
 test("basic observable array property reads", () => {
 	let arr = OArray();
 	arr.push(1, 2, 3, 4, 5);
 
-	expect(arr.length).to.be.equal(5);
-	expect([...arr]).to.be.deep.equal([1, 2, 3, 4, 5]);
+	assert.strictEqual(arr.length, 5);
+	assert.deepStrictEqual([...arr], [1, 2, 3, 4, 5]);
 });
 
 test("basic observable array property reads overriden", () => {
 	let arr = OArray();
 	arr.push(1, 2, 3, 4, 5);
 
-	expect(arr.length).to.be.equal(5);
-	expect([...arr]).to.be.deep.equal([1, 2, 3, 4, 5]);
+	assert.strictEqual(arr.length, 5);
+	assert.deepStrictEqual([...arr], [1, 2, 3, 4, 5]);
 
 	arr[0] = 6;
 	arr[1] = 7;
@@ -46,8 +46,8 @@ test("basic observable array property reads overriden", () => {
 	arr[3] = 9;
 	arr[4] = 10;
 
-	expect(arr.length).to.be.equal(5);
-	expect([...arr]).to.be.deep.equal([6, 7, 8, 9, 10]);
+	assert.strictEqual(arr.length, 5);
+	assert.deepStrictEqual([...arr], [6, 7, 8, 9, 10]);
 });
 
 test("array basic events", () => {
@@ -62,7 +62,7 @@ test("array basic events", () => {
 
 	arr.push(1, 2, 3, 4, 5);
 
-	expect(events).to.deep.equal([1, 2, 3, 4, 5]);
+	assert.deepStrictEqual(events, [1, 2, 3, 4, 5]);
 });
 
 test("array basic events override", () => {
@@ -80,20 +80,20 @@ test("array basic events override", () => {
 	arr[3] = 9;
 	arr[4] = 10;
 
-	expect(events).to.deep.equal([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+	assert.deepStrictEqual(events, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 });
 
 test("propper return values for OArray.splice", () => {
 	let arr = OArray([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 
-	expect(arr.splice(0, 1)).to.deep.equal([1]);
-	expect(arr.splice(0, 2)).to.deep.equal([2, 3]);
-	expect(arr.splice(0, 2, 'hello', 'world')).to.be.deep.equal([4, 5]);
-	expect(arr.splice(1, 4)).to.deep.equal(['world', 6, 7, 8]);
-	expect(arr.splice(1, 2, 'other', 'garbage')).to.deep.equal([9, 10]);
-	expect(arr.splice(1, 2)).to.deep.equal(['other', 'garbage']);
-	expect(arr.pop()).to.equal('hello');
-	expect(arr.length).to.equal(0);
+	assert.deepStrictEqual(arr.splice(0, 1), [1]);
+	assert.deepStrictEqual(arr.splice(0, 2), [2, 3]);
+	assert.deepStrictEqual(arr.splice(0, 2, 'hello', 'world'), [4, 5]);
+	assert.deepStrictEqual(arr.splice(1, 4), ['world', 6, 7, 8]);
+	assert.deepStrictEqual(arr.splice(1, 2, 'other', 'garbage'), [9, 10]);
+	assert.deepStrictEqual(arr.splice(1, 2), ['other', 'garbage']);
+	assert.strictEqual(arr.pop(), 'hello');
+	assert.strictEqual(arr.length, 0);
 });
 
 test("shift / unshift", () => {
@@ -103,22 +103,22 @@ test("shift / unshift", () => {
 	arr.unshift(3);
 	arr.unshift(2);
 
-	expect(arr.pop()).to.equal(1);
-	expect(arr.shift()).to.equal(2);
-	expect(arr.shift()).to.equal(3);
+	assert.strictEqual(arr.pop(), 1);
+	assert.strictEqual(arr.shift(), 2);
+	assert.strictEqual(arr.shift(), 3);
 });
 
 test("should be instanceof itself", () => {
 	let arr = OArray();
 
-	expect(arr).to.be.an.instanceOf(OArray);
+	assert.ok(arr instanceof OArray);
 });
 
 test("must test as an array", () => {
 	let arr = OArray();
 
-	expect(Object.prototype.toString.call(arr)).to.equal('[object Array]');
-	expect(Array.isArray(arr)).to.equal(true);
+	assert.strictEqual(Object.prototype.toString.call(arr), '[object Array]');
+	assert.strictEqual(Array.isArray(arr), true);
 });
 
 test("array pathing", () => {
@@ -133,7 +133,7 @@ test("array pathing", () => {
 	object.push('2');
 	object.push('3');
 
-	expect(paths).to.deep.equal([0, 1, 2]);
+	assert.deepStrictEqual(paths, [0, 1, 2]);
 });
 
 test("array pathing for deleted objects", () => {
@@ -147,7 +147,7 @@ test("array pathing for deleted objects", () => {
 	object.push('init');
 	object.pop();
 
-	expect(events).to.deep.equal([0, 0]);
+	assert.deepStrictEqual(events, [0, 0]);
 });
 
 test("insert before end", () => {
@@ -162,7 +162,7 @@ test("insert before end", () => {
 
 	obj.splice(5, 0, 6);
 
-	expect([...obj]).to.deep.equal([0, 1, 2, 3, 4, 6, 5]);
+	assert.deepStrictEqual([...obj], [0, 1, 2, 3, 4, 6, 5]);
 });
 
 test("array empty splice", () => {
@@ -175,8 +175,8 @@ test("array empty splice", () => {
 	obj.push(4);
 	obj.push(5);
 
-	expect(obj.splice()).to.deep.equal([0, 1, 2, 3, 4, 5]);
-	expect(obj).to.deep.equal([]);
+	assert.deepStrictEqual(obj.splice(), [0, 1, 2, 3, 4, 5]);
+	assert.deepStrictEqual([...obj], []);
 });
 
 test("array splice identical", () => {
@@ -191,26 +191,26 @@ test("array splice identical", () => {
 	obj[0] = 0;
 	obj.splice(0, 1, 0);
 
-	expect(obj).to.deep.equal([0]);
-	expect(vals).to.deep.equal([0]);
+	assert.deepStrictEqual([...obj], [0]);
+	assert.deepStrictEqual(vals, [0]);
 });
 
 test("array path no value", () => {
 	const obj = OArray([0, 1]);
-	expect(obj.observer.path([positionIndex(obj, 0)]).get()).to.equal(0)
+	assert.strictEqual(obj.observer.path([positionIndex(obj, 0)]).get(), 0)
 
 	const index = positionIndex(obj, 1);
-	expect(obj.observer.path([index]).get()).to.equal(1);
+	assert.strictEqual(obj.observer.path([index]).get(), 1);
 
 	obj.splice(1, 1);
-	expect(obj.observer.path([index]).get()).to.equal(null);
+	assert.strictEqual(obj.observer.path([index]).get(), null);
 
 	obj.push(1);
 
 	const index2 = positionIndex(obj, 0);
 	obj.splice(0, 1);
 
-	expect(obj.observer.path([index2]).get()).to.equal(null);
+	assert.strictEqual(obj.observer.path([index2]).get(), null);
 });
 
 test("array modify event previous value", () => {
@@ -224,7 +224,7 @@ test("array modify event previous value", () => {
 
 	obj[0] = 200;
 
-	expect(prev).to.deep.equal(100);
+	assert.deepStrictEqual(prev, 100);
 });
 
 test("array delete check during listener", () => {
@@ -239,7 +239,7 @@ test("array delete check during listener", () => {
 
 	obj.splice(0, 1);
 
-	expect(has).to.equal(false);
+	assert.strictEqual(has, false);
 });
 
 test("array delete check previous value", () => {
@@ -254,7 +254,7 @@ test("array delete check previous value", () => {
 
 	obj.splice(0, 1);
 
-	expect(prev).to.equal('thing');
+	assert.strictEqual(prev, 'thing');
 });
 
 test("array heavy nesting", () => {
@@ -289,9 +289,9 @@ test("array path getter", () => {
 	let obs2 = obj.observer.path([positionIndex(obj, 1)]);
 	let obs3 = obj.observer.path([positionIndex(obj, 2)]);
 
-	expect(obs1.get()).to.equal(obj[0]);
-	expect(obs2.get()).to.equal(obj[1]);
-	expect(obs3.get()).to.equal(obj[2]);
+	assert.strictEqual(obs1.get(), obj[0]);
+	assert.strictEqual(obs2.get(), obj[1]);
+	assert.strictEqual(obs3.get(), obj[2]);
 });
 
 test("array path setter", () => {
@@ -306,9 +306,9 @@ test("array path setter", () => {
 	obs2.set("new value 2");
 	obs3.set("new value 3");
 
-	expect(obs1.get()).to.equal(obj[0]);
-	expect(obs2.get()).to.equal(obj[1]);
-	expect(obs3.get()).to.equal(obj[2]);
+	assert.strictEqual(obs1.get(), obj[0]);
+	assert.strictEqual(obs2.get(), obj[1]);
+	assert.strictEqual(obs3.get(), obj[2]);
 });
 
 test("array path setter events", () => {
@@ -328,7 +328,7 @@ test("array path setter events", () => {
 	obs2.set("new value 2");
 	obs3.set("new value 3");
 
-	expect(vals).to.deep.equal(["new value 1", "new value 2", "new value 3"]);
+	assert.deepStrictEqual(vals, ["new value 1", "new value 2", "new value 3"]);
 });
 
 test("array fill", () => {
@@ -341,15 +341,15 @@ test("array fill", () => {
 
 	arr.fill(null);
 
-	expect(arr).to.deep.equal([null, null, null]);
-	expect(vals).to.deep.equal([null, null, null]);
+	assert.deepStrictEqual([...arr], [null, null, null]);
+	assert.deepStrictEqual(vals, [null, null, null]);
 });
 
 test("array out of bounds", () => {
 	const arr = OArray([1]);
 
-	expect(() => arr[3] = 'val').to.throw();
-	expect(() => arr['0hello'] = 'val').to.throw();
+	assert.throws(() => arr[3] = 'val');
+	assert.throws(() => arr['0hello'] = 'val');
 });
 
 test("array observer and lifetime", () => {
@@ -361,12 +361,12 @@ test("array observer and lifetime", () => {
 		return () => arr.push(1);
 	});
 
-	expect(arr).to.deep.equal([]);
+	assert.deepStrictEqual([...arr], []);
 	const watch = obs.watch(() => {});
 	arr.push(3);
-	expect(arr).to.deep.equal([0, 3]);
+	assert.deepStrictEqual([...arr], [0, 3]);
 	watch();
-	expect(arr).to.deep.equal([0, 3, 1]);
+	assert.deepStrictEqual([...arr], [0, 3, 1]);
 
-	expect(obs.get()).to.equal(arr);
+	assert.strictEqual(obs.get(), arr);
 });

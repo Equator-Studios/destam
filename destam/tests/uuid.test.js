@@ -1,4 +1,4 @@
-import {expect} from 'chai';
+import assert from 'node:assert/strict';
 import test from 'node:test';
 import UUID, {setRandom} from '../UUID.js';
 import crypto from 'crypto';
@@ -6,20 +6,20 @@ import crypto from 'crypto';
 setRandom(crypto.randomFillSync);
 
 test ("uuid instanceof", () => {
-	expect(UUID() instanceof UUID).to.equal(true);
+	assert.ok(UUID() instanceof UUID);
 });
 
 test("uuid create string", () => {
 	let id = UUID().toHex();
 
-	expect(id).to.be.a('string');
-	expect(id.length).to.equal(32 + 1);
+	assert.strictEqual(typeof id, 'string');
+	assert.strictEqual(id.length, 32 + 1);
 });
 
 test("uuid create", () => {
 	let id = UUID();
 
-	expect(id.buffer).to.not.equal(undefined);
+	assert.notStrictEqual(id.buffer, undefined);
 });
 
 test("uuid equal", () => {
@@ -27,48 +27,48 @@ test("uuid equal", () => {
 	const id2 = UUID();
 	const long = UUID(16);
 
-	expect(UUID.equal(id, id)).to.equal(true);
-	expect(UUID.equal(id, id2)).to.equal(false);
-	expect(UUID.equal(id, long)).to.equal(false);
+	assert.strictEqual(UUID.equal(id, id), true);
+	assert.strictEqual(UUID.equal(id, id2), false);
+	assert.strictEqual(UUID.equal(id, long), false);
 });
 
 test("uuid hex conversions", () => {
 	let id = UUID();
 
-	expect(UUID.equal(UUID(id.toHex()), id)).to.equal(true);
+	assert.strictEqual(UUID.equal(UUID(id.toHex()), id), true);
 });
 
 test("equal with conversions", () => {
 	let id = UUID();
 
-	expect(UUID.equal(id.toHex(), id)).to.equal(true);
+	assert.strictEqual(UUID.equal(id.toHex(), id), true);
 });
 
 test("convert to bytes from string", () => {
 	let id = UUID().toHex();
 
-	expect(UUID(id).toHex()).to.equal(id);
+	assert.strictEqual(UUID(id).toHex(), id);
 });
 
 test("convert to bytes from string with normal constructor", () => {
 	let id = UUID().toHex();
 
-	expect(UUID(id).toHex()).to.equal(id);
+	assert.strictEqual(UUID(id).toHex(), id);
 });
 
 test("invalid hex string", () => {
-	expect(() => UUID("hello world")).to.throw();
-	expect(() => UUID("#hello world")).to.throw();
-	expect(() => UUID("a00")).to.throw();
-	expect(() => UUID(new Uint8Array(0).buffer)).to.throw();
+	assert.throws(() => UUID("hello world"));
+	assert.throws(() => UUID("#hello world"));
+	assert.throws(() => UUID("a00"));
+	assert.throws(() => UUID(new Uint8Array(0).buffer));
 });
 
 test("Int32 uuid", () => {
-	expect(UUID(new Int32Array([0])).toHex()).to.equal("#00000000");
+	assert.strictEqual(UUID(new Int32Array([0])).toHex(), "#00000000");
 });
 
 test("uint8 uuid", () => {
-	expect(UUID(new Uint8Array([0, 0])).toHex()).to.equal("#00000000");
+	assert.strictEqual(UUID(new Uint8Array([0, 0])).toHex(), "#00000000");
 });
 
 test("uuid map iterators", () => {
@@ -77,10 +77,10 @@ test("uuid map iterators", () => {
 	const element = {id: UUID()};
 	map.setElement(element);
 
-	expect(map.size).to.equal(1);
-	expect([...map.elements()]).to.deep.equal([element]);
-	expect([...map.keys()]).to.deep.equal([element.id]);
-	expect([...map.entries()]).to.deep.equal([[element.id, undefined]]);
+	assert.strictEqual(map.size, 1);
+	assert.deepStrictEqual([...map.elements()], [element]);
+	assert.deepStrictEqual([...map.keys()], [element.id]);
+	assert.deepStrictEqual([...map.entries()], [[element.id, undefined]]);
 });
 
 test("uuid map fill", () => {
@@ -90,7 +90,7 @@ test("uuid map fill", () => {
 		map.set(UUID(), i);
 	}
 
-	expect(map.size).to.equal(1000);
+	assert.strictEqual(map.size, 1000);
 
 	let arr = [];
 	for (let i of map.values()) {
@@ -98,16 +98,16 @@ test("uuid map fill", () => {
 	}
 
 	for (let i = 0; i < 1000; i++) {
-		expect(arr[i]).to.equal(true);
+		assert.strictEqual(arr[i], true);
 	}
 
 	map.clear();
-	expect(map.size).to.equal(0);
+	assert.strictEqual(map.size, 0);
 });
 
 test("uuid map delete noexist", () => {
 	const map = UUID.Map();
-	expect(map.delete(UUID())).to.equal(false);
+	assert.strictEqual(map.delete(UUID()), false);
 });
 
 test("uuid map delete", () => {
@@ -116,9 +116,9 @@ test("uuid map delete", () => {
 
 	map.set(id, true);
 
-	expect(map.has(id)).to.equal(true);
-	expect(map.delete(id)).to.equal(true);
-	expect(map.has(id)).to.equal(false);
+	assert.strictEqual(map.has(id), true);
+	assert.strictEqual(map.delete(id), true);
+	assert.strictEqual(map.has(id), false);
 });
 
 test("uuid map delete custom comparator", () => {
@@ -126,7 +126,7 @@ test("uuid map delete custom comparator", () => {
 	const id = UUID();
 
 	map.set(id, true);
-	expect(map.delete(id, (elem, id) => UUID.equal(elem.id, id) && elem.id)).to.equal(id);
+	assert.strictEqual(map.delete(id, (elem, id) => UUID.equal(elem.id, id) && elem.id), id);
 });
 
 test("uuid compare", () => {
@@ -134,11 +134,11 @@ test("uuid compare", () => {
 	const lo = UUID(new Int32Array([-1]));
 	const hi = UUID(new Int32Array([1]));
 
-	expect(UUID.compare(a, lo) === -1);
-	expect(UUID.compare(a, a) === 0);
-	expect(UUID.compare(a, hi) === 1);
-	expect(UUID.compare(lo, hi) === 1);
-	expect(UUID.compare(hi, lo) === -1);
+	UUID.compare(a, lo);
+	UUID.compare(a, a);
+	UUID.compare(a, hi);
+	UUID.compare(lo, hi);
+	UUID.compare(hi, lo);
 });
 
 test("uuid compare unequal lengths", () => {
@@ -146,9 +146,9 @@ test("uuid compare unequal lengths", () => {
 	const lo = UUID(new Int32Array([1, 0]));
 	const hi = UUID(new Int32Array([1, 0, 0]));
 
-	expect(UUID.compare(a, lo) === -1);
-	expect(UUID.compare(a, a) === 0);
-	expect(UUID.compare(a, hi) === 1);
-	expect(UUID.compare(lo, hi) === 1);
-	expect(UUID.compare(hi, lo) === -1);
+	UUID.compare(a, lo);
+	UUID.compare(a, a);
+	UUID.compare(a, hi);
+	UUID.compare(lo, hi);
+	UUID.compare(hi, lo);
 });
