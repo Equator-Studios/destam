@@ -83,8 +83,8 @@ const UUID = createClass((size = 4) => {
 UUID.compare = (a, b) => {
 	if (a === b) return 0;
 
-	a = UUID(a).buffer;
-	b = UUID(b).buffer;
+	a = a.buffer ?? UUID(a).buffer;
+	b = b.buffer ?? UUID(b).buffer;
 
 	const lenDif = len(a) - len(b);
 	if (lenDif !== 0) return lenDif < 0 ? -1 : 1;
