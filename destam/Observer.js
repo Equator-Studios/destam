@@ -393,11 +393,14 @@ Object.assign(Observer.prototype, {
 			}
 
 			self.count_++;
-			const remove = self.parent_.register_(listener, governor);
+			let remove = self.parent_.register_(listener, governor);
 			return () => {
+				if (!remove) return;
+
 				self.count_--;
 				assert(self.count_ >= 0);
 				remove();
+				remove = 0;
 
 				if (self.remove_ && self.count_ === 0) {
 					self.remove_();
