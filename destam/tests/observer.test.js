@@ -930,6 +930,22 @@ test("observer selector set selected", () => {
 	expect(two.get()).to.equal(true);
 });
 
+test("observer selector deselect by setting defValue", () => {
+	const selected = Observer.mutable(null);
+	const selector = selected.selector();
+
+	const one = selector(1);
+	const two = selector(2);
+
+	one.set(true);
+	expect(one.get()).to.equal(true);
+	expect(two.get()).to.equal(false);
+	one.set(false);
+	expect(one.get()).to.equal(false);
+	expect(two.get()).to.equal(false);
+	expect(selected.get()).to.equal(null);
+});
+
 test("observer selector set selected custom values", () => {
 	const selected = Observer.mutable(null);
 	const selector = selected.selector('one', 'two');
