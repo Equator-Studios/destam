@@ -1325,6 +1325,29 @@ test("Observer lifetimes", () => {
 	expect(count).to.equal(0);
 });
 
+test("Observer lifetimes double free", () => {
+	let obs = Observer.mutable();
+
+	let count = 0;
+	obs = obs.lifetime(() => {
+		count++;
+
+		return () => {
+			count--;
+		};
+	});
+
+	let one = obs.watch(() => {});
+	let two = obs.watch(() => {});
+
+	one();
+	two();
+	one();
+	two();
+
+	expect(count).to.equal(0);
+});
+
 test("Observer lifetimes multiple null remove", () => {
 	let obs = Observer.mutable();
 
