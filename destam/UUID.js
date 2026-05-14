@@ -1,6 +1,5 @@
 import {createInstance, createClass, len, isInstance, assert} from './util.js';
 
-const HASH_MAP_MIN = 16;
 let random = bytes => {
 	for (let i = 0; i < bytes.length; i++){
 		bytes[i] = Math.min(Math.floor(Math.random() * 256), 255);
@@ -106,9 +105,12 @@ const hashCode = uuid => {
 	return uuid.buffer[0];
 };
 
-UUID.Map = (entries) => {
+UUID.Map = (entries, minAllocation = 16) => {
+	assert((minAllocation & (minAllocation - 1)) == 0, "minAllocation must be a power of two");
+
 	let out = createInstance(UUID.Map);
-	out.arr_ = Array(HASH_MAP_MIN).fill(undefined);
+	out.minAllocation_ = minAllocation;
+	out.arr_ = Array(minAllocation).fill(undefined);
 	out.mask_ = len(out.arr_) - 1;
 	out.size = 0;
 
@@ -224,7 +226,7 @@ createClass(UUID.Map, {
 			// if under 25% residency, shrink
 			// we can get away with shrinking without rebalancing the hash map
 			// because shrinking itself will rebalance for us
-			if (this.size < (len(this.arr_) >> 2) && len(this.arr_) > HASH_MAP_MIN) {
+			if (this.size < (len(this.arr_) >> 2) && len(this.arr_) > this.minAllocation_) {
 				this._resize(len(this.arr_) >> 1);
 				return ret;
 			}
