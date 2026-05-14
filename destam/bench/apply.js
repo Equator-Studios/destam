@@ -69,6 +69,25 @@ bench(`OObject ${N} Delete applies`, (ready) => {
 
 console.log();
 
+// OArray Modify: clone src into dst so fractional indices match, apply N modify commits
+bench(`OArray ${N} Modify applies`, (ready) => {
+    const src = OArray();
+    for (let i = 0; i < N; i++) src.push(0);
+
+    const dst = clone(src);
+    const network = createNetwork(dst.observer);
+
+    const commits = [];
+    const stop = src.observer.watchCommit(c => commits.push(c));
+    for (let i = 0; i < N; i++) src[i] = i + 1;
+    stop();
+
+    ready();
+    for (const commit of commits) network.apply(commit);
+    ready();
+    network.remove();
+});
+
 // OArray Insert: src and dst both empty, apply N insert commits
 bench(`OArray ${N} Insert applies`, (ready) => {
     const src = OArray();
@@ -86,17 +105,17 @@ bench(`OArray ${N} Insert applies`, (ready) => {
     network.remove();
 });
 
-// OArray Modify: clone src into dst so fractional indices match, apply N modify commits
-bench(`OArray ${N} Modify applies`, (ready) => {
+// OArray Delete: clone src into dst so fractional indices match, apply N delete commits
+bench(`OArray ${N} Delete applies`, (ready) => {
     const src = OArray();
-    for (let i = 0; i < N; i++) src.push(0);
+    for (let i = 0; i < N; i++) src.push(i);
 
     const dst = clone(src);
     const network = createNetwork(dst.observer);
 
     const commits = [];
     const stop = src.observer.watchCommit(c => commits.push(c));
-    for (let i = 0; i < N; i++) src[i] = i + 1;
+    while (src.length) src.pop();
     stop();
 
     ready();
