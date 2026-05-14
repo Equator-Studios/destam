@@ -1,12 +1,14 @@
-import { indexCompare, indexAdd, indexLeading, positionIndex } from '../Array.js';
+import { indexCompare, indexAdd, indexLeading } from '../Array.js';
 import OArray from '../Array.js';
+import makeBench from './bench.js';
 
 const COUNT = 10_000;
 const LOOKUPS = 1_000_000;
 const ROUNDS = 100;
 const entropy = 8;
 
-// Build a realistic index array by appending COUNT elements (same logic as splice)
+const bench = makeBench(ROUNDS);
+
 const buildIndices = (count, randomInserts = false) => {
     const indexes = [];
     const zero = [0, 0];
@@ -43,7 +45,6 @@ console.log(`append index avg length: ${avgLen(appendIndexes)}`);
 console.log(`random index avg length: ${avgLen(randomIndexes)}`);
 console.log();
 
-// --- indexCompare (binary search) ---
 const binarySearch = (indexes, target) => {
     let left = 0, right = indexes.length - 1;
     while (left <= right) {
@@ -56,55 +57,40 @@ const binarySearch = (indexes, target) => {
     return left;
 };
 
-const appendCompareStart = performance.now();
-for (let i = 0; i < LOOKUPS; i++) binarySearch(appendIndexes, appendIndexes[i % COUNT]);
-const appendCompareTime = performance.now() - appendCompareStart;
+bench('indexCompare binary search (append indices)', () => {
+    for (let i = 0; i < LOOKUPS; i++) binarySearch(appendIndexes, appendIndexes[i % COUNT]);
+}, 1);
 
-const randomCompareStart = performance.now();
-for (let i = 0; i < LOOKUPS; i++) binarySearch(randomIndexes, randomIndexes[i % COUNT]);
-const randomCompareTime = performance.now() - randomCompareStart;
+bench('indexCompare binary search (random indices)', () => {
+    for (let i = 0; i < LOOKUPS; i++) binarySearch(randomIndexes, randomIndexes[i % COUNT]);
+}, 1);
 
-// --- indexAdd + indexLeading (insert between two existing indices) ---
-const appendInsertStart = performance.now();
-for (let r = 0; r < ROUNDS; r++) {
+console.log();
+
+bench('indexAdd+indexLeading insert (append indices)', () => {
     for (let i = 1; i < COUNT - 1; i++) {
         const prev = appendIndexes[i - 1];
         const d = 1 - indexLeading(appendIndexes[i], prev) + entropy + 1;
         indexAdd(prev, Math.floor(Math.random() * (1 << entropy)) + 1, d);
     }
-}
-const appendInsertTime = (performance.now() - appendInsertStart) / ROUNDS;
+});
 
-const randomInsertStart = performance.now();
-for (let r = 0; r < ROUNDS; r++) {
+bench('indexAdd+indexLeading insert (random indices)', () => {
     for (let i = 1; i < COUNT - 1; i++) {
         const prev = randomIndexes[i - 1];
         const d = 1 - indexLeading(randomIndexes[i], prev) + entropy + 1;
         indexAdd(prev, Math.floor(Math.random() * (1 << entropy)) + 1, d);
     }
-}
-const randomInsertTime = (performance.now() - randomInsertStart) / ROUNDS;
+});
 
-// --- OArray bulk operations (end-to-end) ---
-const arrayAppendStart = performance.now();
-for (let r = 0; r < ROUNDS; r++) {
+console.log();
+
+bench(`OArray push x${COUNT} (end-to-end)`, () => {
     const arr = OArray();
     for (let i = 0; i < COUNT; i++) arr.push(i);
-}
-const arrayAppendTime = (performance.now() - arrayAppendStart) / ROUNDS;
+});
 
-const arrayRandomStart = performance.now();
-for (let r = 0; r < ROUNDS; r++) {
+bench(`OArray random splice x${COUNT} (end-to-end)`, () => {
     const arr = OArray();
     for (let i = 0; i < COUNT; i++) arr.splice(Math.floor(Math.random() * (i + 1)), 0, i);
-}
-const arrayRandomTime = (performance.now() - arrayRandomStart) / ROUNDS;
-
-console.log(`indexCompare binary search (append indices): ${appendCompareTime.toFixed(1)}ms`);
-console.log(`indexCompare binary search (random indices): ${randomCompareTime.toFixed(1)}ms`);
-console.log();
-console.log(`indexAdd+indexLeading insert (append indices): ${appendInsertTime.toFixed(1)}ms`);
-console.log(`indexAdd+indexLeading insert (random indices): ${randomInsertTime.toFixed(1)}ms`);
-console.log();
-console.log(`OArray push x${COUNT} (end-to-end):           ${arrayAppendTime.toFixed(1)}ms`);
-console.log(`OArray random splice x${COUNT} (end-to-end):  ${arrayRandomTime.toFixed(1)}ms`);
+});
