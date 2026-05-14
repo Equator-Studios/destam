@@ -2,16 +2,33 @@ import OObject from '../Object.js';
 import OArray from '../Array.js';
 
 const ROUNDS = 200;
-const WIDTH = 100;   // children per node for wide tree
-const DEPTH = 100;   // levels for deep chain
+const WIDTH = 100;
+const DEPTH = 100;
 const LISTENERS = 1_000;
 
 const bench = (label, fn, rounds = ROUNDS) => {
-    // warmup
-    for (let i = 0; i < 5; i++) fn();
-    const start = performance.now();
-    for (let i = 0; i < rounds; i++) fn();
-    console.log(`${label}: ${((performance.now() - start) / rounds).toFixed(3)}ms`);
+    const times = [];
+
+    const run = () => {
+        const checkpoints = [];
+        const ready = () => checkpoints.push(performance.now());
+        const start = performance.now();
+        fn(ready);
+        checkpoints.push(performance.now());
+        if (times.length === 0) for (let i = 0; i < checkpoints.length; i++) times.push(0);
+        let prev = start;
+        for (let i = 0; i < checkpoints.length; i++) {
+            times[i] += checkpoints[i] - prev;
+            prev = checkpoints[i];
+        }
+    };
+
+    for (let i = 0; i < 5; i++) run();
+    times.fill(0);
+    for (let i = 0; i < rounds; i++) run();
+
+    const segments = times.map(t => (t / rounds).toFixed(3) + 'ms');
+    console.log(`${label}: ${segments.join('  →  ')}`);
 };
 
 // --- Tree builders ---
@@ -45,87 +62,74 @@ const makeBalanced = (depth, branching = 4) => {
     return obj;
 };
 
-// collect all leaves of a balanced tree
 const leaves = (node, depth, branching = 4) => {
     if (depth === 0) return [node];
     return Array.from({length: branching}, (_, i) =>
         leaves(node['c' + i], depth - 1, branching)).flat();
 };
 
-console.log('=== Attaching listeners ===\n');
+console.log('(construct  →  attach  →  fire)\n');
 
-bench('flat object, 1 listener on root', () => {
+bench('flat object, 1 listener', (ready) => {
     const obj = makeFlat(WIDTH);
+    ready();
     const remove = obj.observer.watch(() => {});
-    remove();
-});
-
-bench('flat object, N listeners on root', () => {
-    const obj = makeFlat(WIDTH);
-    const removers = Array.from({length: LISTENERS}, () => obj.observer.watch(() => {}));
-    for (const r of removers) r();
-});
-
-bench('deep chain, 1 listener on root', () => {
-    const { root } = makeDeep(DEPTH);
-    const remove = root.observer.watch(() => {});
-    remove();
-});
-
-bench('wide tree, 1 listener per child', () => {
-    const root = makeWide(WIDTH);
-    const removers = [];
-    for (let i = 0; i < WIDTH; i++) removers.push(root['c' + i].observer.watch(() => {}));
-    for (const r of removers) r();
-});
-
-bench('wide tree, 1 listener on root', () => {
-    const root = makeWide(WIDTH);
-    const remove = root.observer.watch(() => {});
-    remove();
-});
-
-console.log('\n=== Firing events ===\n');
-
-bench('flat object, 1 listener, mutate 1 prop', () => {
-    const obj = makeFlat(WIDTH);
-    const remove = obj.observer.watch(() => {});
+    ready();
     obj.k0 = 99;
     remove();
 });
 
-bench('flat object, N listeners, mutate 1 prop', () => {
+bench('flat object, N listeners', (ready) => {
     const obj = makeFlat(WIDTH);
+    ready();
     const removers = Array.from({length: LISTENERS}, () => obj.observer.watch(() => {}));
+    ready();
     obj.k0 = 99;
     for (const r of removers) r();
 });
 
-bench('deep chain, 1 listener on root, mutate leaf', () => {
+bench('deep chain, 1 listener on root', (ready) => {
     const { root, leaf } = makeDeep(DEPTH);
+    ready();
     const remove = root.observer.watch(() => {});
+    ready();
     leaf.value = 99;
     remove();
 });
 
-bench('wide tree, 1 listener on root, mutate 1 child', () => {
+bench('deep chain, N listeners on root', (ready) => {
+    const { root, leaf } = makeDeep(DEPTH);
+    ready();
+    const removers = Array.from({length: LISTENERS}, () => root.observer.watch(() => {}));
+    ready();
+    leaf.value = 99;
+    for (const r of removers) r();
+});
+
+bench('wide tree, 1 listener on root', (ready) => {
     const root = makeWide(WIDTH);
+    ready();
     const remove = root.observer.watch(() => {});
+    ready();
     root['c0'].value = 99;
     remove();
 });
 
-bench('wide tree, 1 listener per child, mutate all children', () => {
+bench('wide tree, 1 listener per child', (ready) => {
     const root = makeWide(WIDTH);
+    ready();
     const removers = [];
     for (let i = 0; i < WIDTH; i++) removers.push(root['c' + i].observer.watch(() => {}));
+    ready();
     for (let i = 0; i < WIDTH; i++) root['c' + i].value = 99;
     for (const r of removers) r();
 });
 
-bench('balanced tree (depth=3, branching=4), 1 listener on root, mutate all leaves', () => {
+bench('balanced tree (depth=3, branching=4), 1 listener on root', (ready) => {
     const obj = makeBalanced(3, 4);
+    ready();
     const remove = obj.observer.watch(() => {});
+    ready();
     for (const leaf of leaves(obj, 3, 4)) leaf.value = 99;
     remove();
-}, ROUNDS);
+});
