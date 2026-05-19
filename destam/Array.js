@@ -1,5 +1,5 @@
 import {Insert, Modify, Delete} from './Events.js';
-import {observerGetter, getRef} from './Observer.js';
+import {observerGetter} from './Observer.js';
 import {isEqual, len, createProxy, push, createClass, assert} from './util.js';
 import * as Network from './Network.js';
 
@@ -107,6 +107,12 @@ const getElement = (indexes, ref) => {
 	return left;
 };
 
+const stableIndex = (indexes, prop) => {
+	const index = getElement(indexes, prop);
+	if (index >= len(indexes) || indexCompare(indexes[index].query_, prop) !== 0) return -1;
+	return index;
+};
+
 export const indexPosition = (array, ref) => {
 	return getElement(array[observerGetter].indexes_, ref);
 };
@@ -200,7 +206,28 @@ const OArray = createClass((init, id) => {
 		init = [];
 	}
 
+	const setProp = (prop, value) => {
+		const num = parseInt(prop);
+		const old = init[prop];
+		if (!isEqual(old, value)){
+			const link = indexes[prop];
+			assert(link, "Array write outside of bounds!");
+
+			let events;
+			Network.linkApply(link, events = [], Modify, old, value, link.query_, reg.id);
+
+			Network.relink(link, value?.[observerGetter]);
+			init[prop] = value;
+			Network.callListeners(events);
+		}
+	};
+
 	reg.indexes_ = indexes;
+	reg.getProp_ = (_, prop) => init[stableIndex(indexes, prop)];
+	reg.setProp_ = (_, prop, value) => {
+		const index = stableIndex(indexes, prop);
+		if (index >= 0) setProp(index, value);
+	};
 
 	return createProxy(init, reg, {
 		splice: (start = 0, l = len(init), ...val) => splice(reg, start, Math.min(l, len(init) - start), val),
@@ -211,11 +238,6 @@ const OArray = createClass((init, id) => {
 		fill: val => splice(reg, 0, len(init), Array(len(init)).fill(val)),
 		sort: undefined,
 		reverse: undefined,
-		[getRef]: ref => {
-			const index = getElement(indexes, ref);
-			if (index >= len(indexes) || indexCompare(indexes[index].query_, ref) !== 0) return [undefined];
-			return [init[index], val => reg.value[index] = val];
-		},
 	}, (_, prop, value) => {
 		assert((() => {
 			for (let i = 0; i < prop.length; i++){
@@ -228,20 +250,7 @@ const OArray = createClass((init, id) => {
 			return true;
 		})(), "invalid array property: " + prop);
 
-		const num = parseInt(prop);
-		const old = init[num];
-		if (!isEqual(old, value)){
-			const link = indexes[num];
-			assert(link, "Array write outside of bounds!");
-
-			let events;
-			Network.linkApply(link, events = [], Modify, old, value, link.query_, reg.id);
-
-			Network.relink(link, value?.[observerGetter]);
-			init[num] = value;
-			Network.callListeners(events);
-		}
-
+		setProp(parseInt(prop), value);
 		return true;
 	}, Array, OArray);
 });

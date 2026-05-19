@@ -12,7 +12,6 @@ const brokenChain = () => {
 };
 
 export const defaultGovernor = Symbol();
-export const getRef = Symbol();
 
 const chainGov = (prev, next) => (info, child, entry) => {
 	let gov;
@@ -66,9 +65,9 @@ const getPath = (obs, path, off) => {
 	let current = obs.get();
 
 	for (let i = 0; i < len(path) - off && current; i++) {
-		const getter = current[getRef];
-		if (getter) {
-			current = getter(path[i])[0];
+		const obs = current[observerGetter];
+		if (obs) {
+			current = obs.getProp_(obs, path[i]);
 		} else {
 			current = current[path[i]];
 		}
@@ -548,10 +547,10 @@ Object.assign(Observer.prototype, {
 		(self) => getPath(self.parent_, self.path_, 0),
 		(self, value) => {
 			const val = getPath(self.parent_, self.path_, 1);
-			const getter = val[getRef];
+			const obs = val[observerGetter];
 			const last = self.path_[len(self.path_) - 1];
-			if (getter) {
-				getter(last)[1](value);
+			if (obs) {
+				obs.setProp_(obs, last, value);
 			} else {
 				val[last] = value;
 			}

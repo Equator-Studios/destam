@@ -16,9 +16,10 @@ const OObject = createClass((init, id) => {
 	}
 
 	reg.nodes_ = nodes;
+	reg.getProp_ = (_, prop) => init[prop];
 
 	return createProxy(init, reg, {},
-		(_, prop, value) => {
+		reg.setProp_ = (_, prop, value) => {
 			const prev = init[prop];
 
 			if (typeof prop === 'symbol' || isEqual(prev, value)) {

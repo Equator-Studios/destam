@@ -1,5 +1,5 @@
 import {Insert, Modify, Delete} from './Events.js';
-import {observerGetter, getRef} from './Observer.js';
+import {observerGetter} from './Observer.js';
 import {createInstance, isEqual} from './util.js';
 import * as Network from './Network.js';
 import UUID from './UUID.js';
@@ -29,13 +29,12 @@ const OMap = (map, id) => {
 	}
 
 	reg.user_ = map;
+	reg.getProp_ = (_, prop) => map.getElement(prop);
+	reg.setProp_ = (_, prop, value) => reg.value.setElement(value);
 
 	return reg.value = createInstance(OMap, {
 		observer: {
 			get: () => reg
-		},
-		[getRef]: {
-			get: () => ref => [map.getElement(ref), val => reg.value.setElement(val)],
 		},
 		[observerGetter]: {
 			get: () => reg
