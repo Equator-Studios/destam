@@ -125,3 +125,8 @@ test("governor identities map and unwrap", createTest(
 	o => o.map(a => a.observer).unwrap(),
 	o => o,
 ));
+
+test("governor identities map random", createTest(
+	o => o.map(a => Math.random()),
+	o => o,
+));
