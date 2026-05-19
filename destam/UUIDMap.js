@@ -48,6 +48,10 @@ const OMap = (map, id) => {
 			get: () => map.mask_,
 			enumerable: true,
 		},
+		minAllocation_: {
+			get: () => map.minAllocation_,
+			enumerable: true,
+		},
 		size: {
 			get: () => map.size,
 			enumerable: true,
