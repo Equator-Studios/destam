@@ -108,10 +108,10 @@ const hashCode = uuid => {
 UUID.Map = (entries, minAllocation = 16) => {
 	assert((minAllocation & (minAllocation - 1)) == 0, "minAllocation must be a power of two");
 
-	let out = createInstance(UUID.Map);
+	const out = createInstance(UUID.Map);
 	out.minAllocation_ = minAllocation;
 	out.arr_ = Array(minAllocation).fill(undefined);
-	out.mask_ = len(out.arr_) - 1;
+	out.mask_ = minAllocation - 1;
 	out.size = 0;
 
 	if (entries) for (const entry of entries) {
