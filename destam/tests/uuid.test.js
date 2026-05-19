@@ -172,7 +172,6 @@ test("uuid map bucket size", () => {
 	for (const id of ids) map.set(id, 'hello');
 	for (const id of ids) map.delete(id);
 
-	console.log(map);
 	assert.strictEqual(map.size, 0);
 	assert.strictEqual(map.arr_.length, 4);
 });
