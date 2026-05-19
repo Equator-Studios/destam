@@ -213,7 +213,7 @@ const OArray = createClass((init, id) => {
 		reverse: undefined,
 		[getRef]: ref => {
 			const index = getElement(indexes, ref);
-			if (index >= len(indexes) || indexCompare(indexes[index].query_, ref) !== 0) return [null];
+			if (index >= len(indexes) || indexCompare(indexes[index].query_, ref) !== 0) return [undefined];
 			return [init[index], val => reg.value[index] = val];
 		},
 	}, (_, prop, value) => {

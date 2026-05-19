@@ -203,14 +203,14 @@ test("array path no value", () => {
 	assert.strictEqual(obj.observer.path([index]).get(), 1);
 
 	obj.splice(1, 1);
-	assert.strictEqual(obj.observer.path([index]).get(), null);
+	assert.strictEqual(obj.observer.path([index]).get(), undefined);
 
 	obj.push(1);
 
 	const index2 = positionIndex(obj, 0);
 	obj.splice(0, 1);
 
-	assert.strictEqual(obj.observer.path([index2]).get(), null);
+	assert.strictEqual(obj.observer.path([index2]).get(), undefined);
 });
 
 test("array modify event previous value", () => {
