@@ -184,7 +184,7 @@ const Tracker = createClass((observer, minAllocation = 64) => {
 
 	const network = createInstance(Tracker);
 	network.minAllocation_ = minAllocation
-	network.arr_ = Array(minAllocation);
+	network.arr_ = Array(minAllocation).fill(undefined);
 	network.mask_ = minAllocation - 1;
 	network.size = 0;
 	network.eventListeners_ = [];
