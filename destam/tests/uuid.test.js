@@ -152,3 +152,19 @@ test("uuid compare unequal lengths", () => {
 	UUID.compare(lo, hi);
 	UUID.compare(hi, lo);
 });
+
+test("uuid map bucket size", () => {
+	const map = UUID.Map(null, 4);
+
+	let ids = Array(8).fill(null).map(() => UUID());
+	for (const id of ids) map.set(id, 'hello');
+	for (const id of ids) map.delete(id);
+
+	console.log(map);
+	assert.strictEqual(map.size, 0);
+	assert.strictEqual(map.arr_.length, 4);
+});
+
+test("uuid map invalid bucket size", () => {
+	assert.throws(() => UUID.Map(null, 5));
+});
