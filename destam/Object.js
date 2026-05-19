@@ -15,7 +15,6 @@ const OObject = createClass((init, id) => {
 		init = {};
 	}
 
-	reg.init_ = init;
 	reg.nodes_ = nodes;
 
 	return createProxy(init, reg, {},

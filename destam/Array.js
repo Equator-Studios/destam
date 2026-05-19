@@ -200,7 +200,6 @@ const OArray = createClass((init, id) => {
 		init = [];
 	}
 
-	reg.init_ = init;
 	reg.indexes_ = indexes;
 
 	return createProxy(init, reg, {
@@ -217,7 +216,7 @@ const OArray = createClass((init, id) => {
 			if (index >= len(indexes) || indexCompare(indexes[index].query_, ref) !== 0) return [null];
 			return [init[index], val => reg.value[index] = val];
 		},
-	}, (obj, prop, value) => {
+	}, (_, prop, value) => {
 		assert((() => {
 			for (let i = 0; i < prop.length; i++){
 				const code = prop.charCodeAt(i);
