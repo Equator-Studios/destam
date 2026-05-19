@@ -207,7 +207,6 @@ const OArray = createClass((init, id) => {
 	}
 
 	const setProp = (prop, value) => {
-		const num = parseInt(prop);
 		const old = init[prop];
 		if (!isEqual(old, value)){
 			const link = indexes[prop];
