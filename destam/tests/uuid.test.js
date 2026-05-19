@@ -38,6 +38,18 @@ test("uuid hex conversions", () => {
 	assert.strictEqual(UUID.equal(UUID(id.toHex()), id), true);
 });
 
+test("uuid automatic hex conversions", () => {
+	let id = UUID();
+
+	assert.strictEqual(UUID.equal(id.toHex(), id), true);
+});
+
+test("uuid automatic hex conversions inverted", () => {
+	let id = UUID();
+
+	assert.strictEqual(UUID.equal(id, id.toHex()), true);
+});
+
 test("equal with conversions", () => {
 	let id = UUID();
 
