@@ -1362,3 +1362,24 @@ test("oobject unwrap with governor", () => {
 
 	assert.deepStrictEqual(events, [['wrapped'], ['wrapped'], ['wrapped', 'path'], ['wrapped'], ['path'], ['wrapped']]);
 });
+
+test("getting non observer from path", () => {
+	const obj = OObject({
+		nested: {
+			value: 'val'
+		},
+	});
+
+	assert.strictEqual('val', obj.observer.path(['nested', 'value']).get());
+});
+
+test("setting non observer from path", () => {
+	const obj = OObject({
+		nested: {
+			value: 'val'
+		},
+	});
+
+	obj.observer.path(['nested', 'value']).set('val2');
+	assert.strictEqual('val2', obj.observer.path(['nested', 'value']).get());
+});
