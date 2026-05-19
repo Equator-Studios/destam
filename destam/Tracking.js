@@ -178,12 +178,14 @@ const unrefDummy = (dummy) => {
  * Creates a map of observable nodes inside the network. This is used for
  * generating and applying deltas.
  */
-const Tracker = createClass(observer => {
+const Tracker = createClass((observer, minAllocation = 64) => {
 	assert(isInstance(observer, Observer), "Paramater must be an observer");
+	assert((minAllocation & (minAllocation - 1)) == 0, "minAllocation must be a power of two");
 
 	const network = createInstance(Tracker);
-	network.arr_ = Array(64);
-	network.mask_ = len(network.arr_) - 1;
+	network.minAllocation_ = minAllocation
+	network.arr_ = Array(minAllocation);
+	network.mask_ = minAllocation - 1;
 	network.size = 0;
 	network.eventListeners_ = [];
 
