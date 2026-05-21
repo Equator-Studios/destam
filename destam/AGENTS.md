@@ -1,6 +1,6 @@
-# Destam — AI Reference
+# Destam — Agent Reference
 
-Dense, factual reference for destam. The other docs in this directory cover conceptual ideas; this one is a complete API reference with semantics, signatures, and gotchas in one place. Read `intro.md` first if you're new to the concepts.
+Dense, factual reference for destam, written for coding agents reading the package directly. The longer-form prose docs live in `docs/`; this file is a single-page API reference with semantics, signatures, and gotchas in one place. Read `docs/intro.md` first if you're new to the concepts.
 
 ---
 
