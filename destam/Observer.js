@@ -7,10 +7,6 @@ const immutableSetter = () => {
 	assert(false, "Cannot set an immutable observer");
 };
 
-const brokenChain = () => {
-	assert(false, "Cannot get a broken observer chain");
-};
-
 export const defaultGovernor = Symbol();
 
 const chainGov = (prev, next) => (info, child, entry) => {
@@ -100,7 +96,7 @@ const defGet = (self) => self.parent_.get();
 const defSet = (self, v) => self.parent_.set(v);
 const defRegister = (self, listener, governor) => self.parent_.register_(listener, governor);
 
-const createImpl = (construct, get, set, register, unbreak) => {
+const createImpl = (construct, get, set, register) => {
 	const proto = createInstance(Observer);
 	if (get) proto.get = function () {
 		return get(this);
@@ -120,10 +116,6 @@ const createImpl = (construct, get, set, register, unbreak) => {
 
 			if (this.set === immutableSetter && set === defSet) {
 				instance.set = immutableSetter;
-			}
-
-			if (!unbreak && this.get === brokenChain) {
-				instance.get = brokenChain;
 			}
 		}
 
@@ -174,7 +166,7 @@ const Observer = createClass((get, set, register) => {
 
 Object.assign(Observer.prototype, {
 	register_: () => noop,
-	get: brokenChain,
+	get: noop,
 	set: immutableSetter,
 
 	/**
@@ -206,12 +198,7 @@ Object.assign(Observer.prototype, {
 				"Backward must be a function or undefined");
 
 			self.forward_ = () => {
-				let val;
-				if (self.parent_.get !== brokenChain) {
-					val = self.parent_.get();
-				}
-
-				return forward(val);
+				return forward(self.parent_.get());
 			};
 
 			if (backward) {
@@ -264,8 +251,7 @@ Object.assign(Observer.prototype, {
 				if (self.current_ === cur) self.current_ = 0;
 				unregister();
 			};
-		},
-		1
+		}
 	),
 
 	/**
@@ -994,10 +980,7 @@ Object.assign(Observer.prototype, {
 
 		let listenerContext = 0;
 		const call = (commit, meta) => {
-			let val;
-			if (this.get !== brokenChain) {
-				val = this.get();
-			}
+			let val = this.get();
 
 			if (listenerContext) listenerContext();
 			listenerContext = listener(val, commit, meta);
@@ -1103,11 +1086,7 @@ Observer.immutable = createImpl(
 
 const allMutDeps = createImpl(null,
 	self => self.deps_.get().map(obs => {
-		if (obs.get === brokenChain) {
-			return undefined;
-		} else {
-			return obs.get();
-		}
+		return obs.get();
 	}),
 	(self, v) => {
 		const d = self.deps_.get();
@@ -1138,11 +1117,7 @@ const allMutDeps = createImpl(null,
 
 const allImmDeps = createImpl(null,
 	self => self.deps_.map(obs => {
-		if (obs.get === brokenChain) {
-			return undefined;
-		} else {
-			return obs.get();
-		}
+		return obs.get();
 	}),
 	(self, v) => {
 		assert(len(v) === len(self.deps_), "Observer all set array length mismatch");

@@ -396,46 +396,6 @@ test("oobject double memo path", () => {
 	assert.deepStrictEqual(paths, [['hello']]);
 });
 
-test("oobject skip memo", () => {
-	let object = OObject({
-		other: OObject(),
-	});
-
-	assert.throws(() => {
-		object.observer.skip().memo().path('hello').watch(event => {});
-	});
-});
-
-test("oobject tree memo", () => {
-	let object = OObject({
-		other: OObject(),
-	});
-
-	assert.throws(() => {
-		object.observer.tree('children').memo().path('hello').watch(event => {});
-	});
-});
-
-test("oobject skip get", () => {
-	let object = OObject({
-		other: OObject(),
-	});
-
-	assert.throws(() => {
-		object.observer.skip().get();
-	});
-});
-
-test("oobject tree get", () => {
-	let object = OObject({
-		other: OObject(),
-	});
-
-	assert.throws(() => {
-		object.observer.tree('children').get();
-	});
-});
-
 test("oobject skip set", () => {
 	let object = OObject({
 		other: OObject(),
@@ -1201,14 +1161,14 @@ test("oobject map on broken chain with path", () => {
 
 test("oobject Observer.all on broken chain", () => {
 	const obj = OObject();
-	const obs = obj.observer.skip()
+	const obs = obj.observer.skip();
 
 	assert.strictEqual(Observer.all([obs]).get()[0], undefined);
 });
 
 test("oobject Observer.all on broken chain 2", () => {
 	const obj = OObject();
-	const obs = obj.observer.skip()
+	const obs = obj.observer.skip();
 
 	assert.strictEqual(Observer.all(Observer.immutable([obs])).get()[0], undefined);
 });
@@ -1391,3 +1351,48 @@ test("setting non observer from path", () => {
 	obj.observer.path(['nested', 'value']).set('val2');
 	assert.strictEqual('val2', obj.observer.path(['nested', 'value']).get());
 });
+
+/*
+.memo() breaks if .get() doesn't produce a value. TODO: Add dev mode checks that will
+throw when this occurs.
+
+test("oobject skip memo", () => {
+	let object = OObject({
+		other: OObject(),
+	});
+
+	assert.throws(() => {
+		object.observer.skip().memo().path('hello').watch(event => {});
+	});
+});
+
+test("oobject tree memo", () => {
+	let object = OObject({
+		other: OObject(),
+	});
+
+	assert.throws(() => {
+		object.observer.tree('children').memo().path('hello').watch(event => {});
+	});
+});
+
+test("oobject skip get", () => {
+	let object = OObject({
+		other: OObject(),
+	});
+
+	assert.throws(() => {
+		object.observer.skip().get();
+	});
+});
+
+test("oobject tree get", () => {
+	let object = OObject({
+		other: OObject(),
+	});
+
+	assert.throws(() => {
+		object.observer.tree('children').get();
+	});
+});
+ */

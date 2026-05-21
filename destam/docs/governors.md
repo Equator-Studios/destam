@@ -176,39 +176,67 @@ observer.path('array').skip().path('name')
 Now we will get any update to any of the names in the array. But what happens to
 .get()?
 
-## Broken Chains
+## Multi-target observers
 What if we are working with an observer that has multiple targets? Which element are we actually referencing? What will it return? Consider our observer again:
 ```js
 observer.path('array').skip().path('name').get()
 ```
-Will actually just throw an error. In debug builds, the assert "Cannot get a
-broken observer chain" will be thrown. Since destam does not assume what you
-actual want to happen with multiple targets, an error will be thrown. But destam
-does not make it impossible to define application-specific behavior for this
-observer to essentially fix the broken chain. In this case, it's probably
-reasonably to have .get() return an array of all the names. Let's define this behavior
-with `.map()`.
+There is no single answer here, so `.get()` simply returns `undefined`. Destam does
+not crash and does not require any special "fix-up" governor — the lack of a single
+value just propagates through the chain like any other undefined.
+
+Downstream operators behave consistently with this:
+- `.path('foo')` on an `undefined` value resolves to `undefined` (just like `({}).foo.bar` would throw — but destam's path traversal stops cleanly).
+- `.map(forward)` calls `forward(undefined)`. If your forward function uses the value, handle the `undefined` case. If it closes over the underlying state, you can ignore the argument entirely:
 
 ```js
 observer.path('array').skip().path('name').map(() => {
 	return state.array.map(element => element.name);
 }).get() === ['item1', 'item2', 'item3']
 ```
-`.map()` will basically know it's running on a broken chain and instead of crashing,
-it will return `undefined` as the value. This is okay though, we can just
-reference the state directly through the closure.
 
-Let's consider a potential gotcha with this:
+Here, the `.map()` callback ignores its argument and reads the state directly
+through closure. This is the canonical pattern for producing an aggregate value
+from a multi-target observer: use the chain for *event filtering* (so that watchers
+fire when any matching item changes), and use closure access to the underlying
+state for the *value*.
+
+Let's consider a potential gotcha:
 ```js
 observer.path('array').skip().map(() => {
 	return state.array;
 }).path('name').get() === undefined
 ```
-Here, we try to repair the chain right after `.skip()`. The `.path()` won't function properly after the `.map()` because `.path()` will see an array and if you try to get the `name` property of an array reference you get undefined:
+Here, we try to repair the chain right after `.skip()`. The `.path()` after the
+`.map()` ends up calling `.name` on the returned array, which is `undefined`.
+`.map()` is transparent to governors — any governor defined after the `.map()`
+operates on what the `.map()`'s parent sees, not on the value `.map()` returns.
+The `.path('name')` actually filters events for `name` properties on the original
+target, not on the array.
+
+## The `.memo()` footgun
+
+`.memo()` is unusual among the operators because it genuinely depends on its
+parent having a single value. It caches that value to deduplicate downstream
+work, and if the value happens to be an observable, it follows it to deliver
+nested events. A multi-target chain doesn't have a single value to cache, so
+`.memo()` placed after `.skip()` or `.tree()` cannot do its job.
+
 ```js
-[].name === undefined
+// BROKEN — .memo() has no single value to anchor on.
+const memoed = observer.path('array').skip().path('name').memo();
+memoed.path('first').watch(...);
 ```
-Note that this will not drop performance. `.map()` basically is transparent to governors. Any governors that are defined after the map() will effect what .map() looks at. So the `.path('name')` will look past the .map() and make it only fire for `name` properties.
+
+**Rules to avoid it:**
+- Apply `.memo()` before any `.skip()` / `.tree()` in the chain, not after.
+- If you need to memoize a derived value across a multi-target chain, collapse
+  the chain into a concrete value with `.map()` first, then memo:
+
+```js
+// OK — map collapses the multi-target chain into a single concrete value
+observer.path('array').skip().path('name').map(() => state.array.map(e => e.name)).memo()
+```
 
 ## `.tree()`
 `.tree()` is one of those observers that might seem out of place, but can really demonstrate the power of governors in destam. `.tree()` is meant to track data in a tree based structure.
@@ -252,5 +280,7 @@ observer.path('array').tree('children').path('name')
 `.tree()` takes a parameter of the property that it can look more deeply into. This is typically `children` going by programming conventions.
 
 Note how `tree()` will now have multiple targets all referring to these
-`{children: [], name: String }` nodes. That means `.get()` will break because of
-a [broken chain](#broken-chains) but `.path()` can be composed on top of that to instead target the `name` of each node instead of the nodes themselves.
+`{children: [], name: String }` nodes. That means `.get()` will return `undefined`
+(see [Multi-target observers](#multi-target-observers)) but `.path()` can be
+composed on top of that to instead target the `name` of each node instead of the
+nodes themselves.
