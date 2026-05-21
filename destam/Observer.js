@@ -64,7 +64,7 @@ const andGov = (prev, next) => (info, child, entry) => {
 const getPath = (obs, path, off) => {
 	let current = obs.get();
 
-	for (let i = 0; i < len(path) - off && current; i++) {
+	for (let i = 0; i < len(path) - off && current != null; i++) {
 		const obs = current[observerGetter];
 		if (obs) {
 			current = obs.getProp_(obs, path[i]);
