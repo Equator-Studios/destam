@@ -1373,6 +1373,14 @@ test("getting non observer from path", () => {
 	assert.strictEqual('val', obj.observer.path(['nested', 'value']).get());
 });
 
+test("getting nested properties from empty string", () => {
+	const obj = OObject({
+		nested: "",
+	});
+
+	assert.strictEqual(undefined, obj.observer.path(['nested', '1', '2', '3']).get());
+});
+
 test("setting non observer from path", () => {
 	const obj = OObject({
 		nested: {
