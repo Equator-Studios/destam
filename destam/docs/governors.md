@@ -176,6 +176,88 @@ observer.path('array').skip().path('name')
 Now we will get any update to any of the names in the array. But what happens to
 .get()?
 
+## `Observer.prototype.memo`
+
+`.memo()` is primarily an optimization. It caches the parent's value so that
+work done upstream is shared between all watchers attached downstream.
+
+Consider a chain that does meaningful work in a `.map()`:
+
+```js
+const total = state.observer.path('items').map(items =>
+	items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+);
+
+total.watch(...);
+total.watch(...);
+```
+
+Without `.memo()`, the `.map()` callback runs once per watcher per change — twice
+in this example. Adding `.memo()` caches the current value while at least one
+watcher is attached, so the chain above runs once and the cached value is reused:
+
+```js
+const sharedTotal = total.memo();
+
+sharedTotal.watch(...);
+sharedTotal.watch(...);
+// the reduce runs once per change, not twice
+```
+
+### Consequences of a shared upstream subscription
+
+The way `.memo()` achieves this is by maintaining a single subscription up the
+chain no matter how many watchers attach below. Usually this is invisible — the
+chain runs once instead of N times and that's it. But when the upstream chain
+has *per-subscription side effects*, `.memo()` ends up changing observable
+behavior as a natural consequence of that single shared subscription. Two cases
+worth knowing about:
+
+**`Observer.timer(ms)`** creates a new `setInterval` per subscriber. Without
+`.memo()`, N watchers on a timer means N independent intervals that may drift
+relative to each other. With `.memo()`, all watchers share one interval and
+fire in sync:
+
+```js
+const t = Observer.timer(1000).memo();
+t.watch(...);
+t.watch(...);  // both receive ticks from the same interval
+```
+
+**Nested observables.** If the value cached by `.memo()` is itself an
+observable, watchers attached after `.memo()` will follow that observable for
+nested mutations. This makes `.memo()` useful for "current selection" style
+patterns where the value pointed to is a whole observable subtree:
+
+```js
+const current = Observer.mutable(OObject({name: 'foo'}));
+
+current.memo().watch(delta => {
+	// fires when `current` is reassigned AND when the inner object mutates
+});
+```
+
+### `.memo(count)`
+
+Calling `.memo()` with a positive integer returns an array of that many memoized
+observers all sharing one upstream subscription. Useful when you need to hand
+out distinct lifetimes (e.g. one per consumer) but want to pay for the upstream
+chain once.
+
+```js
+const [a, b, c] = observer.path('expensive').memo(3);
+// three distinct downstream lifetimes, one shared upstream subscription
+```
+
+### When to reach for it
+
+`.memo()` is an optimization, not a correctness primitive. Adding it never
+changes behavior — only performance characteristics. It pays off when:
+1. The chain above does meaningful work per evaluation (a non-trivial `.map()`).
+2. There are multiple watchers attached below that would otherwise repeat that work.
+
+If only one watcher is ever attached, `.memo()` adds overhead for nothing.
+
 ## Multi-target observers
 What if we are working with an observer that has multiple targets? Which element are we actually referencing? What will it return? Consider our observer again:
 ```js
