@@ -26,7 +26,6 @@ const createLinkEntry = (link, parent, governor_, user) => {
 	// handle cycles
 	for (let entry = child; child && entry.link_; entry = entry.parent_) {
 		if (entry.link_.reg_ === link.observer_) {
-			child.regNext_ = child.regPrev_ = child;
 			child = 0;
 		}
 	}
@@ -36,11 +35,7 @@ const createLinkEntry = (link, parent, governor_, user) => {
 
 const addListener = (reg, parent) => {
 	const governor = parent.governor_;
-
-	parent.regNext_ = reg.regNext_;
-	reg.regNext_.regPrev_ = parent;
-	reg.regNext_ = parent;
-	parent.regPrev_ = reg;
+	reg.listeners_.set(parent, parent);
 
 	for (let link = reg.linkNext_; link !== reg; link = link.linkNext_) {
 		const user = governor.governor_(parent.user_, link, parent);
@@ -54,8 +49,7 @@ const addListener = (reg, parent) => {
 };
 
 const removeListener = (reg, parent) => {
-	parent.regPrev_.regNext_ = parent.regNext_;
-	parent.regNext_.regPrev_ = parent.regPrev_;
+	const removed = reg.listeners_.delete(parent);
 
 	for (let entry = parent.children_; entry; entry = entry.childNext_) {
 		entry.prev_.next_ = entry.next_;
@@ -66,17 +60,14 @@ const removeListener = (reg, parent) => {
 		}
 	}
 
-	const governor = parent.governor_;
-	if (parent.regPrev_ !== parent) {
-		governor.remove_?.(reg, parent);
-	}
+	if (removed) parent.governor_.remove_?.(reg, parent);
 };
 
 export const link = (link, observer, insert) => {
 	link.observer_ = observer;
 	link.next_ = link.prev_ = link;
 
-	for (let reg = link.reg_.regPrev_; reg !== link.reg_; reg = reg.regPrev_) {
+	for (const reg of link.reg_.listeners_.values()) {
 		const user = reg.governor_.governor_(reg.user_, link, reg);
 		if (user) {
 			const child = createLinkEntry(link, reg, reg.governor_, user);
@@ -138,8 +129,8 @@ export const createReg = createClass((constructor, id = createID?.()) => {
 	const reg = createInstance(createReg);
 	reg.id = id;
 	reg.source_ = constructor;
+	reg.listeners_ = new Map();
 
-	reg.regNext_ = reg.regPrev_ = reg;
 	reg.linkNext_ = reg.linkPrev_ = reg;
 
 	return reg;
