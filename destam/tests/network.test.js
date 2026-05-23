@@ -273,6 +273,18 @@ test("network basic tracking with relink", () => {
 	network.remove();
 });
 
+test("network internal loop", () => {
+	let object = OObject();
+	let network = createNetwork(object.observer);
+
+	const elem = OObject({});
+	elem.elem = elem;
+
+	object.elem = elem;
+
+	network.remove();
+});
+
 test("network crazy", () => {
 	let object = OObject();
 	let network = createNetwork(object.observer);
