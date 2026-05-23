@@ -13,6 +13,16 @@ Dense, factual reference for destam, written for coding agents reading the packa
 - **State tree** — observables nested inside other observables. Listeners on the root see deltas from anywhere in the tree, but **only if every layer is itself an observable** — plain JS objects in between break the link.
 - **Network** — a UUID-indexed mirror of a state tree that can `apply()` external commits. Used for serialization, replication, undo/redo.
 
+### Performance model
+
+destam inverts the typical observable library cost structure:
+
+- **Subscription (`.watch()`) is expensive.** A listener's governor (`.path()`, `.shallow()`, etc.) is not a runtime filter but a *plan* that gets compiled into direct link-level registrations as the listener walks the parts of the tree it cares about. Cost: O(listeners × tree-area-of-interest). Attaching 1000 listeners with deep governors to a 100-deep chain is in the tens of milliseconds.
+- **Plain mutations are nearly free.** Setting a property allocates one event and walks listeners *directly registered on that link*. No tree traversal, no governor evaluation per delta. Fire time is essentially independent of tree depth — only proportional to listeners directly attached at the mutated link.
+- **Structural mutations are the exception.** Assigning an observable to a property (`obj.foo = OObject({...})`) extends the tree, and any existing listeners whose governors reach into the new subtree have to register themselves into it right then — paying a subscription-style cost during what looks like a mutation.
+
+Implication: optimize for fewer/shallower subscriptions, not fewer mutations. Mutation-heavy workloads on a stable tree are exactly the target. `bench/listeners.js` has concrete numbers.
+
 ---
 
 ## Entry Points
@@ -29,6 +39,15 @@ import {
     Insert, Modify, Delete, Synthetic,  // delta classes
 } from 'destam';
 ```
+
+### Naming conventions
+
+destam uses two distinct underscore conventions that look similar but mean opposite things:
+
+- **Leading `_` (`obj._foo`)** is a *runtime* convention. OObject treats these as private from wildcard observers — `.watch()` and `.skip()` ignore them by default. Users put ephemeral, non-broadcast state here. Visible only through explicit `.path('_foo')`.
+- **Trailing `_` (`self.foo_`)** is a *build* convention — a hint to the minifier that this property can be mangled. The pre-bundled CDN distribution of destam mangles all trailing-underscore properties into short names; the npm distribution leaves them legible. Trailing-underscore properties are **not hidden** from npm consumers — they're real API surface, just labelled "internal / mangleable." Reach into them when you need to; just know that name stability is not guaranteed across the pre-bundled distribution.
+
+Public API uses neither: `observer.id`, `observable.observer`, `reg.id`, `reg.value`, etc.
 
 ---
 
@@ -219,10 +238,12 @@ network.remove()                  // tears down; required to avoid leaks
 Aggregates events over a time period into a single commit.
 
 ```js
-const digest = network.digest((commit, isNewObservable, args) => {
-    // commit:  array of deltas
-    // isNewObservable(reg): true if this observable was first seen in this digest
-    // args:    optional metadata passed via .apply(commit, args)
+const digest = network.digest((commit, observerRefs, args) => {
+    // commit:        array of deltas
+    // observerRefs(reg): true if the observable already existed in the network
+    //                    before this digest cycle (serialize as a UUID-only reference).
+    //                    false if it was added during this cycle (serialize its full state).
+    // args:          optional metadata passed via .apply(commit, args)
 }, timeoutMs?, ignorePredicate?);
 ```
 
@@ -277,11 +298,32 @@ network.apply(history.pop().map(d => d.inverse));
 Every observable has a UUID accessible via `observable.observer.id`. Position in the tree doesn't matter — events identify their target by id, so moving observables around preserves listener correctness.
 
 ```js
-const uuid = new UUID();          // random
+const uuid = new UUID();          // random, 128 bits (4 × Int32)
+const uuid = new UUID(8);         // 256 bits — useful if used as a security token
 const uuid = new UUID('#deadbeef...');  // from hex string
 uuid.toHex()                      // → '#...'
 uuid.toString()                   // → same as toHex
 ```
+
+### Performance notes
+
+UUIDs are backed by `Int32Array` rather than strings, and the whole library is built around this. **Hot paths should avoid `.toHex()`** — pass UUID objects directly through APIs that accept them. Generation, comparison, and hashing all work on the integer words; the hex form only needs to materialize for display, persistence, or interop with code that expects strings.
+
+The size argument defaults to 128 bits (already past any practical brute-force threshold). Bump it to 256 bits (`new UUID(8)`) if a UUID is going to double as an unguessable security token — e.g. session keys in `destam-db`. The cost is minor; the implementation handles arbitrary sizes uniformly.
+
+### UUID.Map vs native Map
+
+`UUID.Map` exists because the obvious alternative — a native `Map` keyed by `uuid.toHex()` — pays a string allocation per lookup. In a real event loop, IDs arrive freshly decoded from the network on every packet, so the hex strings can't be cached and re-used. `bench/uuid-map.js` shows the cost concretely (1M lookups):
+
+| Map | Time |
+|---|---|
+| `UUID.Map` | 10–30 ms |
+| Native `Map` with cached hex keys | 1.3 ms |
+| Native `Map` with `.toHex()` per lookup | **155 ms** |
+
+If you control the workflow and can cache keys yourself, native `Map` wins. For destam's actual workload — events streaming in with fresh IDs — `UUID.Map` is 5–15× faster than the realistic native alternative. The `Network` / `createNetwork` machinery is built on `UUID.Map` for exactly this reason.
+
+`UUID.Map(null, minAllocation)` preallocates the backing table — pass roughly `nextPow2(expectedCount / 0.8)` if you know the size up front and want to avoid growth cost (the benchmark shows ~2–3× improvement on the lookup column with appropriate preallocation).
 
 ---
 
