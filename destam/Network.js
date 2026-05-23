@@ -19,29 +19,28 @@ const createLinkEntry = (link, parent, governor_, user) => {
 	link.prev_ = child;
 	child.prev_.next_ = child;
 
-	if (!link.observer_) {
-		child = 0;
-	}
-
-	// handle cycles
-	for (let entry = child; child && entry.link_; entry = entry.parent_) {
-		if (entry.link_.reg_ === link.observer_) {
-			child = 0;
-		}
-	}
-
 	return child;
 };
 
 const addListener = (reg, parent) => {
 	const governor = parent.governor_;
-	reg.listeners_.set(parent, parent);
+	if (!reg) return;
+
+	const existing = reg.listeners_.get(governor);
+	if (existing) {
+		// Record listener shadowing so that we can re-construct if we decide
+		// to remove them later.
+		parent.shadow_ = existing.shadow_;
+		existing.shadow_ = parent;
+		return;
+	}
+
+	reg.listeners_.set(governor, parent);
 
 	for (let link = reg.linkNext_; link !== reg; link = link.linkNext_) {
 		const user = governor.governor_(parent.user_, link, parent);
 		if (user) {
-			const child = createLinkEntry(link, parent, governor, user);
-			if (child) addListener(link.observer_, child);
+			addListener(link.observer_, createLinkEntry(link, parent, governor, user));
 		}
 	}
 
@@ -49,18 +48,40 @@ const addListener = (reg, parent) => {
 };
 
 const removeListener = (reg, parent) => {
-	const removed = reg.listeners_.delete(parent);
+	const governor = parent.governor_;
+	let active = reg.listeners_.get(governor);
 
-	for (let entry = parent.children_; entry; entry = entry.childNext_) {
-		entry.prev_.next_ = entry.next_;
-		entry.next_.prev_ = entry.prev_;
+	if (active === parent) {
+		// Walk children first — without removing parent from listeners_ yet.
+		// Any cycle-shadow descendants will recursively re-enter
+		// removeListener on the same reg, hit the else branch, and unlink
+		// themselves from parent.shadow_ chain (mirror of addListener
+		// visiting the reg twice for a cycle: once setting parent, once
+		// creating the shadow).
+		for (let entry = parent.children_; entry; entry = entry.childNext_) {
+			entry.prev_.next_ = entry.next_;
+			entry.next_.prev_ = entry.prev_;
 
-		if (entry.link_.observer_) {
-			removeListener(entry.link_.observer_, entry);
+			if (entry.link_.observer_) {
+				removeListener(entry.link_.observer_, entry);
+			}
 		}
+
+		const shadow = parent.shadow_;
+		reg.listeners_.delete(governor);
+		if (shadow) addListener(reg, shadow);
+
+		governor.remove_?.(reg, parent);
+	} else if (active) {
+		// parent is somewhere in active's shadow chain — unlink it.
+		// Reached either by explicit removal of a shadow (e.g. obj.y deleted
+		// while obj.x still references the same observable) or by the
+		// children walk above when parent is a cycle-shadow descendant.
+		while (active.shadow_ !== parent) active = active.shadow_;
+		active.shadow_ = parent.shadow_;
 	}
 
-	if (removed) parent.governor_.remove_?.(reg, parent);
+	parent.shadow_ = null;
 };
 
 export const link = (link, observer, insert) => {
@@ -70,8 +91,7 @@ export const link = (link, observer, insert) => {
 	for (const reg of link.reg_.listeners_.values()) {
 		const user = reg.governor_.governor_(reg.user_, link, reg);
 		if (user) {
-			const child = createLinkEntry(link, reg, reg.governor_, user);
-			if (child) addListener(observer, child);
+			addListener(observer, createLinkEntry(link, reg, reg.governor_, user));
 		}
 	}
 
@@ -96,9 +116,7 @@ export const relink = (link, newObserver) => {
 
 		entry.children_ = null;
 
-		if (newObserver) {
-			addListener(newObserver, entry);
-		}
+		addListener(newObserver, entry);
 	}
 };
 
