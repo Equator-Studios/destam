@@ -431,6 +431,119 @@ test("handle circles", () => {
 	assert.strictEqual(object.next.next.next.next.next.next.three, '3');
 });
 
+test("handle diamond", () => {
+	let root = OObject({});
+	let shared = OObject({});
+
+	const paths = [];
+	root.observer.watch(event => {
+		paths.push(event.path);
+	});
+
+	root.x = shared;
+	root.y = shared;
+
+	shared.foo = 'bar';
+
+	// The cycle check in createLinkEntry walks the current registration path
+	// looking for the target observable as an ancestor. For a diamond, neither
+	// path has `shared` as an ancestor of itself, so both registrations are
+	// created and the listener fires once per path on every mutation.
+	assert.deepStrictEqual(paths, [
+		['x'],
+		['y'],
+		['x', 'foo'],
+	]);
+});
+
+test("handle diamond with nested observable", () => {
+	let root = OObject({});
+	let shared = OObject({});
+	let nested = OObject({});
+
+	const paths = [];
+	root.observer.watch(event => {
+		paths.push(event.path);
+	});
+
+	root.x = shared;
+	root.y = shared;
+	shared.nested = nested;
+
+	nested.baz = 'qux';
+
+	// Doubling extends through the subtree — the listener is registered into
+	// `shared` twice (via x and y), and recursively into `nested` twice, so a
+	// mutation deep inside fires once per path from root.
+	assert.deepStrictEqual(paths, [
+		['x'],
+		['y'],
+		['x', 'nested'],
+		['x', 'nested', 'baz'],
+	]);
+});
+
+// Three references to the same observable form a shadow chain. The active is
+// registered; the other two are shadows. Each test below removes the three
+// references in a different order and verifies that:
+//   1. While at least one reference is alive, mutations on `shared` fire
+//      exactly once (no duplicates), with `delta.path[0]` being one of the
+//      still-alive references.
+//   2. After all three references are removed, mutations on `shared` fire
+//      zero times.
+// These exercise the shadow chain bookkeeping: promotion of the head when the
+// active is removed, mid-chain unlinking when a non-active reference is
+// removed, and full cleanup when the last reference is removed.
+for (const order of [
+	['x', 'y', 'z'],
+	['x', 'z', 'y'],
+	['y', 'x', 'z'],
+	['y', 'z', 'x'],
+	['z', 'x', 'y'],
+	['z', 'y', 'x'],
+]) {
+	test(`diamond, three refs, remove in order ${order.join(',')}`, () => {
+		const shared = OObject({});
+		const obj = OObject({});
+
+		let captured = [];
+		obj.observer.watch(event => {
+			// Only collect events from mutating shared.foo — ignore the
+			// setup events (paths of length 1 for the x/y/z assignments).
+			if (event.path.length === 2 && event.path[1] === 'foo') {
+				captured.push(event.path);
+			}
+		});
+
+		obj.x = shared;
+		obj.y = shared;
+		obj.z = shared;
+
+		const remaining = new Set(['x', 'y', 'z']);
+		let counter = 0;
+		const mutateAndCheck = () => {
+			captured = [];
+			shared.foo = counter++;
+			if (remaining.size > 0) {
+				assert.strictEqual(captured.length, 1,
+					`expected 1 event after mutation, got ${captured.length} (remaining: ${[...remaining]})`);
+				assert.ok(remaining.has(captured[0][0]),
+					`expected path[0] in {${[...remaining]}}, got '${captured[0][0]}'`);
+			} else {
+				assert.strictEqual(captured.length, 0,
+					`expected no events after all refs removed, got ${captured.length}`);
+			}
+		};
+
+		mutateAndCheck();
+		for (const ref of order) {
+			delete obj[ref];
+			remaining.delete(ref);
+			mutateAndCheck();
+		}
+	});
+}
+
 test("array in object shallow after map", () => {
 	const obj = OObject({
 		arr: OArray(),

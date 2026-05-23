@@ -37,6 +37,68 @@ import { clone } from './clone.js';
 		obj1.object2 = obj1.object;
 	});
 
+	test("tracking diamond mutate shared", async (obj1, flush) => {
+		const shared = OObject();
+		obj1.x = shared;
+		obj1.y = shared;
+
+		await flush();
+
+		shared.foo = 'bar';
+	});
+
+	test("tracking diamond with nested observable", async (obj1, flush) => {
+		const shared = OObject();
+		obj1.x = shared;
+		obj1.y = shared;
+
+		await flush();
+
+		const nested = OObject();
+		shared.nested = nested;
+		nested.baz = 'qux';
+	});
+
+	// Three references into a shared observable, removed in every possible
+	// order. Verifies the shadow chain bookkeeping in Network.js survives the
+	// full digest+apply round-trip: each delete must propagate cleanly, and
+	// mutations on `shared` between deletes must keep both sides in sync. The
+	// wrapper asserts deepStrictEqual(object, object2) at the end, and a broken
+	// diamond/cycle handler would surface as either divergence or an
+	// "already populated" / "unknown reg" error during apply.
+	for (const order of [
+		['x', 'y', 'z'],
+		['x', 'z', 'y'],
+		['y', 'x', 'z'],
+		['y', 'z', 'x'],
+		['z', 'x', 'y'],
+		['z', 'y', 'x'],
+	]) {
+		test(`tracking diamond, three refs, remove in order ${order.join(',')}`, async (obj1, flush) => {
+			const shared = OObject();
+			obj1.x = shared;
+			obj1.y = shared;
+			obj1.z = shared;
+
+			await flush();
+
+			let counter = 0;
+			shared.foo = counter++;
+			await flush();
+
+			for (const ref of order) {
+				delete obj1[ref];
+				// Mutate while at least one ref still survives, then flush.
+				// On the last iteration `shared` is no longer reachable from
+				// obj1 so this mutation is invisible to the digest — both
+				// sides end up without `shared` and the wrapper's final
+				// deep-equal still holds.
+				shared.foo = counter++;
+				await flush();
+			}
+		});
+	}
+
 	test("utilize refs", async (obj1, flush) => {
 		obj1.object = OObject();
 
