@@ -273,7 +273,7 @@ const trackers = async (func, n, invert) => {
 		two.obj = orig;
 	});
 
-	test('replace with reference and edit other', async ([two, one], [flush2, flush]) => {
+	test('replace with reference and edit other inverted', async ([two, one], [flush2, flush]) => {
 		one.obj = one.obj2 = OObject();
 		await flush();
 		await flush2();
