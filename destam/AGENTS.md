@@ -101,8 +101,8 @@ Map keyed by UUID. Used when you need observables keyed by identity rather than 
 
 | Constructor | Signature | Description |
 |---|---|---|
-| `Observer.mutable(value)` | `(any) → Observer` | Wraps `value` with get/set. If `value` is already an Observer, returns it unchanged. |
-| `Observer.immutable(value)` | `(any) → Observer` | Read-only. If passed an Observer, follows it for reads but `.set()` throws. |
+| `Observer.mutable(value)` | `(any) → Observer` | Wraps `value` with get/set. Always returns a new Observer wrapping the value; if `value` is already an Observer, it's stored as the wrapped value (not followed). |
+| `Observer.immutable(value)` | `(any) → Observer` | Read-only. If passed an Observer, follows it for reads and events but `.set()` throws. If passed a non-Observer, returns an Observer that always resolves to that value. |
 | `Observer.all(deps)` | `(Observer[] \| Observer<Observer[]>) → Observer` | Combines observers. `.get()` returns an array of resolved values; `.set(arr)` calls `.set` on each. Reactive to changes in any dep. The deps argument can itself be an observer of an array — useful when the dependency list isn't known up front. |
 | `Observer.timer(ms)` | `(number) → Observer<number>` | Increments on a setInterval. Multiple watchers create multiple intervals — use `.memo()` to share. |
 | `Observer.event(elem, type, options)` | `(EventTarget, string, EventInit?) → Observer` | DOM event observable. |
