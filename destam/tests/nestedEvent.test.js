@@ -445,10 +445,9 @@ test("handle diamond", () => {
 
 	shared.foo = 'bar';
 
-	// The cycle check in createLinkEntry walks the current registration path
-	// looking for the target observable as an ancestor. For a diamond, neither
-	// path has `shared` as an ancestor of itself, so both registrations are
-	// created and the listener fires once per path on every mutation.
+	// Two paths to the same observable form a diamond. A mutation on the
+	// shared observable fires exactly once — through whichever path is the
+	// active registration (the first one assigned, here x).
 	assert.deepStrictEqual(paths, [
 		['x'],
 		['y'],
@@ -472,9 +471,9 @@ test("handle diamond with nested observable", () => {
 
 	nested.baz = 'qux';
 
-	// Doubling extends through the subtree — the listener is registered into
-	// `shared` twice (via x and y), and recursively into `nested` twice, so a
-	// mutation deep inside fires once per path from root.
+	// Diamond handling extends through the subtree — assigning and mutating
+	// observables under `shared` fires once per logical change, through the
+	// active path.
 	assert.deepStrictEqual(paths, [
 		['x'],
 		['y'],
