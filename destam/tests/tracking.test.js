@@ -1323,6 +1323,82 @@ test("digest.remove() during pending async sync still releases dummies", async (
 	network.remove();
 });
 
+test("re-entrant flush combines multiple digests into one transaction", async () => {
+	const obj1 = OObject();
+	const obj2 = OObject();
+	const net1 = createNetwork(obj1.observer);
+	const net2 = createNetwork(obj2.observer);
+
+	const TYPE_1 = 0;
+	const TYPE_2 = 1;
+
+	let inFlush = false;
+	const transactions = [];
+
+	const orchestrate = (flushType, changes, observerRefs) => {
+		if (inFlush) return [changes, observerRefs];
+		inFlush = true;
+
+		return (async () => {
+			try {
+				const networks = [net1, net2];
+				const both = await Promise.all([TYPE_1, TYPE_2].map(type => {
+					if (type === flushType) {
+						return Promise.resolve([changes, observerRefs]);
+					}
+
+					return networks[type].flush().then(digests => digests[0]);
+				}));
+
+				transactions.push(both);
+			} finally {
+				inFlush = false;
+			}
+		})();
+	};
+
+	const digest1 = net1.digest((changes, observerRefs) =>
+		orchestrate(TYPE_1, changes, observerRefs), null);
+	const digest2 = net2.digest((changes, observerRefs) =>
+		orchestrate(TYPE_2, changes, observerRefs), null);
+
+	obj1.a = 1;
+	obj2.b = 2;
+
+	await net1.flush();
+
+	assert.strictEqual(transactions.length, 1);
+
+	const [[changes1, refs1], [changes2, refs2]] = transactions[0];
+
+	assert.strictEqual(changes1.length, 1);
+	assert.strictEqual(changes1[0].ref, 'a');
+	assert.strictEqual(changes1[0].value, 1);
+	assert.strictEqual(typeof refs1, 'function');
+
+	assert.strictEqual(changes2.length, 1);
+	assert.strictEqual(changes2[0].ref, 'b');
+	assert.strictEqual(changes2[0].value, 2);
+	assert.strictEqual(typeof refs2, 'function');
+
+	// And the next round, triggered from the *other* side, should work the
+	// same way — proves the guard resets and isn't tied to TYPE_1 being the
+	// initiator.
+	obj1.c = 3;
+	obj2.d = 4;
+	await net2.flush();
+
+	assert.strictEqual(transactions.length, 2);
+	const [[c1, ], [c2, ]] = transactions[1];
+	assert.strictEqual(c1[0].ref, 'c');
+	assert.strictEqual(c2[0].ref, 'd');
+
+	digest1.remove();
+	digest2.remove();
+	net1.remove();
+	net2.remove();
+});
+
 // When a child observable is removed during a digest cycle, a dummy is
 // inserted into the child's reg to keep events routing to the digest until
 // it next syncs. The concern: when the digest is removed, its share of the
