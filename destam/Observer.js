@@ -255,8 +255,8 @@ Object.assign(Observer.prototype, {
 	),
 
 	/**
-	 * Creates an observer that will resolve to value a nested observer might have.
-	 * If this observer does not nest another observer, then unwrap() will return
+	 * Creates an observer that will resolve to a value the nested observer has.
+	 * If this observer does not nest another observer, then unwrap() will
 	 * resolve to the value of this observer.
 	 *
 	 * Consider this:
@@ -728,29 +728,41 @@ Object.assign(Observer.prototype, {
 	),
 
 	/**
-	 * Creates an observer that memoizes state and collapses all listeners down
-	 * to one listener for the parent state. In the case where you may have many
-	 * similar observer queries that only differ in the end, this can be used
-	 * to reduce overhead of walking the tree everytime a new listener is
-	 * attached.
+	 * Memoizes the value at this point in an observer chain. Watchers
+	 * attached to the memo register against the cached value rather than
+	 * registering through the chain that produced it — they read the
+	 * snapshot, not the upstream network.
 	 *
-	 * Additionally, a count can be passed to have the memo create a list of
-	 * observers that all have a event order guarantee. If 2 is passed, an
-	 * array of two observers will be generated where the first observer
-	 * in the array will always have its listeners called before any listeners
-	 * defined in the second observer in the array.
+	 * If the cached value is itself an observable, downstream watchers
+	 * follow it for nested mutations. This is the "current selection"
+	 * pattern — wrap an observable in `Observer.mutable` and memo it so
+	 * consumers track whichever observable is currently held and react to
+	 * its contents.
 	 *
-	 * Note that events will not be forwarded if the value that the observer
-	 * resolves to the same value.
+	 * If the cached value is a primitive, downstream watchers fire when the
+	 * cached value itself changes (i.e. when the parent emits a new value
+	 * that doesn't equal the old). They do not see mutations from
+	 * observables further upstream — the chain is intentionally cut off at
+	 * the memo boundary.
+	 *
+	 * Memo also amortizes upstream work: the chain producing the cached
+	 * value runs once per emission regardless of how many watchers are
+	 * attached below.
+	 *
+	 * If a count is passed, returns an array of that many memos sharing one
+	 * upstream subscription. They have a defined event order: listeners
+	 * attached to `memos[i]` are called before listeners attached to
+	 * `memos[i+1]`.
+	 *
+	 * Events are not forwarded when the new cached value equals the old (by
+	 * isEqual).
 	 *
 	 * Params:
-	 *   count: The number of observers to create to create observers have
-	 *     have an event order guarantee among them. If a falsy value is provided
-	 *     (or none at all) then a single observer is returned.
+	 *   count: Number of memos to create with guaranteed ordering. If falsy
+	 *     or omitted, a single observer is returned.
 	 *
 	 * Returns:
-	 *   An observer that has the same behavior when memo was not used at all,
-	 *     but serves as a transparent performance optimization.
+	 *   A memoized observer, or an array of them when count is provided.
 	 */
 	memo: createImpl(
 		(self, count) => {

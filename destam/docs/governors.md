@@ -158,45 +158,44 @@ Now the observer fires for the `name` of any array element. The chain has multip
 
 ## `Observer.prototype.memo`
 
-`.memo()` is primarily an optimization. It caches the parent's value so that
-work done upstream is shared between all watchers attached downstream.
+`.memo()` memoizes the value at a point in an observer chain. Watchers attached to the memo register against the *cached value*, not against the chain that produced it. The memo is the boundary between the upstream network and downstream consumers.
 
-Consider a chain that does meaningful work in a `.map()`:
-
-```js
-const total = state.observer.path('items').map(items =>
-	items.reduce((sum, item) => sum + item.price * item.quantity, 0)
-);
-
-total.watch(...);
-total.watch(...);
-```
-
-Without `.memo()`, the `.map()` callback runs once per watcher per change — twice
-in this example. Adding `.memo()` caches the current value while at least one
-watcher is attached, so the chain above runs once and the cached value is reused:
+The most useful case is the "current selection" pattern — the cached value is itself an observable, and downstream watchers follow it for nested mutations:
 
 ```js
-const sharedTotal = total.memo();
+const current = Observer.mutable(OObject({name: 'foo'}));
 
-sharedTotal.watch(...);
-sharedTotal.watch(...);
-// the reduce runs once per change, not twice
+current.memo().watch(delta => {
+	// fires when `current` is reassigned (a new observable is held)
+	// AND when the currently-held observable mutates internally
+});
+
+current.set(OObject({name: 'bar'}));  // watcher fires
+current.get().name = 'baz';           // watcher also fires
 ```
 
-### Consequences of a shared upstream subscription
+Without `.memo()`, watchers would only see the outer `.set()` — the inner observable's mutations wouldn't propagate through `Observer.mutable`. With memo, the watcher tracks "whichever observable is currently held" and reacts to changes in its contents.
 
-The way `.memo()` achieves this is by maintaining a single subscription up the
-chain no matter how many watchers attach below. Usually this is invisible — the
-chain runs once instead of N times and that's it. But when the upstream chain
-has *per-subscription side effects*, `.memo()` ends up changing observable
-behavior as a natural consequence of that single shared subscription. Two cases
-worth knowing about:
+When the cached value is a primitive, downstream watchers fire only when the cached value itself changes (i.e. when the parent emits a new value that isn't equal to the previous one).
 
-**`Observer.timer(ms)`** creates a new `setInterval` per subscriber. Without
-`.memo()`, N watchers on a timer means N independent intervals that may drift
-relative to each other. With `.memo()`, all watchers share one interval and
-fire in sync:
+### Memo amortizes upstream work
+
+A side effect of registering against the cached value is that all downstream watchers share one upstream subscription. The chain producing the value runs once per emission regardless of how many watchers attach below:
+
+```js
+const sum = Observer.all(sources).map(arr => heavy(arr)).memo();
+
+sum.watch(...);
+sum.watch(...);
+sum.watch(...);
+// `heavy` still runs only once per emission of `sources`
+```
+
+This makes memo useful for chains that do real per-evaluation work (a `.map()` reduce, an `Observer.all` join) with multiple consumers attached.
+
+### `Observer.timer`
+
+`Observer.timer` creates a new `setInterval` per subscriber. Without `.memo()`, N watchers on a timer get N independent intervals that may drift relative to each other. With `.memo()`, all watchers share one interval and fire in sync:
 
 ```js
 const t = Observer.timer(1000).memo();
@@ -204,39 +203,15 @@ t.watch(...);
 t.watch(...);  // both receive ticks from the same interval
 ```
 
-**Nested observables.** If the value cached by `.memo()` is itself an
-observable, watchers attached after `.memo()` will follow that observable for
-nested mutations. This makes `.memo()` useful for "current selection" style
-patterns where the value pointed to is a whole observable subtree:
-
-```js
-const current = Observer.mutable(OObject({name: 'foo'}));
-
-current.memo().watch(delta => {
-	// fires when `current` is reassigned AND when the inner object mutates
-});
-```
-
 ### `.memo(count)`
 
-Calling `.memo()` with a positive integer returns an array of that many memoized
-observers all sharing one upstream subscription. Useful when you need to hand
-out distinct lifetimes (e.g. one per consumer) but want to pay for the upstream
-chain once.
+Calling `.memo()` with a positive integer returns an array of memoized observers that share one upstream subscription and have a defined event order: listeners on `memos[0]` fire before listeners on `memos[1]`, and so on.
 
 ```js
 const [a, b, c] = observer.path('expensive').memo(3);
-// three distinct downstream lifetimes, one shared upstream subscription
+// three distinct downstream lifetimes, one shared upstream subscription,
+// deterministic ordering between them
 ```
-
-### When to reach for it
-
-`.memo()` is an optimization, not a correctness primitive. Adding it never
-changes behavior — only performance characteristics. It pays off when:
-1. The chain above does meaningful work per evaluation (a non-trivial `.map()`).
-2. There are multiple watchers attached below that would otherwise repeat that work.
-
-If only one watcher is ever attached, `.memo()` adds overhead for nothing.
 
 ## Multi-target observers
 What if we are working with an observer that has multiple targets? Which element are we actually referencing? What will it return? Consider our observer again:
