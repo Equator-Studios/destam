@@ -253,6 +253,89 @@ new, and which ones you can reference again to be put onto different parts of
 the tree. `observerRefs` is a callback where we can ask the question if we
 knew about the observable before, or if it's new for this digest.
 
+# Conflict resolution
+
+The basic synchronization story destam ships with is server-authoritative: a
+central process orders events, peers `.apply()` what they're told, and `args`
+plus the digest's `ignore` predicate prevent echo loops. This covers most
+collaborative apps — the kind where a backend exists and clients trust it to
+arbitrate.
+
+For offline-first or peer-to-peer use, where two clients can mutate the same
+state while disconnected and have to merge on reconnect, destam doesn't ship a
+full conflict resolution layer in the box. But the underlying data structures
+are already shaped to do most of the work, so a small sync library on top can
+finish the job.
+
+## What destam already gives you for free
+
+**UUID-based identity.** Every observable has a stable UUID independent of
+where it sits in the tree. Two clients concurrently moving the same observable
+to different parents both produce deltas that reference the same id — applying
+them in any order converges (the last move wins, but no data is lost in the
+process). Same goes for renaming, attaching, detaching: the object identity
+survives.
+
+**Probabilistic position ordering in OArray.** When you insert an element into
+an `OArray`, the position is encoded as a byte string generated to lie strictly
+between the bytes of its neighbors. The encoder mixes in random low-order bits
+so that two clients independently inserting "between A and B" produce different
+byte strings with overwhelming probability. Those byte strings have a total
+order, the same on every peer, so the resulting sequence converges:
+
+```js
+// client 1 (offline)
+arr.splice(0, 0, 'C');   // position generated between start and 'A'
+// client 2 (offline)
+arr.splice(0, 0, 'D');   // independently generated position in the same range
+```
+
+Both inserts survive after reconnect, both clients agree on whether C or D
+ends up first (whichever has the lexicographically smaller position bytes),
+and no per-element tombstone bookkeeping is needed. This is the same property
+LSEQ and Logoot give you, just baked into the data structure rather than
+maintained by a sync layer.
+
+The default entropy is tuned for single-writer use. For offline-first apps
+where many writers may insert into the same slot concurrently while
+disconnected, increase the `entropy` constant in `Array.js` — every extra bit
+roughly halves the collision probability at the cost of one bit per position.
+Most apps won't need to touch it.
+
+**Multiple references.** Already covered above — diamonds and shared references
+serialize correctly via `observerRefs`, so a peer-to-peer sync layer doesn't
+have to think about graph structure separately.
+
+## What a sync library on top would add
+
+A real offline-first or peer-to-peer layer needs:
+
+- **Per-(id, ref) timestamp metadata.** OObject sets are last-writer-wins by
+  field. The library keeps a side store of "the latest timestamp we've
+  accepted for `(reg.id, propertyName)`", checks incoming deltas against it,
+  and drops stragglers.
+- **Tombstones for deletes.** A deleted key needs to remember "deleted at T"
+  so a late-arriving Insert with time < T is rejected.
+- **A transport.** Websocket, WebRTC, IndexedDB replication — whatever moves
+  bytes between peers. destam stays transport-agnostic.
+
+Destam handles the data-structure side of the problem (identity, position
+ordering, delta encoding, diff transport via digest). The conflict policy
+sits in a thin layer above. If you need stronger semantics than LWW (true
+CRDT preservation of all concurrent writes on the same field, vector clocks
+for causal ordering), that goes in the same layer — destam doesn't need to
+change.
+
+## When you need different behavior
+
+`OArray`'s convergence assumes lexicographic ordering of random position
+bytes is acceptable for your application. If you need specific semantics for
+how concurrently-inserted items relate to each other — e.g. "always group by
+inserting client" or "always insert before the cursor of the other peer" —
+write your own array-like observable. The `Network.js` link/reg machinery is
+the same regardless of what data structure sits on top of it; `OArray` is one
+implementation among possible others.
+
 # Undo / Redo
 
 Since network events specify what changed about a network these events can
