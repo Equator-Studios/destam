@@ -338,16 +338,12 @@ const Tracker = createClass((observer, minAllocation = 64) => {
 				for (const dummy of dummies) unrefDummy(dummy);
 				dummies.length = 0;
 
-				if (!len(deltas)) {
-					reset();
+				let val = undefined;
+				if (len(deltas) && (val = callback(deltas, regFunc))?.then) {
+					return syncPending = val.then(reset);
 				} else {
-					const val = callback(deltas, regFunc);
-					if (val?.then) {
-						return syncPending = val.then(reset);
-					} else {
-						reset();
-						return val;
-					}
+					reset();
+					return val;
 				}
 			} else if (wantsSync) {
 				return wantsSync.cache_;
