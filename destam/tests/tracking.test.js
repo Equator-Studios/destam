@@ -1166,3 +1166,200 @@ test("tracking constraint network with dummy", async () => {
 
 	assert.deepStrictEqual(stuff, [[['thing']]]);
 });
+
+// === Tests for digest() with async (promise-returning) callbacks ===
+
+test("digest async callback resolves through flush", async () => {
+	const obj = OObject();
+	const network = createNetwork(obj.observer);
+
+	let callbackInvocations = 0;
+	let resolveCallback;
+	const callbackBarrier = new Promise(r => { resolveCallback = r; });
+
+	const digest = network.digest(async commit => {
+		callbackInvocations++;
+		await callbackBarrier;
+		return 'done';
+	}, null);
+
+	obj.thing = 'hello';
+	const flushPromise = digest.flush();
+
+	// Sync runs the body (and invokes the callback) synchronously before
+	// awaiting any internal promise returned by the callback.
+	assert.strictEqual(callbackInvocations, 1, "callback should have been invoked synchronously");
+
+	resolveCallback();
+	const result = await flushPromise;
+	assert.strictEqual(result, 'done');
+
+	digest.remove();
+	network.remove();
+});
+
+test("digest async callback that rejects propagates the error", async () => {
+	const obj = OObject();
+	const network = createNetwork(obj.observer);
+
+	const digest = network.digest(async commit => {
+		throw new Error('boom');
+	}, null);
+
+	obj.thing = 'hello';
+
+	await assert.rejects(digest.flush(), /boom/);
+
+	digest.remove();
+	network.remove();
+});
+
+test("changes during async sync are picked up by a subsequent flush", async () => {
+	const obj = OObject();
+	const network = createNetwork(obj.observer);
+
+	const allCommits = [];
+	const resolvers = [];
+
+	// Each callback invocation pushes its own resolver onto `resolvers`, so
+	// they don't overwrite each other across invocations.
+	const digest = network.digest(async commit => {
+		allCommits.push(commit.map(d => d.ref));
+		await new Promise(r => resolvers.push(r));
+	}, null);
+
+	obj.a = 1;
+	const firstFlush = digest.flush();
+
+	// First callback is now awaiting resolvers[0]. Mutate while sync is
+	// in flight — these changes should accumulate into the digest's
+	// changes map.
+	obj.b = 2;
+
+	resolvers[0]();
+	await firstFlush;
+
+	// In passive mode (time=null) post-sync `reset` does NOT auto-schedule
+	// a next sync even though changes.size > 0. An explicit flush picks
+	// them up.
+	const secondFlush = digest.flush();
+	resolvers[1]();
+	await secondFlush;
+
+	assert.deepStrictEqual(allCommits, [['a'], ['b']]);
+
+	digest.remove();
+	network.remove();
+});
+
+test("flush during pending async sync doesn't reinvoke the callback", async () => {
+	const obj = OObject();
+	const network = createNetwork(obj.observer);
+
+	let callbackInvocations = 0;
+	let resolveCallback;
+	const digest = network.digest(async commit => {
+		callbackInvocations++;
+		await new Promise(r => { resolveCallback = r; });
+	}, null);
+
+	obj.thing = 'hello';
+	const firstFlush = digest.flush();
+
+	// Calling flush() again while the first is still pending should not
+	// invoke the callback a second time.
+	digest.flush();
+	assert.strictEqual(callbackInvocations, 1,
+		"callback should not be invoked twice while first sync is pending");
+
+	// Release and let everything settle.
+	resolveCallback();
+	await firstFlush;
+
+	digest.remove();
+	network.remove();
+});
+
+test("digest.remove() during pending async sync still releases dummies", async () => {
+	const obj = OObject();
+	const network = createNetwork(obj.observer);
+
+	let resolveFirstCallback;
+	let callCount = 0;
+	// The first invocation blocks on a Promise (simulating an async flush
+	// in progress). Subsequent invocations (triggered by the follow-up sync
+	// queued via wantsSync) return undefined so they complete synchronously
+	// and don't hang the test.
+	const digest = network.digest(commit => {
+		callCount++;
+		if (callCount === 1) {
+			return new Promise(r => { resolveFirstCallback = r; });
+		}
+	}, null);
+
+	obj.child = OObject();
+	const cache = obj.child;
+	const firstFlush = digest.flush();
+
+	// Delete child while the first sync is in flight — creates a dummy in
+	// cache's reg.listeners_ and pushes it onto the digest's `dummies`
+	// array (waiting for the next sync to unref it).
+	delete obj.child;
+
+	// Remove the digest mid-sync. Sync is in progress so this can't process
+	// dummies immediately, but it queues a follow-up sync via wantsSync that
+	// must process them once the in-flight sync completes.
+	digest.remove();
+
+	// Release the still-pending first callback. Resolution triggers `reset`,
+	// which runs the queued follow-up sync — that's where the dummy gets
+	// unref'd.
+	resolveFirstCallback();
+	await firstFlush;
+
+	assert.strictEqual(cache.observer.listeners_.size, 0,
+		"dummy should be cleaned up after digest.remove() even when sync was pending");
+
+	network.remove();
+});
+
+// When a child observable is removed during a digest cycle, a dummy is
+// inserted into the child's reg to keep events routing to the digest until
+// it next syncs. The concern: when the digest is removed, its share of the
+// dummy's refs_ must be unref'd as part of that removal — we can't rely on
+// future events arriving at remove_ to clean up, because once the digest
+// is out of network.eventListeners_, remove_ is no longer called on it.
+test("digest removed while dummy is active unrefs immediately", async () => {
+	const obj = OObject();
+	const network = createNetwork(obj.observer);
+
+	const digest = network.digest(() => {}, null);
+
+	obj.child = OObject({foo: 'bar'});
+	await digest.flush();
+
+	const cache = obj.child;
+	delete obj.child;
+
+	// Exercise the dummy's event-routing role — mutate the orphan while
+	// the dummy is active. The dummy in cache's reg is what carries this
+	// event to the still-attached digest.
+	cache.myValue = 'whatever';
+
+	// At this point the dummy should be in cache's reg.listeners_.
+	assert.ok(
+		cache.observer.listeners_.size > 0,
+		"expected dummy in cache.observer.listeners_ after delete (mid-digest)"
+	);
+
+	// Remove the digest. This must unref the dummy as part of the
+	// removal — no further events are coming to clean it up.
+	digest.remove();
+
+	assert.strictEqual(
+		cache.observer.listeners_.size, 0,
+		"expected dummy to be unref'd and removed on digest.remove()"
+	);
+
+	network.remove();
+});
