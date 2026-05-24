@@ -1,167 +1,117 @@
 # Observer network
 
-The technology that brings observers to the next level above other similar
-javascript libraries managing application state are built in handling for
-synchronization of observer state trees and delta creation.
+What sets destam apart from most JavaScript state libraries is built-in machinery for synchronizing observer state trees and constructing deltas.
 
-Suppose we have a client-server architecture and we want to have application
-state that is synched between the client and the server. We want this to create
-a collaborative envirnoment between clients where any state changes that happen
-on one client will be visible on all the others as well as the server to
-save into its database. If the client makes any changes to its state, those
-changes are automatically relayed to the server so that it can record those
-changes into its database.
+Imagine a client-server architecture where you want application state synced between client and server. You want a collaborative environment where state changes on any client are visible to all the others and recorded by the server. Whenever a client makes a change, those changes are automatically relayed to the server so it can persist them.
 
-Observers are already modelled after atomic updates that happen throughout the
-state tree. In a watch handler, an observer event is passed with three event
-types describing the type of mutations that can happen to an observer tree. Those
-events being `Insert`, `Update` and `Remove`.
+Observers are already modeled around atomic updates that happen throughout the state tree. The delta passed into a watch handler is one of four event types describing what kind of mutation happened:
 
-`Insert` describes a newly inserted element that doesn't exist yet.
-`Update` updates an existing element that mutates to a different value.
-`Delete` deletes an existing element.
+- `Insert` — a new property/index was created.
+- `Modify` — an existing property/index changed value.
+- `Delete` — a property/index was removed.
+- `Synthetic` — a value-level change with no key (used internally and for non-observable observers like `Observer.mutable`).
 
-However, these primitives are not enough to describe what can happen during a
-given slice of time. An unsorted list of multiple of these events can be
-compiled that describes a series of mutations to change any one state tree into
-another state tree.
+These primitives aren't enough to describe everything that can happen during a slice of time. Multiple events combined form a commit — an unordered list of mutations describing the transition from one state tree to another.
 
 ## Event commits
 
-Multiple events can even be generated from a single mutation observed from
-javascript for the case of `Array.prototype.slice`. Remember, slice can add,
-remove and delete elements at the same time. Observers are equipped to handle
-this case and any case in which an atomic is required for the correctness of
-an application.
+A single JS-level operation can produce multiple events. For example, `Array.prototype.splice` can simultaneously add, remove, and modify elements. Observers handle this and any other case where atomicity matters for correctness.
 
-Although commits are simply just an array of events, this is an unsorted array
-and the order of events inside the commit does not matter and events
-can be shuffled without affecting correctness.
+A commit is an unordered array of events — the order doesn't affect the result of applying it, and events can be shuffled freely without affecting correctness.
 
-Note that the simpler `watch` funciton that we have been exposed to up until
-this point is simply a helper method provided that will iterate all events
-in a commit and call the `watch` function for each one in listeners that aren't
-interested in atomic updates. We can use `watchCommit` function to see the full
-commit.
+The `watch` function we've used so far is a helper that iterates events out of a commit and calls your callback once per event. Use `watchCommit` instead when you need to see the whole commit at once:
 
 ```js
-// initialize an observable array starting with one element.
+// initialize an observable array with one element.
 const arr = OArray([0]);
 
 arr.observer.watchCommit(commit => {
 	console.log(commit);
 });
 
-arr.observer.watch(commit => {
-	// will be invoked three times as an iteration of the events that would be
-	// received by the listener above.
+arr.observer.watch(event => {
+	// will be invoked three times — once per event in the commit above.
 });
 
-// the splice below will generate the commit list in the above watcher.
-// - Modify of the first element in the array to 1
-// - Insert of an element into position 1 of value 2
-// - Insert of an element into position 0 of value 2
-// Remember that events are encoded to be position indepentent. Any of the above
-// events can come in any order.
-arr.splice(0, 1, [1, 2, 3]);
-
+// the splice below generates the following commit:
+// - Modify the existing element at position 0 to 1
+// - Insert a new element at position 1 with value 2
+// - Insert a new element at position 2 with value 3
+// Events within a commit are position-independent and may arrive in any order.
+arr.splice(0, 1, 1, 2, 3);
 ```
 
 ## Event ids
 
-Events describe what happens to an object, but how do we know what object exactly
-the events are targetting? Observables are all assigned a UUID that uniquely
-identifies an object within a state tree that we might want to mutate parts about.
-Every event records the UUID of the object that it is intending to mutate.
+Events describe what happens to an object, but how does the framework know which object an event targets? Every observable is assigned a UUID that uniquely identifies it, and every event records the UUID of the observable it's mutating.
 
-The benefit of tagging every observable with a UUID is that it makes the position
-of the specific state within the state tree not matter (it can move around freely
-and events will still apply to the same object). This can be important in the
-case where a client moves a piece of state elsewhere (to reorder or otherwise)
-while another client can mutate state within that moving piece of state without
-failing a transaction.
+Tagging every observable with a UUID means the observable's position in the state tree doesn't matter — it can move around freely and events still apply to the same object. This is important when one client moves a piece of state to a different location while another client is mutating state inside it: the mutation lands on the right object regardless.
 
-Note that to get the UUID of an existing observable, `<observable>.observer.id`
-property can be used. Not all observers have ids, only observers that are
-derived from observables implement this.
+The UUID of an existing observable is accessed via `observable.observer.id`. Not all observers expose this — only those derived directly from an observable.
 
 ```js
 const obj = OObject({
 	nested: OObject(),
 });
 
-arr.observer.watch(event => {
-	// this event listener will be invoked twice with similar events except that
-	// one event will have a observable id of `obj`, and the other for
-	// `obj.nested`.
+obj.observer.watch(event => {
+	// the listener fires twice: once for the mutation on obj,
+	// once for the mutation on obj.nested. Each event's id
+	// identifies the observable that emitted it.
 
 	assert(event.id === obj.observer.id || event.id === obj.nested.observer.id);
 });
 
 obj.state = 1;
 obj.nested.state = 1;
-
 ```
 
 ## createNetwork
 
-Now that we know that we can get a list of events from an observable watcher,
-and how we can identify the object we wish to mutate we can now create a system
-to essentially "replay" these events in an entirely new state tree. This
-state tree can live in the same javascript context or it can live be across the
-internet if the events are serialized.
+With a list of events from a watcher and a way to identify the target of each event, we can build a system to "replay" events into an entirely new state tree. That tree can live in the same JS context or, if the events are serialized, on another machine across the internet.
 
-In order to apply events to a state tree, we need to create an index of all
-ids that are relevant to a transaction. We can't replay events if we're having
-trouble finding the things to mutate after all. `createNetwork` allows us to
-construct this index.
+To apply events to a state tree, the framework needs an index of all UUIDs relevant to a transaction — you can't replay events if you can't find the observables to mutate. `createNetwork` constructs this index.
 
 ```js
 const obj = OObject();
 const network = createNetwork(obj.observer);
 ```
 
-A network here is essentially just a giant hash map associating each id in the
-state tree with its actual observable object. In fact, this network extends
-the functionally of `UUID.Map`!
+A network is a hash map associating each id in the state tree with its observable. In fact, it extends `UUID.Map`:
+
 ```js
 assert(network.get(obj.observer.id) === obj);
 ```
 
-This network will automatically be updated as the state tree updates.
+The network updates automatically as the state tree changes:
+
 ```js
 obj.nested = OObject();
 assert(network.get(obj.nested.observer.id) === obj.nested);
 ```
 
-Because neworks are dynamically changing depending on the observable it's based
-on, it will leak resources if you keep it around without using it anymore. The
-JavaScript GC will be confused in this case. Use the `remove` method to unregister
-any ties it has to the state tree and the GC will be happy to clean it up now.
+Because networks track an observable's tree dynamically, they hold references that prevent garbage collection. Call `remove()` when you're done so the GC can clean up:
+
 ```js
 network.remove();
 ```
 
-Tying this all together we can maintain a seperate state tree that will always
-have the same state as our original tree. We can use the `apply` convenience
-method to apply a commit for us.
+Putting it together, you can maintain a separate state tree that always mirrors the original. Use the `apply` convenience method to apply a commit:
 
 ```js
-// create a deep clone of the original state tree. Networks assume that the
-// two state trees are initialized to be the same.
-const duplicate = clone();
+// Deep-clone the original tree as the starting state.
+// Networks assume both state trees start identical.
+const duplicate = clone(obj);
 
-// we want to apply our state to the duplicate network, not the original network
-// belonging to the object above or else we would try to apply deltas to itself.
-// Observers are robust against this case (i.e. an error will be thrown) but it
-// won't do what we want.
-const dupNetwork = createNetwork(duplicate);
+// Apply changes to the duplicate's network, not the original's — applying
+// deltas to the network they came from would attempt to mutate state into
+// itself. Observers throw rather than silently misbehave in this case.
+const dupNetwork = createNetwork(duplicate.observer);
 
 obj.observer.watchCommit(commit => {
-	// networks require that both state trees be completely seperate in memory.
-	// If an object was shared within memory, it would essentiall collapse parts
-	// of the network to be one and the same and it would be functially equivelant
-	// to trying to apply events to itself.
+	// Both state trees must be completely separate in memory. If they
+	// shared observables, applying a commit to one would mutate the other
+	// directly — equivalent to applying events to themselves.
 	const cloned = clone(commit);
 
 	dupNetwork.apply(cloned);
@@ -169,28 +119,17 @@ obj.observer.watchCommit(commit => {
 
 obj.state = 2;
 
-// the mutation will be replaceted on `duplicate`.
+// the mutation is replicated on the duplicate tree.
 assert(duplicate.state === 2);
 ```
 
-In many cases, it's important that we don't update the duplicate state tree as
-the commits are created. This not only would not be correct as there are edge
-cases with parts of state trees being momentarily detached but also this would
-simply be too granular especially if the commits are being serialized to go over
-the internet. Networks provide a `digest` function that will collect all events
-that happen within a time period and squash them into a big commit when ready.
+Often you don't want to apply each commit as it happens. There are edge cases where parts of the state tree are momentarily detached during a multi-step operation, and per-mutation updates are too fine-grained when commits are being serialized over the network. Networks provide a `digest` function that collects events over a time window and squashes them into one combined commit.
 
-Note that the `digest` method is a property of a network and we can't simply
-accumulate commits into some mega array to apply at a later time. Since commits
-are guaranteed to have an unordered list of mutations, applying mutations to
-the same element cannot happen within the same commit as those commits would
-become position depentent.
+`digest` is a method on the network because you can't simply accumulate commits into an array and apply them later — commits are unordered, so multiple mutations to the same element across two commits would lose their ordering and produce inconsistent results.
 
-`digest` is implemented optimally and will commit mutations the least amount
-of mutations that are required to recreate the state at the other end.
+`digest` is implemented optimally — it emits the minimum number of mutations needed to recreate the resulting state at the other end.
 
-In particular, observer networks are robust against multiple references. For
-this implementaiton to be performant, it is built upon `createNetwork`.
+Observer networks also handle multiple references correctly. For performance, the digest is built directly on top of `createNetwork`.
 
 ```js
 const duplicate = clone();
@@ -221,37 +160,29 @@ assert(duplicate.state2 === 4);
 // Note that we don't have an Insert and Modify in the same commit.
 ```
 
-## multiple references
+## Multiple references
 
-Observable networks can deduplicate observables that are referenced multiple
-times. This is important to keep observer networks handle state applications
-even after the state has moved around the tree which can be common if multiple
-parties are contributing to a central state tree.
+Observable networks deduplicate observables that are referenced multiple times. This matters for keeping network state applications consistent — especially when multiple parties contribute to the same shared state tree and observables move around or end up referenced from multiple locations.
 
 Consider this:
+
 ```js
 const obj = OObject();
 const obj2 = OObject();
 
-obj.reference1 = obj;
-obj.reference2 = obj;
+obj.reference1 = obj2;
+obj.reference2 = obj2;
 ```
 
-Both `reference1` and `reference2` are the same object. When mutating any
-property from within any of these references, it's expected to see that the
-changes are seen on both references. Networks handle this case by encoding
-what objects already exist within a network and what references were just created.
+Both `reference1` and `reference2` point at the same observable. Mutating any property of `obj2` should be visible through both references. Networks handle this by keeping track of which observables are already known and which are newly introduced in the current digest.
 
 ```js
 network.digest((commit, observerRefs) => {
 	dupNetwork.apply(clone(commit, {observerRefs, observerNetwork: dupNetwork}));
-})
+});
 ```
 
-Networks will automatically keep track of what references you need to serialize
-new, and which ones you can reference again to be put onto different parts of
-the tree. `observerRefs` is a callback where we can ask the question if we
-knew about the observable before, or if it's new for this digest.
+The network automatically tracks which references need to be serialized as new observables and which can be referred to by id because the receiving side already has them. `observerRefs` is the callback that answers the question "did we know about this observable before this digest started?"
 
 # Conflict resolution
 
@@ -338,23 +269,18 @@ implementation among possible others.
 
 # Undo / Redo
 
-Since network events specify what changed about a network these events can
-be trivially stored and used later. `Event.prototype.invert` can be used
-to invert events such that they cancel out their effects after the fact. Cloning
-the events as you build the history is required for correct behiavior in
-non trivial situations especially if you want to selectively revert some commits
-but not others unlike in a strict undo/redo operation.
+Because network events describe exactly what changed, they can be stored and replayed later. `Event.prototype.invert` returns an inverted delta — applying the inverse cancels out the original change. Cloning events as you build the history is required for correct behavior in non-trivial situations, especially if you want to selectively revert specific commits rather than doing a strict linear undo/redo.
 
 ```js
 const history = [];
 
-network.digest((commit) => {
+network.digest(commit => {
 	history.push(clone(commit));
 }, 0);
 
-// ... state changes and the history is built
+// ... state changes happen and the history accumulates
 
-for (let i = history.length - 1; i >= 0; i++) {
+for (let i = history.length - 1; i >= 0; i--) {
 	network.apply(history[i].map(delta => delta.inverse));
 }
 
@@ -362,10 +288,9 @@ for (let i = history.length - 1; i >= 0; i++) {
 ```
 
 # Automatic flushing
-Destam network digests don't require applications to automatically flush them.
-Flushes can happen at any point in the application lifetime - even asynchronously.
-For almost all applications, just scheduling a periodic flush during idle is enough
-for a robust flushing mechanism:
+
+Destam network digests don't have to be flushed automatically — flushes can happen at any point, including asynchronously. For most applications, a periodic flush during idle time is enough:
+
 ```js
 const network = createNetwork(stateTree);
 const digest = network.digest(...);
@@ -374,37 +299,38 @@ setInterval(() => {
 	digest.flush();
 }, 1000);
 ```
-However, this method is obviously naive. It will try to flush changes even
-though nothing changed.
+
+This is naive though — it tries to flush even when nothing has changed.
 
 ## Reactivity-aware flushing
-We can be a little bit more precise about this by leveraging the core reactivity
-model:
+
+You can be more precise by leveraging the reactivity model:
+
 ```js
 stateTree.observer.throttle(1000).watch(() => {
 	digest.flush();
 });
 ```
-With this method, now the network will only flush at most once a second and will
-remain quiet if there are no changes occurring. This is helpful for real-time
-collaboration.
+
+Now the network flushes at most once per second, and stays quiet when nothing is changing. Good for real-time collaboration.
+
 ```js
 stateTree.observer.wait(1000).watch(() => {
 	digest.flush();
 });
 ```
-This method will only flush if there is a period of inactivity for a second
-second. Better for slower pace document editing software.
 
-For a built in solution digest() accepts a timeout as a second paramater:
+This variant only flushes after a full second of inactivity. Better for slower-paced document editing.
+
+For a built-in solution, `digest()` accepts a timeout as a second parameter:
+
 ```js
 network.digest(commit => {
 	// flushes automatically with the same timing semantics as throttle.
 }, 1000);
 ```
-The built in approach benefits in two ways:
-1. cleaning up is simpler: You only need to remember to remove the digest, not
-the flush listener as well.
-2. This is a little bit higher performance. Attaching listeners to objects are
-not free. Everytime the state tree mutates, the listener has to explore those
-mutations. Digest will reuse its existing event stream.
+
+The built-in approach has two advantages:
+
+1. **Cleanup is simpler.** You only need to remove the digest, not also a separate flush listener.
+2. **It's slightly faster.** Attaching listeners isn't free — every mutation has to walk the listener structure. The built-in digest reuses its existing event stream rather than adding an extra watcher.

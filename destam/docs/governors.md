@@ -1,180 +1,160 @@
 # Destam Governors
-Governors are a declarative, composable feature in destam to allow you to narrow down your listeners to properties that actually matter. Using governors effectively will be the difference between a high performance application and not.
+
+Governors are a declarative, composable mechanism for narrowing listeners down to the properties that actually matter. Using them effectively is the difference between a high-performance application and one that re-renders everything on every mutation.
 
 ## Modeling your program state
-To understand how to construct governors, you first need a robust mental model of your program state. Governors compose in a way that almost acts like a schema for your data. Instead of the schema being there to make sure your data types are correct and formatted correctly, this "schema" is used to select which parts of the state tree should be listened on.
 
-For the sake of brevity and clarity, I'm going to drop the OArray and OObject wrappers. Keep in mind that you need to construct a [state tree](state-tree.md) in order to create functioning governors.
+To use governors well, you need a clear mental model of your state tree. Governors compose in a way that almost acts like a schema — not for validating types, but for selecting which parts of the tree a listener cares about.
+
+For brevity, the examples below show the conceptual state with plain object/array literals. In real code you'd construct the tree with `OObject` and `OArray` so it's a proper [state tree](state-tree.md) with a working `.observer`.
 
 ```js
-const state = {
-	array: [
-		{
-			name: 'item1',
-		},
-		{
-			name: 'item2',
-		},
-		{
-			name: 'item3',
-		}
-	],
+const state = OObject({
+	array: OArray([
+		OObject({ name: 'item1' }),
+		OObject({ name: 'item2' }),
+		OObject({ name: 'item3' }),
+	]),
 	property: 'property',
-	nestedProperties: {
+	nestedProperties: OObject({
 		prop1: 1,
 		prop2: 2,
-	}
-};
+	}),
+});
 
 const observer = state.observer;
 ```
 
-## `.path()` and `.ignore()` observers.
-Let's introduce our first two observers. These observers are interesting and
-importantly easy to understand because they operate directly on object properties.
+## `.path()` and `.ignore()`
+
+These are the two simplest governors — both operate directly on property names.
 
 ### Observer.prototype.path
-`path()` is the most simple of the governors. It's basically a whitelist for which properties you want to look at. Suppose we just want to look at `property`
+
+`path()` is a whitelist: it narrows the observer to a specific property. To target just `property`:
+
 ```js
-observer.path('property')
+observer.path('property');
 ```
-This will create an observer that will only react to changes made to the `property` property. Note that `path()` will still exhibit recursive behavior.
+
+The resulting observer only reacts to changes under `property`. Note that `path()` is recursive — it includes descendants of the target:
+
 ```js
-// this observer will still fire for changes made to state.nestedProperties.prop1, etc...
+// this observer fires for changes to state.nestedProperties.prop1, .prop2, etc.
 observer.path('nestedProperties');
 ```
 
 ### Observer.prototype.ignore
-`ignore()` is the opposite of `path()`. It will take a property value just like `path()` except it's like a blacklist. It listen to all other properties but the one specified.
+
+`ignore()` is the opposite — a blacklist. It listens to everything except the specified property and its descendants.
+
 ```js
-// will react to all changes throughout the tree except for the `property` property and all its descendants.
-observer.ignore(`property`)
+// reacts to all changes EXCEPT under `property` and its descendants.
+observer.ignore('property');
 ```
 
-## Governor Chaining
-Armed with the knowledge of your first two governors, let's try to compose them to create more interesting queries.
-```js
-observer.path('nestedProperties').ignore(`prop1`)
-```
-### Understanding the governor pointer
-In order to understand this basic example, you have to understand what each of the
-governors are trying to target. If you take something like `path()`, the
-property of the path is dependent on what object it targets. Each governor as a
-result will target something. The cool thing about this is that a governor may
-have multiple targets. This is called a [broken chain](#broken-chains) and has
-is own ramifications.
+## Chaining governors
 
-For the case of `path()` path will advance the governor pointer. In this example:
-```js
-observer.path(`nestedProperties`);
-```
-The observer that results from this governor will target the object that
-`nestedProperties` is set to. We can confirm this by getting the value of the
-observer.
-```js
-observer.path(`nestedProperties`).get() === state.nestedProperties;
-```
-On the contrary, `ignore()` will not advance the governor pointer.
-```js
-observer.ignore(`property`).get() === state;
-```
-Here, the observer is still referencing the base `state` object, but the ignore
-is essentially acting as a filter for events. This can be useful to masking
-non-important information.
+With those two governors in hand, you can compose more interesting queries:
 
-A common example of why you would want to ignore a value is for distributed user
-states in collaborative platforms. The user may send events to the server, but
-the server doesn't want to reflect those events back to the user.
-
-Let's consider the initial example:
 ```js
-observer.path('nestedProperties').ignore(`prop1`);
+observer.path('nestedProperties').ignore('prop1');
 ```
-Understanding that the first of the composed governors will advance the governor
-pointer to start referencing the `nestedProperties` object instead of the base
-object. Since `ignore()` does not advance the pointer, it will still target
-`nestedProperties` with `.get()` but will now ignore any changes to `prop1` to
-any listeners attached to this observer.
+
+### The governor pointer
+
+To understand chained governors, you need to know what each one is *targeting*. `path('foo')` operates on the value of property `foo` — so the property it operates on is relative to whatever the previous governor was pointing at. Each governor in the chain has a target. Some governors can target multiple things at once — that's called a *multi-target observer* and has its own behavior (see [Multi-target observers](#multi-target-observers)).
+
+`path()` advances the governor pointer. In this example:
+
+```js
+observer.path('nestedProperties');
+```
+
+The resulting observer targets the object stored at `state.nestedProperties`:
+
+```js
+observer.path('nestedProperties').get() === state.nestedProperties;
+```
+
+`ignore()` does *not* advance the pointer:
+
+```js
+observer.ignore('property').get() === state;
+```
+
+The observer still references the base `state` object — `ignore` only acts as a filter for events. This is useful for masking information that should be excluded from a specific listener.
+
+A common use case is collaborative apps where the user sends events to the server, but the server doesn't want to echo them back: `ignore` can scope the broadcast to exclude those specific properties.
+
+Putting it together, the chained example:
+
+```js
+observer.path('nestedProperties').ignore('prop1');
+```
+
+The `path` advances the pointer to `nestedProperties`. The `ignore` doesn't advance the pointer, so `.get()` still returns `nestedProperties`, but events for `prop1` (a property of `nestedProperties`) are filtered out.
 
 ## `.skip()` and `.shallow()`
-Similar to `.skip()`/`.ignore()` these governors are like ying and yang.
+
+Like `path`/`ignore`, these two governors complement each other.
 
 ### `.shallow()`
-`.ignore()` is very simple, it will simply put a depth cap on how far down you want
-to search. It will not advance the observer pointer at all. It's basically acting
-as a filter much like `.ignore()`. Here's an interesting equality to consider:
+
+`shallow()` puts a depth cap on how far down events propagate. It does not advance the pointer — it's purely a filter. An interesting identity:
+
 ```js
 observer.path('property').shallow();
 
-// will be functionally equivalent to
+// is functionally equivalent to
 
 observer.shallow(1).path('property');
 ```
-Note that `.shallow()` takes a depth as its parameter. With the first example,
-we call `.path()` and advance the pointer into the `property`, and then .shallow()
-says: "I don't care about anything else, I just want this property". In the second
-equivalent example, we first call `.shallow(1)`. This will make an observer
-that will respond to any property changes of the `state` for any property. However,
-we then call `.path()` later to single out the property we care about. The important
-thing here to conceptualize is that we have to create a deeper `.shallow()` call with the second example is that we are calling that before `.path()` which advances the pointer.
 
-Note that since `.shallow()` does not advance the pointer, .get() will work and will
-just target the base object.
+`shallow()` takes a depth as a parameter (default 0). In the first example, `path()` advances the pointer into `property`, then `shallow()` says "I only care about direct changes to this property, not its descendants." In the second example, `shallow(1)` says "look one level deep from `state`," and then `path()` narrows that down to `property`. The reason `shallow` needs `+1` in the second version is that `path()` hadn't yet advanced the pointer when `shallow` was applied — so the depth is measured from `state`, not from `state.property`.
+
+Since `shallow()` doesn't advance the pointer, `.get()` still works on the result and returns the base object:
+
 ```js
 observer.shallow().get() === state;
 ```
 
 ## Default governor
-Watching destam state trees through the standard .watch()/.watchCommit()/.effect()
-will by default use a governor that will ignore any string query member that starts
-with an underscore. This is used to target OObject underscore variables. Underscore
-variables are meant to act as "private" variables that shouldn't call public listeners
-(wildcard listeners that just want to capture everything). However, when explicitly
-listened on (using the .path() governor), you can still observe these variables.
+
+`.watch()`, `.watchCommit()`, and `.effect()` apply a default governor that ignores any property whose name starts with an underscore. This is how destam supports OObject's "private" property convention — underscore-prefixed properties don't fire wildcard listeners, but they can still be explicitly observed via `.path()`.
+
 ```js
 const obj = OObject();
 
-obj.observer.watch(console.log); // public variable
-obj.observer.path('_privateVariable').watch(console.log); // my single private variable
+obj.observer.watch(console.log);                              // wildcard
+obj.observer.path('_privateVariable').watch(console.log);     // explicit
 
-// the console log for the public listener will invoke with an event for publicVirable.
-obj.publicVariable = 1;
-
-// the console log listening to the specific private variable will get invoked.
-obj._privateVariable = 1;
-
-// will trigger none of the listeners
-obj._myOtherPrivate = 1;
-
+obj.publicVariable = 1;       // fires the wildcard listener
+obj._privateVariable = 1;     // fires the path-specific listener
+obj._myOtherPrivate = 1;      // fires neither
 ```
 
 ### `.skip()`
-`.skip()` is basically a fancy way to force advancing the governor pointer. Like
-with `.path()` instead of singling out a property, we basically don't care about
-any individual item. They are meant to be wildcard governors meant to capture
-everything* up to a certain depth.
 
-\*: Since this is a wildcard governor, the same rules for the
-[default gorvernor](#default-governor) apply. Underscore properties will be
-ignored.
+`skip()` is a wildcard equivalent of `path()` — it advances the governor pointer past one level without singling out a property. The result is an observer targeting "every value at this level."
 
-Consider an array we have in the
-above example state. What happens if we want to target the `name` of each element?
-Let's start with what we know:
+Like other wildcard mechanisms, `skip()` honors the default governor: underscore-prefixed properties are ignored.
+
+Suppose you want to react to changes in the `name` of every element of `state.array`. Without `skip()`, you'd have to write:
+
 ```js
 observer.path('array').path(positionIndex(state.array, 0)).path('name')
 ```
-Note the call to `positionIndex` exported by `destam/Array`. We have this because
-array indexes shift. `positionIndex` will take the index at this instant in time,
-and turn it into a stable reference even if the array shifts around.
 
-With this observer, we will get `name` updates, but only for the first element.
-Let's instead use `.skip()` to instead target all elements:
+This works, but only targets the first element. `positionIndex` (from `destam/Array`) is needed because array indices shift when items are inserted or removed — `positionIndex` turns the index at the current moment into a stable reference that survives reordering.
+
+Using `skip()` you can target all elements at once:
+
 ```js
-observer.path('array').skip().path('name')
+observer.path('array').skip().path('name');
 ```
-Now we will get any update to any of the names in the array. But what happens to
-.get()?
+
+Now the observer fires for the `name` of any array element. The chain has multiple targets — see [Multi-target observers](#multi-target-observers) for what that means for `.get()`.
 
 ## `Observer.prototype.memo`
 
@@ -321,48 +301,45 @@ observer.path('array').skip().path('name').map(() => state.array.map(e => e.name
 ```
 
 ## `.tree()`
-`.tree()` is one of those observers that might seem out of place, but can really demonstrate the power of governors in destam. `.tree()` is meant to track data in a tree based structure.
 
-Let's change our state up a little bit. Let's flesh out the `array` in our state
-so that it actually has some interesting nesting going on:
+`.tree()` is the most powerful governor — it descends through arbitrarily deep, recursively-nested structures. Use it when your data is shaped like a tree (a node with a list of children, where each child has the same shape).
+
+Suppose `state.array` has tree-shaped elements:
+
 ```js
 state.array = [
-	{
-		name: 'item1',
-	},
+	{ name: 'item1' },
 	{
 		name: 'item2',
 		children: [
-			{ name: 'item2-child1' }
+			{ name: 'item2-child1' },
 			{
 				name: 'item2-child2',
 				children: [
-					{ name: 'item2-child2-child1' }
-					{ name: 'item2-child2-child2' }
-					{ name: 'item2-child2-child3' }
-				]
-			}
-		]
+					{ name: 'item2-child2-child1' },
+					{ name: 'item2-child2-child2' },
+					{ name: 'item2-child2-child3' },
+				],
+			},
+		],
 	},
 	{
 		name: 'item3',
 		children: [
-			{ name: 'item3-child1' }
-			{ name: 'item3-child2' }
-			{ name: 'item3-child3' }
-		]
-	}
+			{ name: 'item3-child1' },
+			{ name: 'item3-child2' },
+			{ name: 'item3-child3' },
+		],
+	},
 ];
 ```
-Suppose we want to react to changes made to any of the names in the tree, not just
-one level of it. `.tree()` helps us do that.
-```js
-observer.path('array').tree('children').path('name')
-```
-`.tree()` takes a parameter of the property that it can look more deeply into. This is typically `children` going by programming conventions.
 
-Note how `tree()` will now have multiple targets all referring to these
-`{children: [], name: String }` nodes. That means `.get()` will return `undefined`
-(see [Multi-target observers](#multi-target-observers)) but `.path()` can be
-composed on top of that to instead target the `name` of each node instead of the
-nodes themselves.
+To react to changes to any `name` anywhere in the tree, not just one level:
+
+```js
+observer.path('array').tree('children').path('name');
+```
+
+`.tree(name)` takes the property name that recursively contains children — typically `children`.
+
+The resulting observer has multiple targets — every `{ children, name }` node anywhere in the tree. That means `.get()` returns `undefined` (see [Multi-target observers](#multi-target-observers)). Composing `.path('name')` on top narrows the events to mutations on the `name` property of any of those nodes.

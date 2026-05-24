@@ -1,39 +1,37 @@
 # Observer
 
-## Basic Usage
+## Basic usage
 
-An observer is a wrapper around mutating state.\
-
-Since they are just a box, let's see how we can create a box and extract state from it. Observers provide `get()`` that can be used to retrieve the state its holding.
+An observer is a wrapper around mutating state. Think of it as a box: state goes in, you can read it out with `.get()`, change it with `.set()`, and subscribe to changes with `.watch()`.
 
 ```js
 const observer = Observer.mutable("my state");
 
-console.log(observer.get()) // prints "my state"
+console.log(observer.get()); // "my state"
 ```
 
-Observe how Observers provide a constructor for a state that can mutate. The `set()` method can be used to mutate the observer after the fact. If you're wondering, there also exists an immutable constructor.
+`Observer.mutable` creates a box whose value can change later. `Observer.immutable` also exists for the read-only case.
 
 ```js
 observer.set("my new state");
 
-console.log(observer.get()) // prints "my new state"
+console.log(observer.get()); // "my new state"
 ```
 
-We've just mutated the state inside of our Observer box. How can we listen to mutations that happen?
+To react to changes, attach a watcher:
 
 ```js
 observer.watch(() => {
     console.log(observer.get());
 });
 
-observer.set("my watched state"); // prints "my wached state"
+observer.set("my watched state"); // prints "my watched state"
 ```
 
-Every observer provides a `watch()` function. These can be called with a single callback that will be invoked the moment state is changed.
+`watch()` takes a callback that fires every time the state changes.
 
 ## Transforms
-Transforms are used to compute values on the fly from other observers. The tool observers provide is called `map` and the idea is that it maps values from the provided observer to whatever other values you need.
+Transforms compute new values on the fly from existing observers. The primary tool is `map`, which produces a new observer derived from the input.
 
 ```js
 const number = Observer.mutable(1);
@@ -41,14 +39,15 @@ const number = Observer.mutable(1);
 const doubled = number.map(x => x * 2);
 ```
 
-In this example, we create a transform using the `map` function that will double the number that is set in the initial observer. However, `doubled` is now an immutable observer because it doesn't know how to transform the value back. `map` can be provided a second argument that does this.
+`doubled` is an immutable observer that always reflects `number * 2`. It's immutable because `map` doesn't know how to invert the transformation. Provide a second argument to make it mutable:
 
 ```js
 const doubled = number.map(x => x * 2, x => x / 2);
 ```
-Now this transform will act almost as if we're working with any other regular observer where this transform value can be retrieved, it can be listened to for mutations, and it can be mutated.
 
-But, sometimes we want to depend on multiple values in order to compute something. Suppose we have two observers and we want to add them together.
+Now `doubled.set(10)` will write back through to `number.set(5)`. The transform observer behaves like any other observer — readable, writable, and watchable.
+
+Sometimes you want to compute a value from multiple observers. Suppose you have two observers and want their sum:
 
 ```js
 const a = Observer.mutable(1);
@@ -57,69 +56,58 @@ const b = Observer.mutable(2);
 const sum = Observer.all([a, b]).map(([a, b]) => a + b);
 ```
 
-The `Observer.all` function can be used to essentially combine observers into one. The observer will respond to any events that happen on any of the values it depends on. We then use the regular `map` funciton to take those two dependencies and add them together.
+`Observer.all` combines observers into one whose value is an array of the inputs. Changes to any of the inputs trigger the combined observer.
 
 ## Event filters
 
-Above, we only talked about the simplest kinds of observers: those that can only handle a single value changing and provide no mechanisms for watching specific elements inside the state. This is very useful when talking about observables that can create a directed graph of state. These functions below are meant to be used with observables as they are not supported with the use case above (nor does it make sense). They define ways to filter out data so that our watchers only get called for things we care about.
+So far we've only talked about flat observers — those holding a single value with no nested structure. Observables (OObject, OArray, etc.) produce observers over a state *tree*, and that tree can be deeply nested. By default a watcher on the root sees mutations anywhere in the tree.
 
-Since observables represent a tree of state that can have unlimited nesting, event watchers will get events for even nested events all along the state tree as long as the state tree is fully made of observable objects. Because state trees can get quite complex, it's important that we can filter out for changes to the state tree that we care about.
+Because trees can get large, destam provides governors — chainable filters that narrow which mutations a watcher fires for.
 
-Here's an example with nested observables:
+Here's the baseline (no governors) behavior:
+
 ```js
 const state = OObject({
 	nested: OObject(),
 });
 
-state.observer.watch(state => {
-	console.log(state.path);
+state.observer.watch(delta => {
+	console.log(delta.path);
 });
 
-// the watcher above will console.log ['foo']
-state.foo = 'baz'
-
-// the watcher above will console.log ['nested', 'bar']
-state.nested.bar = 'baz';
+state.foo = 'baz';        // logs ['foo']
+state.nested.bar = 'baz'; // logs ['nested', 'bar']
 ```
 
-There are functions that we can call onto an `observer` to limit our queries. Here are the important ones:
-- `observer.path([path])`
-   Suppose we have a nested value within our object graph, we can use `.path` to just respond to events on that nested object. An interesting property of `.path` is that we can actually respond to events that happened under a hidden property (remember that stuff with the prefixed `_`), just as long as your path is that hidden object itself.
-- `observer.ignore([path])`
-  `.ignore` will not fire events for a specified nested object. It takes the same arguments as `.path` but instead responds to the exact opposite events.
-- `observer.shallow(<level>)`
-  Sometimes, we are only interested in getting events on just the observable we attached the listener onto and not any of the nested children. This is possible with shallow only responding to events not too deep within the nested tree. The `level` parameter taking how far you want to respond to events with 0 meaning don't look at any nested objects. Will default to 0
+The main governors are:
 
-We can chain these events like so:
- - `observer.path('hello').path('world')`
-    This is just equivelant to `observer.path(['hello', 'world'])`
- - `observer.path('hello').ignore('world')`
-   This will respond to events for the property `object.hello.foo = 'bar'` but will not respond to `object.hello.world = "I'm singled out!"` and of course will not respond to `object.help = "me"`
- - `observer.path('hello').shallow()`
-   Will respond to `object.hello.foo = "bar"` but not `object.hello.nestedEvenMore.foo = "bar"`
+- **`observer.path(key | keys[])`** — whitelist a property path. Only events under that path reach the watcher. Path also works for hidden (underscore-prefixed) properties as long as you name them explicitly.
+- **`observer.ignore(key | keys[])`** — blacklist a property path. Opposite of `path`: drops events under that path and lets everything else through.
+- **`observer.shallow(level = 0)`** — cap recursion depth. `shallow(0)` excludes all nested mutations; `shallow(1)` includes one level down, etc.
 
-Note that multiple watchers can be added to the same observer and in this case,
-the order in which these watchers will be called when a relevent change is made
-is undefined. The watcher is guaranteed to be called at the time of the mutation
-unless a nested observer mutation happens within a watcher.
+You can chain them:
+
+- `observer.path('hello').path('world')` — equivalent to `observer.path(['hello', 'world'])`.
+- `observer.path('hello').ignore('world')` — fires for `object.hello.foo` but not `object.hello.world`, and obviously not for anything outside `hello`.
+- `observer.path('hello').shallow()` — fires for `object.hello.foo` but not `object.hello.deeper.foo`.
+
+Multiple watchers can be attached to the same observer. The order in which they fire for a given mutation is undefined. Each watcher is called synchronously at the moment of the mutation, except that a nested mutation triggered from inside a watcher may be processed after the current one finishes.
 
 ```jsx
 let object = OObject({
     nested: OObject()
 });
 
-object.observer.watch(state => {
-    console.log(state.value) // should print 'value' - but this time the event came from the nested object.
-    console.log(state.parent === object.nested) // state.parent will give us the object that generated the event so this statement should be true.
-    console.log(state.parent !== object) // true
+object.observer.watch(delta => {
+    console.log(delta.value);             // 'value' — the new value
+    console.log(delta.parent === object.nested); // true — the parent is the observable that emitted
+    console.log(delta.parent !== object); // true
 });
 
 object.nested.property = 'value';
-
-console.log(object.property) // prints 'value'
 ```
 
-This simple level of pathing is enough to spetify most use cases. But what happens if we want to dynamically react to different paths and we can't pre-define them?
+The delta passed to the watcher includes `delta.path` (the path from the root observer to where the mutation happened) and `delta.parent` (the observable that emitted the mutation). Use these when you need to react to general events but still know where they came from:
 
 ```jsx
 let object = OObject({
@@ -129,14 +117,13 @@ let object = OObject({
 
 object.observer.watch(event => console.log(event.path));
 
-object.first.property = 'value'; // ['first', 'property'] will be printed.
-object.second.property = 'value'; // ['second', 'property'] will be printed.
-object.property = 'value'; // ['property'] will be printed.
+object.first.property = 'value';  // logs ['first', 'property']
+object.second.property = 'value'; // logs ['second', 'property']
+object.property = 'value';        // logs ['property']
 ```
 
-The event value we get from watching an observable will let us query the path from the root object (passed in as the parameter) and where the event was actually fired. You can use this whenever you need to react to general events that could be anything, but you still need to know where they came from.
+A complete example showing how multiple governors interact:
 
-Lets finally look at a complete example:
 ```jsx
 let object = OObject({
     first: OObject(),
@@ -151,21 +138,21 @@ observer.shallow().watch(event => console.log('C'));
 
 observer.watch(event => console.log('will be called for everything'));
 
-// 'A' will be printed as we changed something within the 'first' object.
-// however, 'B' or 'C' won't be called.
-object.first.property = 'value'
+object.first.property = 'value';
+// 'A' fires (mutation inside 'first')
+// 'will be called for everything' fires
+// 'B' and 'C' do not fire
 
-object.second.property = 'value' // 'B' will be called
+object.second.property = 'value';
+// 'B' fires
+// 'will be called for everything' fires
 
-// 'C' will be called
-// this is a little bit more interesting as the 'shallow' filter is used for this.
-// What it does is it denies events from any nested objects except for anything that happens to the root.
-// .shallow() can also take an integer specifying how many levels of nesting we want to capture.
-object.property = 'value'
+object.property = 'value';
+// 'C' fires — shallow(0) only matches direct properties of object
+// 'will be called for everything' fires
 
-// 'hidden event' will be called
-// this will call the hook watching this path specifically
-// but also bare in mind that this will not call the last listener (the
-// one that says "will be called for everything") - it's lying to us!
 object._hidden = 'this is hidden';
+// 'hidden event' fires — explicitly subscribed via .path('_hidden')
+// 'will be called for everything' does NOT fire —
+// wildcard watchers ignore underscore-prefixed properties by default
 ```
