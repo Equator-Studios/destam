@@ -301,32 +301,61 @@ const Tracker = createClass((observer, minAllocation = 64) => {
 		const dummies = [];
 
 		// sync is not reentrant: Track previous invocations
-		let syncPromise = Promise.resolve();
+		let syncPending = 0, wantsSync = 0;
 
 		const trackingReg = (trackedChanges, reg) => {
 			return trackedChanges.get(reg) ?? this.has(reg.id);
 		};
 
-		const sync = () => syncPromise = syncPromise.then(() => {
-			const deltas = [...changes.values()];
-			changes.clear();
-			deleted.clear();
+		const reset = val => {
+			currentTimeout = syncPending = 0;
 
-			const regFunc = trackingReg.bind(undefined, trackedChanges);
-			trackedChanges = new Map();
-
-			for (const dummy of dummies) unrefDummy(dummy);
-			dummies.length = 0;
-
-			if (len(deltas)) return callback(deltas, regFunc);
-		}).then(val => {
-			currentTimeout = 0;
-			if (time != null && changes.size) {
+			const wants = wantsSync;
+			if (wants) {
+				wantsSync = 0;
+				sync();
+				if (syncPending) {
+					syncPending.then(wants);
+				} else {
+					wants();
+				}
+			} else if (time != null && changes.size) {
 				currentTimeout = setTimeout(sync, time);
 			}
 
 			return val;
-		});
+		};
+
+		const sync = () => {
+			if (!syncPending) {
+				const deltas = [...changes.values()];
+				changes.clear();
+				deleted.clear();
+
+				const regFunc = trackingReg.bind(undefined, trackedChanges);
+				trackedChanges = new Map();
+
+				for (const dummy of dummies) unrefDummy(dummy);
+				dummies.length = 0;
+
+				if (!len(deltas)) {
+					reset();
+				} else {
+					const val = callback(deltas, regFunc);
+					if (val?.then) {
+						return syncPending = val.then(reset);
+					} else {
+						reset();
+						return val;
+					}
+				}
+			} else if (wantsSync) {
+				return wantsSync.cache_;
+			} else {
+				const obs = new Promise(ok => wantsSync = ok);
+				return wantsSync.cache_ = obs;
+			}
+		};
 
 		const flush = () => {
 			if (currentTimeout) clearTimeout(currentTimeout);
