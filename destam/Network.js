@@ -67,12 +67,11 @@ const removeListener = (reg, parent) => {
 			}
 		}
 
-		const shadow = parent.shadow_;
 		reg.listeners_.delete(governor);
-		if (shadow) addListener(reg, shadow);
+		if (parent.shadow_) addListener(reg, parent.shadow_);
 
 		governor.remove_?.(reg, parent);
-	} else if (active) {
+	} else {
 		// parent is somewhere in active's shadow chain — unlink it.
 		// Reached either by explicit removal of a shadow (e.g. obj.y deleted
 		// while obj.x still references the same observable) or by the
