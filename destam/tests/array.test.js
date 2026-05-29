@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import OArray, {indexPosition, positionIndex} from '../Array.js';
+import OObject from '../Object.js';
 import {Insert} from '../Events.js';
 
 test("reverse and sort not accessible", () => {
@@ -370,3 +371,113 @@ test("array observer and lifetime", () => {
 
 	assert.strictEqual(obs.get(), arr);
 });
+
+test("array splice bigger array listen items", () => {
+	const obj = OArray([OObject()]);
+
+	const special = OObject();
+	obj.splice(0, 1, special, OObject());
+
+	const events = [];
+	const stop = obj.observer.watch(delta => {
+		events.push(delta.value);
+	});
+
+	obj.pop();
+	special.value = 'val';
+	obj.pop();
+
+	assert.deepStrictEqual(events, [undefined, 'val', undefined]);
+
+	stop();
+});
+
+test("array splice smaller array listen items", () => {
+	const special = OObject();
+	const obj = OArray([OObject(), special, OObject()]);
+
+	obj.splice(0, 2, OObject());
+
+	const events = [];
+	const stop = obj.observer.watch(delta => {
+		events.push(delta.value);
+	});
+
+	obj.pop();
+	special.value = 'val';
+	obj.pop();
+
+	assert.deepStrictEqual(events, [undefined, undefined]);
+
+	stop();
+});
+
+test("OArray splice while watched", () => {
+	const items = OArray([OObject(), OObject(), OObject()]);
+	const stop = items.observer.watch(() => {});
+
+	items.splice(0, 2, OObject());
+	items.pop();
+	items.pop();
+
+	stop();
+});
+
+test("OArray fuzz", () => {
+	let s = 1234 >>> 0;
+	const rng = () => {
+		s = (s * 1664525 + 1013904223) >>> 0;
+		return s / 0x100000000;
+	};
+
+	const pick = (rng, arr) => arr[Math.floor(rng() * arr.length)];
+
+	const items = OArray([
+		OObject({ label: 'a' }),
+		OObject({ label: 'b' }),
+		OObject({ label: 'c' }),
+		OObject({ label: 'd' }),
+	]);
+
+	const ops = ['push', 'pop', 'shift', 'unshift', 'splice', 'swap', 'replace'];
+	for (let i = 0; i < 5000; i++) {
+		const len = items.length;
+		switch (pick(rng, ops)) {
+			case 'push': items.push(OObject({ label: `p${i}` })); break;
+			case 'pop': if (len) items.pop(); break;
+			case 'shift': if (len) items.shift(); break;
+			case 'unshift': items.unshift(OObject({ label: `u${i}` })); break;
+			case 'splice': {
+				const start = len ? Math.floor(rng() * len) : 0;
+				const del = len ? Math.floor(rng() * Math.min(3, len - start)) : 0;
+				const adds = Math.floor(rng() * 5);
+				const vals = [];
+				for (let j = 0; j < adds; j++) vals.push(OObject({ label: `s${i}-${j}` }));
+				items.splice(start, del, ...vals);
+				break;
+			}
+			case 'swap': {
+				// reuses existing element instances -> same observable briefly at two indices
+				if (len < 2) break;
+				const a = Math.floor(rng() * len);
+				let b = Math.floor(rng() * len);
+				if (b === a) b = (b + 1) % len;
+				const va = items[a];
+				const vb = items[b];
+				items[b] = va;
+				items[a] = vb;
+				break;
+			}
+			case 'replace': {
+				if (!len) break;
+				items[Math.floor(rng() * len)] = OObject({ label: `r${i}` });
+				break;
+			}
+		}
+	}
+
+	for (let i = 0; i < items.length; i++) {
+		assert.strictEqual(items.observer.indexes_[i].observer_, items[i].observer);
+	}
+});
+
