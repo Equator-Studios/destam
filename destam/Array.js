@@ -151,7 +151,7 @@ const splice = (reg, start, count, arr) => {
 			Network.linkApply(link, events, Delete, init[start + i], undefined, link.query_, reg.id);
 		}
 
-		indexes.splice(start, -insertCount);
+		indexes.splice(start + addCount, -insertCount);
 	} else if (insertCount) {
 		const links = [];
 
@@ -184,7 +184,7 @@ const splice = (reg, start, count, arr) => {
 			links[i - count] = link;
 		}
 
-		indexes.splice(start, 0, ...links);
+		indexes.splice(start + count, 0, ...links);
 	}
 
 	const ret = init.splice(start, count, ...arr);
