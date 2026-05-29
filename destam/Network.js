@@ -77,8 +77,11 @@ const removeListener = (reg, parent) => {
 		// Reached either by explicit removal of a shadow (e.g. obj.y deleted
 		// while obj.x still references the same observable) or by the
 		// children walk above when parent is a cycle-shadow descendant.
-		while (active.shadow_ !== parent) active = active.shadow_;
-		active.shadow_ = parent.shadow_;
+		// Guard the walk: when the same observable is shared across OArray
+		// indices, parent can be absent from this governor's shadow chain, so
+		// walking unconditionally runs off the end and dereferences null.
+		while (active && active.shadow_ !== parent) active = active.shadow_;
+		if (active) active.shadow_ = parent.shadow_;
 	}
 
 	parent.shadow_ = null;
