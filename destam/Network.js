@@ -105,8 +105,8 @@ export const link = (link, observer, insert) => {
 
 export const relink = (link, newObserver) => {
 	const oldObserver = link.observer_;
-	link.observer_ = newObserver;
 	if (oldObserver === newObserver) return;
+	link.observer_ = newObserver;
 
 	for (let entry = link.next_; entry !== link; entry = entry.next_) {
 		if (oldObserver) {
