@@ -342,23 +342,35 @@ const withSeededRandom = fn => async (...args) => {
 		}
 	}));
 
-	// TODO: No conflict resolution yet
-	/*
-	test('big busy array and delete', async (objects, flush) => {
+	test('big busy array and delete', withSeededRandom(async (objects, flush) => {
 		objects[0].array = OArray();
 		await flush[0]();
+		await flush[1]();
+
+		const pendingDeletes = new Set();
 
 		for (let i = 0; i < 100; i++) {
 			const obj = objects[Math.floor(Math.random() * objects.length)];
 
-			if (Math.random() < .2) {
-				obj.array.splice(Math.floor(obj.array.length * Math.random()), 1);
+			if (Math.random() < .2 && obj.array.length > 0) {
+				const start = Math.floor(Math.random() * obj.array.length);
+				let pos = -1;
+				for (let j = 0; j < obj.array.length; j++) {
+					const candidate = (start + j) % obj.array.length;
+					if (!pendingDeletes.has(obj.array[candidate])) {
+						pos = candidate;
+						break;
+					}
+				}
+				if (pos >= 0) {
+					pendingDeletes.add(obj.array[pos]);
+					obj.array.splice(pos, 1);
+				}
 			} else {
 				obj.array.splice(Math.floor(obj.array.length * Math.random()), 0, Math.random());
 			}
 
 			await flush[Math.floor(Math.random() * flush.length)]();
 		}
-	});
-	*/
+	}));
 });
