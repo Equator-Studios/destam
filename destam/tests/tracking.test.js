@@ -1099,6 +1099,46 @@ test("tracking duplicates 3", silenceConflicting(() => {
 	assert.strictEqual(network.has(id), true);
 }));
 
+{
+	const perms = arr => arr.length <= 1 ? [[...arr]] :
+		arr.flatMap((_, i) => perms([...arr.slice(0, i), ...arr.slice(i + 1)]).map(p => [arr[i], ...p]));
+
+	for (const order of perms(['thing', 'thing2', 'thing3'])) {
+		test(`tracking conflicting ids N=3 remove order [${order.join(',')}]`, silenceConflicting(() => {
+			const id = UUID();
+			const obj = OObject({});
+			const network = createNetwork(obj.observer);
+
+			obj.thing = OObject({}, id);
+			obj.thing2 = OObject({}, id);
+			obj.thing3 = OObject({}, id);
+
+			for (let i = 0; i < order.length; i++) {
+				obj[order[i]] = null;
+				assert.strictEqual(network.has(id), i < order.length - 1);
+			}
+		}));
+	}
+
+	for (const order of perms(['thing', 'thing2', 'thing3', 'thing4'])) {
+		test(`tracking conflicting ids N=4 remove order [${order.join(',')}]`, silenceConflicting(() => {
+			const id = UUID();
+			const obj = OObject({});
+			const network = createNetwork(obj.observer);
+
+			obj.thing = OObject({}, id);
+			obj.thing2 = OObject({}, id);
+			obj.thing3 = OObject({}, id);
+			obj.thing4 = OObject({}, id);
+
+			for (let i = 0; i < order.length; i++) {
+				obj[order[i]] = null;
+				assert.strictEqual(network.has(id), i < order.length - 1);
+			}
+		}));
+	}
+}
+
 test("tracking network duplicates", () => {
 	const id = UUID();
 	const obj = OObject({}, id);
