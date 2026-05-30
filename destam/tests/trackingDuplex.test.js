@@ -61,6 +61,20 @@ const trackers = async (func, n, invert) => {
 	for (const net of networks) net.remove();
 };
 
+const withSeededRandom = fn => async (...args) => {
+	let s = 1234 >>> 0;
+	const original = Math.random;
+	Math.random = () => {
+		s = (s * 1664525 + 1013904223) >>> 0;
+		return s / 0x100000000;
+	};
+	try {
+		return await fn(...args);
+	} finally {
+		Math.random = original;
+	}
+};
+
 [
 	(name, func) => test('tracking duplex: ' + name, async () => trackers(func, 2, false)),
 	(name, func) => test('tracking duplex inverted: ' + name, async () => trackers(func, 2, true)),
@@ -315,10 +329,7 @@ const trackers = async (func, n, invert) => {
 		one.one.prop = "prop";
 	});
 
-	// TODO: is flaky. Because OArrays rely on non-deterministic behaviour with
-	// element placement, we might get unlucky.
-	/*
-	test('big busy array', async (objects, flush) => {
+	test('big busy array', withSeededRandom(async (objects, flush) => {
 		objects[0].array = OArray();
 		await flush[0]();
 		await flush[1]();
@@ -329,8 +340,7 @@ const trackers = async (func, n, invert) => {
 
 			await flush[Math.floor(Math.random() * flush.length)]();
 		}
-	});
-	*/
+	}));
 
 	// TODO: No conflict resolution yet
 	/*
