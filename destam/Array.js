@@ -158,13 +158,13 @@ const splice = (reg, start, count, arr) => {
 		let prev, d = 0;
 		if (len(indexes) === 0) {
 			prev = zero;
-		} else if (len(indexes) === start) { // appending the array
+		} else if (len(indexes) === start + count) { // appending the array
 			prev = indexes[len(indexes) - 1].query_;
-		} else if (start === 0) { // prepending the array
+		} else if (start + count === 0) { // prepending the array
 			prev = indexAdd(indexes[0].query_, -2);
 		} else { // inserting between
-			prev = indexes[start - 1].query_;
-			d = 1 - indexLeading(indexes[start].query_, prev);
+			prev = indexes[start + count - 1].query_;
+			d = 1 - indexLeading(indexes[start + count].query_, prev);
 		}
 
 		const significant = 31 - Math.clz32(insertCount);
