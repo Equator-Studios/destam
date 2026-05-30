@@ -9,6 +9,19 @@ import createNetwork from '../Tracking.js';
 import {Insert, Modify, Delete} from '../Events.js';
 import { clone } from './clone.js';
 
+const silenceConflicting = fn => () => {
+	const originalWarn = console.warn;
+	console.warn = (msg, ...args) => {
+		if (typeof msg === 'string' && msg.includes('Conflicting id in observer network')) return;
+		originalWarn(msg, ...args);
+	};
+	try {
+		return fn();
+	} finally {
+		console.warn = originalWarn;
+	}
+};
+
 [
 	(name, func) => test(name, async () => {
 		let object = OObject();
@@ -1038,7 +1051,7 @@ test("tracking oarray no exist exists delete", () => {
 	});
 });
 
-test("tracking duplicates", () => {
+test("tracking duplicates", silenceConflicting(() => {
 	const id = UUID();
 	const obj = OObject({});
 	const network = createNetwork(obj.observer);
@@ -1052,9 +1065,9 @@ test("tracking duplicates", () => {
 	assert.strictEqual(network.has(id), true);
 	obj.thing2 = null;
 	assert.strictEqual(network.has(id), false);
-});
+}));
 
-test("tracking duplicates 2", () => {
+test("tracking duplicates 2", silenceConflicting(() => {
 	const id = UUID();
 	const obj = OObject({});
 	const network = createNetwork(obj.observer);
@@ -1068,9 +1081,9 @@ test("tracking duplicates 2", () => {
 	assert.strictEqual(network.has(id), true);
 	obj.thing = null;
 	assert.strictEqual(network.has(id), false);
-});
+}));
 
-test("tracking duplicates 3", () => {
+test("tracking duplicates 3", silenceConflicting(() => {
 	const id = UUID();
 	const obj = OObject({}, id);
 	const network = createNetwork(obj.observer);
@@ -1084,7 +1097,7 @@ test("tracking duplicates 3", () => {
 	assert.strictEqual(network.has(id), true);
 	obj.thing = null;
 	assert.strictEqual(network.has(id), true);
-});
+}));
 
 test("tracking network duplicates", () => {
 	const id = UUID();
