@@ -213,9 +213,9 @@ const OArray = createClass((init, id) => {
 			assert(link, "Array write outside of bounds!");
 
 			let events;
+			Network.relink(link, value?.[observerGetter]);
 			Network.linkApply(link, events = [], Modify, old, value, link.query_, reg.id);
 
-			Network.relink(link, value?.[observerGetter]);
 			init[prop] = value;
 			Network.callListeners(events);
 		}
