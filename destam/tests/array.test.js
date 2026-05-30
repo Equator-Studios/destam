@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import OArray, {indexPosition, positionIndex} from '../Array.js';
+import OArray, {indexPosition, positionIndex, indexCompare} from '../Array.js';
 import OObject from '../Object.js';
 import {Insert} from '../Events.js';
 
@@ -478,6 +478,10 @@ test("OArray fuzz", () => {
 
 	for (let i = 0; i < items.length; i++) {
 		assert.strictEqual(items.observer.indexes_[i].observer_, items[i].observer);
+
+		if (i > 0) {
+			assert.ok(indexCompare(items.observer.indexes_[i - 1].query_, items.observer.indexes_[i].query_) < 0);
+		}
 	}
 });
 
