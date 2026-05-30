@@ -611,3 +611,68 @@ test("network digest timeout flush anyway", async () => {
 
 	assert.strictEqual(called, true);
 });
+
+test("network OArray fuzz", async () => {
+	let s = 1234 >>> 0;
+	const rng = () => {
+		s = (s * 1664525 + 1013904223) >>> 0;
+		return s / 0x100000000;
+	};
+	const pick = arr => arr[Math.floor(rng() * arr.length)];
+
+	const source = OArray([
+		OObject({ label: 'a' }),
+		OObject({ label: 'b' }),
+		OObject({ label: 'c' }),
+		OObject({ label: 'd' }),
+	]);
+	const target = parse(stringify(source));
+	const network = createNetwork(target.observer);
+	const sourceNetwork = createNetwork(source.observer);
+
+	sourceNetwork.digest((changes, observerRefs) => {
+		network.apply(clone(changes, {observerRefs, observerNetwork: network}));
+	});
+
+	const ops = ['push', 'pop', 'shift', 'unshift', 'splice', 'swap', 'replace'];
+	for (let i = 0; i < 5000; i++) {
+		const len = source.length;
+		switch (pick(ops)) {
+			case 'push': source.push(OObject({ label: `p${i}` })); break;
+			case 'pop': if (len) source.pop(); break;
+			case 'shift': if (len) source.shift(); break;
+			case 'unshift': source.unshift(OObject({ label: `u${i}` })); break;
+			case 'splice': {
+				const start = len ? Math.floor(rng() * len) : 0;
+				const del = len ? Math.floor(rng() * Math.min(3, len - start)) : 0;
+				const adds = Math.floor(rng() * 5);
+				const vals = [];
+				for (let j = 0; j < adds; j++) vals.push(OObject({ label: `s${i}-${j}` }));
+				source.splice(start, del, ...vals);
+				break;
+			}
+			case 'swap': {
+				if (len < 2) break;
+				const a = Math.floor(rng() * len);
+				let b = Math.floor(rng() * len);
+				if (b === a) b = (b + 1) % len;
+				const va = source[a];
+				const vb = source[b];
+				source[b] = va;
+				source[a] = vb;
+				break;
+			}
+			case 'replace': {
+				if (!len) break;
+				source[Math.floor(rng() * len)] = OObject({ label: `r${i}` });
+				break;
+			}
+		}
+
+		await sourceNetwork.flush();
+	}
+
+	assert.deepStrictEqual(source, target);
+	sourceNetwork.remove();
+	network.remove();
+});
