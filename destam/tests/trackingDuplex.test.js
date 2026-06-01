@@ -6,7 +6,7 @@ import OMap from '../UUIDMap.js';
 import UUID from '../UUID.js';
 import createNetwork from '../Tracking.js';
 
-import { clone } from './util.js';
+import { clone, withSeededRandom } from './util.js';
 
 const trackers = async (func, n, invert) => {
 	const objects = [OObject()];
@@ -61,19 +61,6 @@ const trackers = async (func, n, invert) => {
 	for (const net of networks) net.remove();
 };
 
-const withSeededRandom = fn => async (...args) => {
-	let s = 1234 >>> 0;
-	const original = Math.random;
-	Math.random = () => {
-		s = (s * 1664525 + 1013904223) >>> 0;
-		return s / 0x100000000;
-	};
-	try {
-		return await fn(...args);
-	} finally {
-		Math.random = original;
-	}
-};
 
 [
 	(name, func) => test('tracking duplex: ' + name, async () => trackers(func, 2, false)),
