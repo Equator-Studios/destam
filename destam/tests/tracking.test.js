@@ -7,7 +7,7 @@ import UUID from '../UUID.js';
 import createNetwork from '../Tracking.js';
 
 import {Insert, Modify, Delete} from '../Events.js';
-import { clone } from './util.js';
+import { clone, withSeededRandom } from './util.js';
 
 const silenceConflicting = fn => () => {
 	const originalWarn = console.warn;
@@ -1492,3 +1492,54 @@ test("digest removed while dummy is active unrefs immediately", async () => {
 
 	network.remove();
 });
+
+test("tracking multi-digest fuzzer", withSeededRandom(() => {
+	const N = 5;
+	const ITERATIONS = 500;
+
+	const source = OObject();
+	const sourceNetwork = createNetwork(source.observer);
+
+	const replicas = [];
+	const digests = [];
+
+	for (let i = 0; i < N; i++) {
+		const replica = clone(source);
+		const replicaNetwork = createNetwork(replica.observer);
+
+		const digest = sourceNetwork.digest((changes, observerRefs) => {
+			const decoded = clone(changes, {observerRefs, observerNetwork: replicaNetwork});
+			replicaNetwork.apply(decoded);
+		}, null);
+
+		replicas.push({obj: replica, network: replicaNetwork});
+		digests.push(digest);
+	}
+
+	const keys = ['a', 'b', 'c', 'd', 'e'];
+	let counter = 0;
+
+	for (let i = 0; i < ITERATIONS; i++) {
+		const existingKeys = Object.keys(source);
+
+		if (existingKeys.length > 0 && Math.random() < 0.2) {
+			delete source[existingKeys[Math.floor(Math.random() * existingKeys.length)]];
+		} else if (Math.random() < 0.3) {
+			source[keys[Math.floor(Math.random() * keys.length)]] = OObject({value: counter++});
+		} else {
+			source[keys[Math.floor(Math.random() * keys.length)]] = counter++;
+		}
+
+		digests[Math.floor(Math.random() * digests.length)].flush();
+	}
+
+	// drain all digests in one synchronous pass
+	for (const d of digests) d.flush();
+
+	for (const {obj} of replicas) {
+		assert.deepStrictEqual(source, obj);
+	}
+
+	for (const {network} of replicas) network.remove();
+	sourceNetwork.remove();
+}));
