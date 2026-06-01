@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {indexLeading, indexCompare, indexAdd} from '../Array.js';
+import {withSeededRandom} from './util.js';
 
 const signedLen = i => {
 	if (i < 0) i = -i;
@@ -73,3 +74,82 @@ test("leading", () => {
 	assert.strictEqual(indexLeading(indexAdd(indexFromSigned(0), 1, 2), indexFromSigned(0)), -2);
 	assert.strictEqual(indexLeading(indexAdd(indexFromSigned(0), 1, 8), indexFromSigned(0)), -8);
 });
+
+test("integer fuzzer", withSeededRandom(() => {
+	const ITERATIONS = 1000;
+	const MAX_DELTA = 10000;
+
+	const stack = [];
+	let index = indexFromSigned(0);
+
+	for (let i = 0; i < ITERATIONS; i++) {
+		const delta = Math.floor((Math.random() * 2 - 1) * MAX_DELTA) || 1;
+		stack.push(delta);
+		index = indexAdd(index, delta);
+	}
+
+	// shuffle the stack
+	for (let i = stack.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		[stack[i], stack[j]] = [stack[j], stack[i]];
+	}
+
+	// unwind by subtracting each recorded delta
+	for (const delta of stack) {
+		index = indexAdd(index, -delta);
+	}
+
+	assert.strictEqual(indexCompare(index, indexFromSigned(0)), 0);
+}));
+
+test("decimal fuzzer", withSeededRandom(() => {
+	const ITERATIONS = 1000;
+	const MAX_DELTA = 10000;
+	const MAX_DEC = 256;
+
+	const stack = [];
+	let index = indexFromSigned(0);
+
+	for (let i = 0; i < ITERATIONS; i++) {
+		const delta = Math.floor((Math.random() * 2 - 1) * MAX_DELTA) || 1;
+		const currentMaxDec = Math.floor((i / (ITERATIONS - 1)) * MAX_DEC);
+		const dec = Math.floor(Math.random() * (currentMaxDec + 1));
+		stack.push([delta, dec]);
+		index = indexAdd(index, delta, dec);
+	}
+
+	// shuffle the stack
+	for (let i = stack.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		[stack[i], stack[j]] = [stack[j], stack[i]];
+	}
+
+	// unwind by subtracting each recorded (delta, dec) pair
+	for (const [delta, dec] of stack) {
+		index = indexAdd(index, -delta, dec);
+	}
+
+	assert.strictEqual(indexCompare(index, indexFromSigned(0)), 0);
+}, 5678));
+
+test("leading fuzzer", withSeededRandom(() => {
+	const ITERATIONS = 1000;
+	const MAX_BASE = 10000;
+	const MAX_DELTA = 10000;
+	const MAX_DEC = 256;
+
+	// build a random base so the test isn't anchored to zero
+	let base = indexFromSigned(0);
+	for (let i = 0; i < 10; i++) {
+		base = indexAdd(base, Math.floor((Math.random() * 2 - 1) * MAX_BASE) || 1);
+	}
+
+	for (let i = 0; i < ITERATIONS; i++) {
+		const delta = Math.floor(Math.random() * MAX_DELTA) + 1;
+		const currentMaxDec = Math.floor((i / (ITERATIONS - 1)) * MAX_DEC);
+		const dec = Math.floor(Math.random() * (currentMaxDec + 1));
+
+		const leading = indexLeading(indexAdd(base, delta, dec), base);
+		assert.strictEqual(leading, (31 - Math.clz32(delta)) - dec);
+	}
+}, 9012));
