@@ -6,7 +6,7 @@ import OMap from '../UUIDMap.js';
 import UUID from '../UUID.js';
 import createNetwork from '../Tracking.js';
 
-import { clone } from './clone.js';
+import { clone } from './util.js';
 
 const trackers = async (func, n, invert) => {
 	const objects = [OObject()];

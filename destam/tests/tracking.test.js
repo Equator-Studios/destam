@@ -7,7 +7,7 @@ import UUID from '../UUID.js';
 import createNetwork from '../Tracking.js';
 
 import {Insert, Modify, Delete} from '../Events.js';
-import { clone } from './clone.js';
+import { clone } from './util.js';
 
 const silenceConflicting = fn => () => {
 	const originalWarn = console.warn;

@@ -1,6 +1,6 @@
 import OObject from '../Object.js';
 import createNetwork from '../Tracking.js';
-import { clone } from './clone.js';
+import { clone } from './util.js';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import Observer from '../Observer.js';
