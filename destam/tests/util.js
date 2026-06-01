@@ -228,8 +228,8 @@ export const clone = (value, options) => {
 	return parse(stringify(value, options), options);
 }
 
-export const withSeededRandom = fn => async (...args) => {
-	let s = 1234 >>> 0;
+export const withSeededRandom = (fn, seed = 1234) => async (...args) => {
+	let s = seed >>> 0;
 	const original = Math.random;
 	Math.random = () => {
 		s = (s * 1664525 + 1013904223) >>> 0;

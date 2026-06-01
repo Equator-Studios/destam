@@ -3,6 +3,7 @@ import test from 'node:test';
 import OArray, {indexPosition, positionIndex, indexCompare} from '../Array.js';
 import OObject from '../Object.js';
 import {Insert} from '../Events.js';
+import {withSeededRandom} from './util.js';
 
 test("reverse and sort not accessible", () => {
 	let arr = OArray();
@@ -423,14 +424,8 @@ test("OArray splice while watched", () => {
 	stop();
 });
 
-test("OArray fuzz", () => {
-	let s = 1234 >>> 0;
-	const rng = () => {
-		s = (s * 1664525 + 1013904223) >>> 0;
-		return s / 0x100000000;
-	};
-
-	const pick = (rng, arr) => arr[Math.floor(rng() * arr.length)];
+test("OArray fuzz", withSeededRandom(() => {
+	const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
 	const items = OArray([
 		OObject({ label: 'a' }),
@@ -442,15 +437,15 @@ test("OArray fuzz", () => {
 	const ops = ['push', 'pop', 'shift', 'unshift', 'splice', 'swap', 'replace'];
 	for (let i = 0; i < 5000; i++) {
 		const len = items.length;
-		switch (pick(rng, ops)) {
+		switch (pick(ops)) {
 			case 'push': items.push(OObject({ label: `p${i}` })); break;
 			case 'pop': if (len) items.pop(); break;
 			case 'shift': if (len) items.shift(); break;
 			case 'unshift': items.unshift(OObject({ label: `u${i}` })); break;
 			case 'splice': {
-				const start = len ? Math.floor(rng() * len) : 0;
-				const del = len ? Math.floor(rng() * Math.min(3, len - start)) : 0;
-				const adds = Math.floor(rng() * 5);
+				const start = len ? Math.floor(Math.random() * len) : 0;
+				const del = len ? Math.floor(Math.random() * Math.min(3, len - start)) : 0;
+				const adds = Math.floor(Math.random() * 5);
 				const vals = [];
 				for (let j = 0; j < adds; j++) vals.push(OObject({ label: `s${i}-${j}` }));
 				items.splice(start, del, ...vals);
@@ -459,8 +454,8 @@ test("OArray fuzz", () => {
 			case 'swap': {
 				// reuses existing element instances -> same observable briefly at two indices
 				if (len < 2) break;
-				const a = Math.floor(rng() * len);
-				let b = Math.floor(rng() * len);
+				const a = Math.floor(Math.random() * len);
+				let b = Math.floor(Math.random() * len);
 				if (b === a) b = (b + 1) % len;
 				const va = items[a];
 				const vb = items[b];
@@ -470,7 +465,7 @@ test("OArray fuzz", () => {
 			}
 			case 'replace': {
 				if (!len) break;
-				items[Math.floor(rng() * len)] = OObject({ label: `r${i}` });
+				items[Math.floor(Math.random() * len)] = OObject({ label: `r${i}` });
 				break;
 			}
 		}
@@ -483,5 +478,5 @@ test("OArray fuzz", () => {
 			assert.ok(indexCompare(items.observer.indexes_[i - 1].query_, items.observer.indexes_[i].query_) < 0);
 		}
 	}
-});
+}));
 

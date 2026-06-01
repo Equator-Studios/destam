@@ -6,7 +6,7 @@ import UUID from '../UUID.js';
 import OMap from '../UUIDMap.js';
 import createNetwork from '../Tracking.js';
 
-import { stringify, parse, clone } from './util.js';
+import { stringify, parse, clone, withSeededRandom } from './util.js';
 
 [
 	(name, callback) => test("forward " + name, () => {
@@ -612,13 +612,8 @@ test("network digest timeout flush anyway", async () => {
 	assert.strictEqual(called, true);
 });
 
-test("network OArray fuzz", async () => {
-	let s = 1234 >>> 0;
-	const rng = () => {
-		s = (s * 1664525 + 1013904223) >>> 0;
-		return s / 0x100000000;
-	};
-	const pick = arr => arr[Math.floor(rng() * arr.length)];
+test("network OArray fuzz", withSeededRandom(async () => {
+	const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
 	const source = OArray([
 		OObject({ label: 'a' }),
@@ -643,9 +638,9 @@ test("network OArray fuzz", async () => {
 			case 'shift': if (len) source.shift(); break;
 			case 'unshift': source.unshift(OObject({ label: `u${i}` })); break;
 			case 'splice': {
-				const start = len ? Math.floor(rng() * len) : 0;
-				const del = len ? Math.floor(rng() * Math.min(3, len - start)) : 0;
-				const adds = Math.floor(rng() * 5);
+				const start = len ? Math.floor(Math.random() * len) : 0;
+				const del = len ? Math.floor(Math.random() * Math.min(3, len - start)) : 0;
+				const adds = Math.floor(Math.random() * 5);
 				const vals = [];
 				for (let j = 0; j < adds; j++) vals.push(OObject({ label: `s${i}-${j}` }));
 				source.splice(start, del, ...vals);
@@ -653,8 +648,8 @@ test("network OArray fuzz", async () => {
 			}
 			case 'swap': {
 				if (len < 2) break;
-				const a = Math.floor(rng() * len);
-				let b = Math.floor(rng() * len);
+				const a = Math.floor(Math.random() * len);
+				let b = Math.floor(Math.random() * len);
 				if (b === a) b = (b + 1) % len;
 				const va = source[a];
 				const vb = source[b];
@@ -664,7 +659,7 @@ test("network OArray fuzz", async () => {
 			}
 			case 'replace': {
 				if (!len) break;
-				source[Math.floor(rng() * len)] = OObject({ label: `r${i}` });
+				source[Math.floor(Math.random() * len)] = OObject({ label: `r${i}` });
 				break;
 			}
 		}
@@ -675,4 +670,4 @@ test("network OArray fuzz", async () => {
 	assert.deepStrictEqual(source, target);
 	sourceNetwork.remove();
 	network.remove();
-});
+}));
