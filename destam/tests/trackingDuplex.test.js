@@ -8,6 +8,63 @@ import createNetwork from '../Tracking.js';
 
 import { clone, withSeededRandom } from './util.js';
 
+const trackersMultiNetwork = async (func, n, invert) => {
+	const objects = [OObject()];
+	for (let i = 1; i < n; i++) {
+		objects.push(clone(objects[0]));
+	}
+
+	const flushers = Array.from({length: n}, () => []);
+	const digests = [];
+	const networks = [];
+
+	for (let i = 1; i < n; i++) {
+		const network = createNetwork(objects[0].observer);
+		const peerNetwork = createNetwork(objects[i].observer);
+		networks.push(network, peerNetwork);
+
+		const a = {}, b = {};
+
+		const d1 = network.digest((changes, observerRefs) => {
+			const decoded = clone(changes, {observerRefs, observerNetwork: peerNetwork});
+			peerNetwork.apply(decoded, b);
+			return changes.length > 0;
+		}, null, arg => arg === a);
+
+		const d2 = peerNetwork.digest((changes, observerRefs) => {
+			const decoded = clone(changes, {observerRefs, observerNetwork: network});
+			network.apply(decoded, a);
+			return changes.length > 0;
+		}, null, arg => arg === b);
+
+		flushers[0].push(() => d1.flush());
+		flushers[i].push(() => d2.flush());
+		digests.push(d1, d2);
+	}
+
+	{
+		let objs = objects;
+		let flushs = flushers.map(fs => () => Promise.all(fs.map(f => f())));
+
+		if (invert) {
+			objs = [objs[1], objs[0], ...objs.slice(2)];
+			flushs = [flushs[1], flushs[0], ...flushs.slice(2)];
+		}
+
+		await func(objs, flushs);
+	}
+
+	while (true) {
+		if ((await Promise.all(digests.map(d => d.flush()))).indexOf(true) === -1) break;
+	}
+
+	for (let i = 1; i < n; i++) {
+		assert.deepStrictEqual(objects[0], objects[i]);
+	}
+
+	for (const net of networks) net.remove();
+};
+
 const trackers = async (func, n, invert) => {
 	const objects = [OObject()];
 	for (let i = 1; i < n; i++) {
@@ -69,6 +126,8 @@ const trackers = async (func, n, invert) => {
 	(name, func) => test('tracking triplex inverted: ' + name, async () => trackers(func, 3, true)),
 	(name, func) => test('tracking 4: ' + name, async () => trackers(func, 4, false)),
 	(name, func) => test('tracking 4 inverted: ' + name, async () => trackers(func, 4, true)),
+	(name, func) => test('tracking 4 multi-network: ' + name, async () => trackersMultiNetwork(func, 4, false)),
+	(name, func) => test('tracking 4 multi-network inverted: ' + name, async () => trackersMultiNetwork(func, 4, true)),
 ].forEach(test => {
 	test('basic', ([one, two]) => {
 		one.a = 'a';
