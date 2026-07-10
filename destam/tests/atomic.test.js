@@ -96,3 +96,32 @@ test("non-atomic reentrant mutation of the same observable dispatches normally",
 	assert.deepStrictEqual([...arr], ['Y', 'Y']);
 	assert.deepStrictEqual(commits, [['X', 'X'], ['Y', 'Y']]);
 });
+
+test("atomic rejects two events for the same link in one commit", () => {
+	const arr = OArray(['a']);
+	arr.observer.watchCommit(() => {});
+
+	assert.throws(() => {
+		atomic(() => {
+			arr[0] = 'b';
+			arr[0] = 'c';
+		});
+	}, /same link/);
+});
+
+test("atomic rejects a reentrant touch to a still-queued link", () => {
+	const arr = OArray(['a', 'b']);
+	const trigger = OObject({go: false});
+
+	arr.observer.watchCommit(() => {});
+	trigger.observer.watchCommit(() => {
+		if (trigger.go) arr.fill('Y');
+	});
+
+	assert.throws(() => {
+		atomic(() => {
+			trigger.go = true;
+			arr.fill('X');
+		});
+	}, /same link/);
+});
