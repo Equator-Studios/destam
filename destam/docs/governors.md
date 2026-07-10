@@ -119,6 +119,10 @@ Since `shallow()` doesn't advance the pointer, `.get()` still works on the resul
 observer.shallow().get() === state;
 ```
 
+### The immutable-root case
+
+Applied directly to a bare observable's `.observer` — with no preceding `.path()`/`.skip()` to advance the pointer first — depth 0 lands on the observable's own reference, and that reference never changes (you can't `.set()` a different observable into the place a variable used to hold). So `state.observer.shallow()` never fires at all. `state.observer.skip().shallow()` (equivalently `state.observer.shallow(1)`) is what reaches `state`'s direct properties instead — `.skip()` advances the pointer past the immutable root and into its contents. See [observables.md](observables.md#observerprototypeshallow) for why this is true and the `Observer.mutable` pattern for when you actually want reactivity to the root itself changing.
+
 ## Default governor
 
 `.watch()`, `.watchCommit()`, and `.effect()` apply a default governor that ignores any property whose name starts with an underscore. This is how destam supports OObject's "private" property convention — underscore-prefixed properties don't fire wildcard listeners, but they can still be explicitly observed via `.path()`.

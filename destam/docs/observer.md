@@ -83,7 +83,7 @@ The main governors are:
 
 - **`observer.path(key | keys[])`** — whitelist a property path. Only events under that path reach the watcher. Path also works for hidden (underscore-prefixed) properties as long as you name them explicitly.
 - **`observer.ignore(key | keys[])`** — blacklist a property path. Opposite of `path`: drops events under that path and lets everything else through.
-- **`observer.shallow(level = 0)`** — cap recursion depth. `shallow(0)` excludes all nested mutations; `shallow(1)` includes one level down, etc.
+- **`observer.shallow(level = 0)`** — cap recursion depth. `shallow(0)` excludes all nested mutations; `shallow(1)` includes one level down, etc. Applied directly to a bare observable's `.observer` (no preceding `.path()`/`.skip()`), depth 0 is the observable's own reference — which never changes — so `shallow()` alone on a root never fires. See [observables.md](observables.md#observerprototypeshallow) for why, and how to get past it.
 
 You can chain them:
 
@@ -134,7 +134,7 @@ let observer = object.observer;
 observer.path('first').watch(event => console.log('A'));
 observer.path('second').watch(event => console.log('B'));
 observer.path('_hidden').watch(event => console.log('hidden event'));
-observer.shallow().watch(event => console.log('C'));
+observer.skip().shallow().watch(event => console.log('C'));
 
 observer.watch(event => console.log('will be called for everything'));
 
@@ -148,11 +148,16 @@ object.second.property = 'value';
 // 'will be called for everything' fires
 
 object.property = 'value';
-// 'C' fires — shallow(0) only matches direct properties of object
+// 'C' fires — .skip() advances past `object`'s own (immutable) reference,
+// then .shallow() matches only object's direct properties, not anything nested.
+// A bare `observer.shallow()` here (no .skip()) would never fire — see
+// observables.md for why.
 // 'will be called for everything' fires
 
 object._hidden = 'this is hidden';
 // 'hidden event' fires — explicitly subscribed via .path('_hidden')
+// 'C' does NOT fire — .skip() is a wildcard mechanism and honors the same
+// default governor, so underscore-prefixed properties are excluded from it too
 // 'will be called for everything' does NOT fire —
 // wildcard watchers ignore underscore-prefixed properties by default
 ```

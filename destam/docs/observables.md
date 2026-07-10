@@ -148,6 +148,38 @@ observer.shallow().watch(() => {
 });
 ```
 
+This isn't a destam limitation being worked around — it's a hard boundary of the language, not a design choice. There is no way to attach a listener to a plain variable binding:
+
+```js
+let state = OObject({ value: 1 });
+
+// there is no version of this that could ever notify a listener —
+// reassigning a `let` has no hook in JS, in any framework:
+state = OObject({ value: 2 });
+```
+
+`observer.shallow()` on a root is asking for exactly that notification. It can't exist for a bare `let`/`const`, so destam is honest about it and fires nothing rather than faking a level of reactivity the language can't actually provide.
+
+If you genuinely need "tell me when the thing I'm looking at gets swapped for a different object," you can't get it from a variable — you have to hold the reference inside something that has its own `.set()` destam can hook, instead of a bare `=`. That's what `Observer.mutable` is for:
+
+```js
+const current = Observer.mutable(OObject({ value: 1 }));
+
+current.memo().watch(() => {
+	// fires when current.set(...) points at a different object,
+	// AND when the currently-held object mutates internally
+});
+
+current.set(OObject({ value: 2 }));   // fires — genuine reassignment
+current.get().value = 3;              // also fires — memo follows the held observable
+```
+
+`.memo()` (see [governors.md](governors.md#observerprototypememo)) is what turns "which object is this" into something with its own hookable identity — the cost is going through `Observer.mutable`'s `.set()` instead of a plain `=`.
+
+### Why this is worth the friction
+
+It's tempting to wish `observer.shallow()` on a root would "just work" for direct properties, folding `.skip()` in automatically. It deliberately doesn't, and the payoff shows up in generic code: a function that accepts "some Observer" and does `observer.skip().shallow().watch(cb)` behaves correctly whether it's handed a plain `oobj.observer` (never fires — the object can never be swapped out, which is the *correct* answer) or an `Observer.mutable(oobj.observer).memo()` (fires on both property mutations and reassignment) — with no special-casing in the consumer either way. Repointability is something the *caller* opts into by choosing what to construct and hand in, not something every downstream consumer has to detect or guard against. A "warn if this never fires" diagnostic would break exactly this pattern, since "never fires" is also the correct, common behavior for a plain non-repointable observer — the two cases are indistinguishable at runtime by design.
+
 To observe structural changes at the top level of an observable (e.g. tracking `arr.length`), see the "Reacting to structural changes" pattern in AGENTS.md.
 
 ### observer.prototype.ignore
