@@ -53,14 +53,22 @@ export const call = events => {
 	for (events.index_ ||= 0; events.index_ < len(events);) {
 		const cur = events[events.index_++];
 
+		// Clear current_/events_ before invoking, not after: a reentrant
+		// mutation of the same observable from within this very listener
+		// call must see gov.events_ as stale (cleared) so linkApply gives it
+		// a fresh current_ array and re-queues the governor onto `events`,
+		// instead of appending to the array we already handed to the
+		// listener (which would otherwise get silently dropped when this
+		// call returns).
+		const current = cur.current_;
+		cur.current_ = cur.events_ = null;
+
 		try {
-			(cur.listener_ || cur)(events.event_ || cur.current_, events.args_);
+			(cur.listener_ || cur)(events.event_ || current, events.args_);
 		} catch (e) {
 			events.error_ = e;
 			events.hasError_ = 1;
 		}
-
-		cur.current_ = cur.events_ = null;
 	}
 
 	events.event_ = 0;
