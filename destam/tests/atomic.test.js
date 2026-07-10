@@ -54,3 +54,45 @@ test("atomic oarray", () => {
 		[obj.observer.indexes_[1].query_]
 	]]);
 });
+
+test("atomic reentrant mutation of the same observable is not lost", () => {
+	const arr = OArray(['a', 'b']);
+
+	const commits = [];
+	let reentered = false;
+	arr.observer.watchCommit(commit => {
+		commits.push(commit.map(delta => delta.value));
+
+		if (!reentered) {
+			reentered = true;
+			arr.fill('Y');
+		}
+	});
+
+	atomic(() => {
+		arr.fill('X');
+	});
+
+	assert.deepStrictEqual([...arr], ['Y', 'Y']);
+	assert.deepStrictEqual(commits, [['X', 'X'], ['Y', 'Y']]);
+});
+
+test("non-atomic reentrant mutation of the same observable dispatches normally", () => {
+	const arr = OArray(['a', 'b']);
+
+	const commits = [];
+	let reentered = false;
+	arr.observer.watchCommit(commit => {
+		commits.push(commit.map(delta => delta.value));
+
+		if (!reentered) {
+			reentered = true;
+			arr.fill('Y');
+		}
+	});
+
+	arr.fill('X');
+
+	assert.deepStrictEqual([...arr], ['Y', 'Y']);
+	assert.deepStrictEqual(commits, [['X', 'X'], ['Y', 'Y']]);
+});
