@@ -109,19 +109,48 @@ test("atomic rejects two events for the same link in one commit", () => {
 	}, /same link/);
 });
 
-test("atomic rejects a reentrant touch to a still-queued link", () => {
+test("atomic dispatches a reentrant touch to a still-queued link instead of corrupting it", () => {
 	const arr = OArray(['a', 'b']);
 	const trigger = OObject({go: false});
 
-	arr.observer.watchCommit(() => {});
+	const commits = [];
+	arr.observer.watchCommit(commit => {
+		commits.push(commit.map(delta => delta.value));
+	});
 	trigger.observer.watchCommit(() => {
 		if (trigger.go) arr.fill('Y');
 	});
 
-	assert.throws(() => {
-		atomic(() => {
-			trigger.go = true;
-			arr.fill('X');
-		});
-	}, /same link/);
+	atomic(() => {
+		trigger.go = true;
+		arr.fill('X');
+	});
+
+	assert.deepStrictEqual([...arr], ['Y', 'Y']);
+	assert.deepStrictEqual(commits, [['X', 'X'], ['Y', 'Y']]);
+});
+
+test("atomic: two listeners triggered by one commit can independently mutate a third observable", () => {
+	const source = OObject({a: 0, b: 0});
+	const target = OObject({value: null});
+
+	const targetCommits = [];
+	target.observer.watchCommit(commit => {
+		targetCommits.push(commit.map(delta => delta.value));
+	});
+
+	source.observer.path('a').watchCommit(() => {
+		target.value = 'from-a';
+	});
+	source.observer.path('b').watchCommit(() => {
+		target.value = 'from-b';
+	});
+
+	atomic(() => {
+		source.a = 1;
+		source.b = 1;
+	});
+
+	assert.strictEqual(target.value, 'from-b');
+	assert.deepStrictEqual(targetCommits, [['from-a'], ['from-b']]);
 });

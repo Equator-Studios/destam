@@ -207,9 +207,10 @@ export const atomic = (cb, args) => {
 		cb();
 	} finally {
 		events.args_ = args;
+		override = old;
+
 		call(events);
 
-		override = old;
 		if (events.hasError_) throw events.error_;
 	}
 };
