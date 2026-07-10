@@ -64,6 +64,22 @@ export const call = events => {
 		cur.current_ = cur.events_ = null;
 
 		try {
+			// A commit is a minimal per-link diff: delta order within it is
+			// undefined, so a listener can never be asked to make sense of
+			// two events for the same link in one commit (e.g. an Insert
+			// immediately undone by a Delete).
+			assert((() => {
+				if (!current) return true;
+
+				const seen = new Set();
+				for (const delta of current) {
+					if (seen.has(delta.network_.link_)) return false;
+					seen.add(delta.network_.link_);
+				}
+
+				return true;
+			})(), "a single commit cannot contain more than one event for the same link");
+
 			(cur.listener_ || cur)(events.event_ || current, events.args_);
 		} catch (e) {
 			events.error_ = e;
