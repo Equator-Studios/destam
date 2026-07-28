@@ -37,9 +37,15 @@ const watchID = (link, element) => {
 		// delete by identity: the element still sits in the bucket its old id
 		// hashed to, but no longer answers to that id
 		reg.user_.delete(current, spot => spot === element);
-		reg.user_.setElement(element);
+		Network.unlink(link);
 
+		reg.user_.setElement(element);
 		link.query_ = current = next;
+
+		// which listeners want this link is decided from its query when the
+		// link is made, so relink to have the governors recompute - otherwise a
+		// path watcher stays pinned to the key the element used to have
+		Network.link(link, element[observerGetter]);
 	});
 };
 
