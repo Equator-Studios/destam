@@ -211,3 +211,31 @@ test("omap re-key onto a live key", () => {
 	assert.strictEqual(map.getElement(before), other);
 	assert.strictEqual(map.getElement(elem.id), elem);
 });
+
+test("omap re-key moves path watchers", () => {
+	const map = OMap();
+
+	const a = UUID(), b = UUID();
+	const elem = OObject({id: a, v: 1});
+	map.setElement(elem);
+
+	// which listeners want a link is decided from its query when the link is
+	// made, so a key change has to have the governors recompute
+	let atA = 0, atB = 0;
+	map.observer.path(a).watch(() => atA++);
+	map.observer.path(b).watch(() => atB++);
+
+	elem.id = b;
+
+	atA = atB = 0;
+	elem.v = 2;
+	assert.strictEqual(atA, 0);
+	assert.strictEqual(atB, 1);
+
+	elem.id = a;
+
+	atA = atB = 0;
+	elem.v = 3;
+	assert.strictEqual(atA, 1);
+	assert.strictEqual(atB, 0);
+});
