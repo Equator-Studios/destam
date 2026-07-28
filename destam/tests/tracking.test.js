@@ -165,6 +165,123 @@ const silenceConflicting = fn => async (...args) => {
 		obj1.object2.hello = 'world';
 	});
 
+	// Relocating a live observable within one digest window. The replay side
+	// already holds it, so the commit should reference it by id - and where the
+	// contents are re-serialized instead, the delete vacating the old location
+	// has to be emitted ahead of the insert that reintroduces the id.
+	const fill = async (obj, flush) => {
+		obj.list = OArray([]);
+		for (let i = 0; i < 4; i++) {
+			obj.list.push(OObject({name: 'item' + i, nested: OObject({flag: true})}));
+		}
+
+		await flush();
+	};
+
+	test("move array element, insert before remove", async (obj1, flush) => {
+		await fill(obj1, flush);
+
+		const moved = obj1.list[1];
+		obj1.list.push(moved);
+		obj1.list.splice(1, 1);
+	});
+
+	test("move array element, remove before insert", async (obj1, flush) => {
+		await fill(obj1, flush);
+
+		const moved = obj1.list[1];
+		obj1.list.splice(1, 1);
+		obj1.list.push(moved);
+	});
+
+	// Writing the destination earlier in the window gives that link its place in
+	// the commit; the move then coalesces into it, landing ahead of the delete.
+	test("move array element into an already touched slot", async (obj1, flush) => {
+		await fill(obj1, flush);
+
+		const moved = obj1.list[1];
+		obj1.list[3] = OObject({name: 'other'});
+		obj1.list.splice(1, 1);
+		obj1.list[2] = moved;
+	});
+
+	test("move object between arrays", async (obj1, flush) => {
+		obj1.from = OArray([OObject({name: 'item'})]);
+		obj1.to = OArray([]);
+
+		await flush();
+
+		const moved = obj1.from[0];
+		obj1.from.splice(0, 1);
+		obj1.to.push(moved);
+	});
+
+	test("move object to another key", async (obj1, flush) => {
+		obj1.object = OObject();
+		obj1.object.first = OObject({id: UUID(), nested: OObject({n: 1})});
+
+		await flush();
+
+		const moved = obj1.object.first;
+		delete obj1.object.first;
+		obj1.object.second = moved;
+	});
+
+	// Mutations made while an object sits detached still have to reach the far
+	// side once it is put back. Nothing reports them at the time - the object is
+	// nowhere in the tree - so they ride on the dummy listener installed when it
+	// left, which only sees them while it holds an entry on each of the reg's
+	// links. Re-serializing the whole object on reattach would mask all of this.
+	test("mutate while detached, then reattach", async (obj1, flush) => {
+		obj1.first = OObject({v: 1});
+
+		await flush();
+
+		const moved = obj1.first;
+		delete obj1.first;
+		moved.v = 2;
+		obj1.second = moved;
+	});
+
+	test("mutate a nested property while detached", async (obj1, flush) => {
+		obj1.first = OObject({inner: OObject({v: 1})});
+
+		await flush();
+
+		const moved = obj1.first;
+		delete obj1.first;
+		moved.inner.v = 2;
+		obj1.second = moved;
+	});
+
+	test("attach a new observable while detached", async (obj1, flush) => {
+		obj1.first = OObject({v: 1});
+
+		await flush();
+
+		const moved = obj1.first;
+		delete obj1.first;
+		moved.extra = OObject({v: 2});
+		obj1.second = moved;
+	});
+
+	// Each cycle installs a fresh dummy; retiring one has to take its link
+	// entries with it, or they accumulate and keep feeding it deltas.
+	test("mutate while detached over repeated cycles", async (obj1, flush) => {
+		obj1.k0 = OObject({v: 0});
+
+		await flush();
+
+		const moved = obj1.k0;
+		for (let i = 1; i <= 4; i++) {
+			delete obj1['k' + (i - 1)];
+			moved.v = i;
+			obj1['k' + i] = moved;
+
+			await flush();
+		}
+	});
+
 	test("delete and modify in tree", async (obj1, flush) => {
 		obj1.object = OObject({
 			object2: OObject({
