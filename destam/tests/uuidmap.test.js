@@ -161,3 +161,53 @@ test("omap set element from observer", () => {
 	}));
 	assert.strictEqual(map.has(id), true);
 });
+
+test("omap re-key moves the element", () => {
+	const map = OMap();
+
+	const elem = OObject({id: UUID(), payload: 'kept'});
+	map.setElement(elem);
+
+	const before = elem.id;
+	elem.id = UUID();
+
+	assert.strictEqual(map.size, 1);
+	assert.strictEqual(map.getElement(before), undefined);
+	assert.strictEqual(map.getElement(elem.id), elem);
+	assert.strictEqual(map.getElement(elem.id).payload, 'kept');
+});
+
+test("omap re-key repeatedly", () => {
+	const map = OMap();
+
+	const elem = OObject({id: UUID()});
+	map.setElement(elem);
+
+	for (let i = 0; i < 3; i++) {
+		const before = elem.id;
+		elem.id = UUID();
+
+		assert.strictEqual(map.size, 1);
+		assert.strictEqual(map.getElement(before), undefined);
+		assert.strictEqual(map.getElement(elem.id), elem);
+	}
+});
+
+test("omap re-key onto a live key", () => {
+	const map = OMap();
+
+	const elem = OObject({id: UUID()});
+	const other = OObject({id: UUID()});
+	map.setElement(elem);
+	map.setElement(other);
+
+	const before = other.id;
+	assert.throws(() => other.id = elem.id, /already populated/);
+
+	// the assignment lands before the map can object to it, so it gets put
+	// back - the map must be left exactly as it was
+	assert.strictEqual(UUID.equal(other.id, before), true);
+	assert.strictEqual(map.size, 2);
+	assert.strictEqual(map.getElement(before), other);
+	assert.strictEqual(map.getElement(elem.id), elem);
+});
