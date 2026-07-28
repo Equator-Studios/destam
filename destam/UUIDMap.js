@@ -7,12 +7,55 @@ import OObject from './Object.js';
 
 export const linkGetter = Symbol('uuid_map_linkGetter');
 
+// An element is bucketed under its own `id`, so changing that id has to move
+// it. Watching from here catches the change wherever it comes from - a local
+// assignment or an applied delta - and keeps the bucket and the link's query in
+// step without the map emitting anything of its own, which is what lets both
+// sides of a network re-key off the element's plain property delta.
+const watchID = (link, element) => {
+	unwatchID(link);
+
+	const reg = link.reg_;
+	let current = element.id;
+
+	link.unwatchID_ = element.observer.path('id').watch(() => {
+		const next = element.id;
+		if (UUID.equal(current, next)) return;
+
+		// the element already carries `next` by the time this runs, so a probe
+		// that lands on it would otherwise read as a collision with itself
+		const occupant = reg.user_.getElement(next);
+		if (occupant && occupant !== element) {
+			// the write has already landed and throwing will not unwind it, so
+			// put it back before rejecting - otherwise the element is left
+			// keyed under an id it no longer answers to and the bad id ships
+			// downstream. Re-entry here is a no-op: `current` is unchanged.
+			element.id = current;
+			throw new Error("already populated: " + next);
+		}
+
+		// delete by identity: the element still sits in the bucket its old id
+		// hashed to, but no longer answers to that id
+		reg.user_.delete(current, spot => spot === element);
+		reg.user_.setElement(element);
+
+		link.query_ = current = next;
+	});
+};
+
+export const unwatchID = (link) => {
+	link.unwatchID_?.();
+	link.unwatchID_ = null;
+};
+
 export const registerElement = (element, link) => {
 	Object.defineProperty(element, linkGetter, {
 		enumerable: false,
 		configurable: true,
 		value: link,
 	});
+
+	watchID(link, element);
 };
 
 const OMap = (map, id) => {
@@ -101,6 +144,7 @@ OMap.prototype = Object.assign(createInstance(UUID.Map), {
 
 		if (elem) {
 			const link = elem[linkGetter];
+			unwatchID(link);
 			delete elem[linkGetter];
 
 			let events;
@@ -119,6 +163,7 @@ OMap.prototype = Object.assign(createInstance(UUID.Map), {
 		let events = [];
 		for (const elem of reg.user_.elements()) {
 			const link = elem[linkGetter];
+			unwatchID(link);
 
 			Network.linkApply(link, events, Delete, elem, undefined, elem.id, reg.id);
 			Network.unlink(link);

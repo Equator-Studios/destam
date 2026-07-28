@@ -6,7 +6,7 @@ import {createInstance, len, isEqual, callAll, isInstance, assert, createClass, 
 
 import OObject from './Object.js';
 import OArray, {indexCompare, indexPosition} from './Array.js';
-import OMap, {registerElement, linkGetter} from './UUIDMap.js';
+import OMap, {registerElement, unwatchID, linkGetter} from './UUIDMap.js';
 
 Network.setIDConstructor(UUID);
 
@@ -65,6 +65,7 @@ OMap.apply = (reg, value, link, events) => {
 		registerElement(element, link);
 	} else {
 		const current = link.user_;
+		unwatchID(link);
 		delete current[linkGetter];
 
 		Network.linkApply(link, events, cloneEvent, value, current);
