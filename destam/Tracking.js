@@ -370,7 +370,11 @@ const Tracker = createClass((observer, minAllocation = 64) => {
 			},
 			add_: reg => {
 				if (!this.isExternal_ || !ignore(this.externalArg_)) {
-					trackedChanges.set(reg, false);
+					if (trackedChanges.get(reg) === true) {
+						trackedChanges.delete(reg);
+					} else {
+						trackedChanges.set(reg, false);
+					}
 				}
 			},
 			remove_: (reg, dummy) => {
