@@ -168,7 +168,7 @@ OArray.apply = (reg, value, link, events) => {
 const unrefDummy = (dummy) => {
 	assert(dummy.refs_ > 0);
 	if (!--dummy.refs_) {
-		dummy.reg_.listeners_.delete(dummy.governor_);
+		Network.removeListener(dummy.reg_, dummy);
 	}
 };
 
@@ -262,7 +262,7 @@ const Tracker = createClass((observer, minAllocation = 64) => {
 					refs_: refs,
 				};
 
-				reg.listeners_.set(dummy.governor_, dummy);
+				Network.addListener(reg, dummy);
 
 				for (const l of network.eventListeners_) {
 					l.remove_(reg, dummy);

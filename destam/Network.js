@@ -22,7 +22,7 @@ const createLinkEntry = (link, parent, governor_, user) => {
 	return child;
 };
 
-const addListener = (reg, listener) => {
+export const addListener = (reg, listener) => {
 	const governor = listener.governor_;
 	if (!reg) return;
 
@@ -47,7 +47,7 @@ const addListener = (reg, listener) => {
 	governor.add_?.(reg, listener);
 };
 
-const removeListener = (reg, listener) => {
+export const removeListener = (reg, listener) => {
 	const governor = listener.governor_;
 	let active = reg.listeners_.get(governor);
 
