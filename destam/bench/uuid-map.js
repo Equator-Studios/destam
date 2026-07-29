@@ -10,7 +10,7 @@ const bench = makeBench(ROUNDS);
 const uuids = Array.from({length: COUNT}, () => UUID());
 const nextPow2 = n => 1 << Math.ceil(Math.log2(n));
 const preallocBase = nextPow2(COUNT / 0.8);
-const elems = uuids.map(id => ({id, value: true}));
+const elems = uuids.map(id => ({_id: id, value: true}));
 const hexKeys = uuids.map(id => id.rawHex());
 
 const uuidMapBench = (label, minAllocation) => bench(label, (ready) => {

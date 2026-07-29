@@ -1,7 +1,7 @@
 import OObject from '../Object.js';
 import OArray from '../Array.js';
 import createNetwork from '../Tracking.js';
-import { clone } from '../tests/clone.js';
+import { clone } from '../tests/util.js';
 import makeBench from './bench.js';
 
 const N = 1_000;
