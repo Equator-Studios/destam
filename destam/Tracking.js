@@ -6,7 +6,7 @@ import {createInstance, len, isEqual, callAll, isInstance, assert, createClass, 
 
 import OObject from './Object.js';
 import OArray, {indexCompare, indexPosition} from './Array.js';
-import OMap, {registerElement, unwatchID, linkGetter} from './UUIDMap.js';
+import OMap, {registerElement, linkGetter} from './UUIDMap.js';
 
 Network.setIDConstructor(UUID);
 
@@ -27,11 +27,11 @@ OMap.verify = (reg, value) => {
 	if (isInstance(value, Insert)) {
 		const element = value.value;
 
-		if (map.has(element.id)) {
-			throw new Error("already populated: " + element.id);
+		if (map.has(value.ref)) {
+			throw new Error("already populated: " + value.ref);
 		}
 
-		return {reg_: reg, user_: element, query_: element.id};
+		return {reg_: reg, user_: element, query_: value.ref};
 	} else {
 		assert(isInstance(value, Delete) || isInstance(value, Modify), "unknown event type");
 
@@ -48,31 +48,56 @@ OMap.apply = (reg, value, link, events) => {
 	if (isInstance(value, Insert)) {
 		const element = value.value;
 
+		// An insert may be relocating an element this commit also deletes from
+		// somewhere else. If that delete has not landed yet the element is
+		// still filed under its old key, so vacate that here rather than
+		// depend on the ordering. Vacate before re-keying: UUID.Map.delete
+		// rebalances by re-hashing trailing entries off their `_id`, so the
+		// element has to still agree with the bucket it is sitting in.
+		const from = element._id;
+
+		if (from !== undefined) map.delete(from, spot => spot === element && UUID.equal(spot._id, from));
+
+		element._id = link.query_;
 		registerElement(element, link);
 		map.setElement(element);
 		Network.link(link, element[observerGetter]);
 		Network.linkApply(link, events, cloneEvent, value);
 	} else if (isInstance(value, Modify)) {
 		const current = link.user_;
-		delete current[linkGetter];
+
+		if (current[linkGetter] === link) delete current[linkGetter];
 
 		const element = value.value;
 		Network.linkApply(link, events, cloneEvent, value, current);
 
+		// same as the insert branch: the replacement element may itself still be
+		// filed elsewhere in this map under a key whose delete has not landed
+		const from = element._id;
+
+		if (from !== undefined) map.delete(from, spot => spot === element && UUID.equal(spot._id, from));
+
+		element._id = link.query_;
 		map.setElement(element);
 		link.user_ = element;
 		Network.relink(link, element[observerGetter]);
 		registerElement(element, link);
 	} else {
 		const current = link.user_;
-		unwatchID(link);
-		delete current[linkGetter];
+
+		// only tear down what still belongs to this link: an insert earlier in
+		// this commit may have already re-registered the element elsewhere
+		if (current[linkGetter] === link) delete current[linkGetter];
 
 		Network.linkApply(link, events, cloneEvent, value, current);
 		Network.unlink(link);
 
-		const found = map.deleteElement(current);
-		assert(found, "Tracking went into a bad state");
+		// Probe from the delta's own ref, and require the element to still be
+		// keyed there. Identity alone is not enough: an insert earlier in this
+		// commit may have moved it, and the open-addressing walk from the old
+		// hash can still reach its new slot. A miss is legitimate for the same
+		// reason, so it is not an error.
+		map.delete(link.query_, spot => spot === current && UUID.equal(spot._id, link.query_));
 	}
 };
 
@@ -193,7 +218,7 @@ const Tracker = createClass((observer, minAllocation = 64) => {
 	};
 
 	const createElement = reg => ({
-		id: reg.id,
+		_id: reg.id,
 		value: reg.value,
 		reg,
 		occurrences_: 1,

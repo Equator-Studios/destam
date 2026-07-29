@@ -86,13 +86,13 @@ test("uint8 uuid", () => {
 test("uuid map iterators", () => {
 	let map = UUID.Map();
 
-	const element = {id: UUID()};
+	const element = {_id: UUID()};
 	map.setElement(element);
 
 	assert.strictEqual(map.size, 1);
 	assert.deepStrictEqual([...map.elements()], [element]);
-	assert.deepStrictEqual([...map.keys()], [element.id]);
-	assert.deepStrictEqual([...map.entries()], [[element.id, undefined]]);
+	assert.deepStrictEqual([...map.keys()], [element._id]);
+	assert.deepStrictEqual([...map.entries()], [[element._id, undefined]]);
 });
 
 test("uuid map fill", () => {
@@ -138,7 +138,7 @@ test("uuid map delete custom comparator", () => {
 	const id = UUID();
 
 	map.set(id, true);
-	assert.strictEqual(map.delete(id, (elem, id) => UUID.equal(elem.id, id) && elem.id), id);
+	assert.strictEqual(map.delete(id, (elem, id) => UUID.equal(elem._id, id) && elem._id), id);
 });
 
 test("uuid compare", () => {

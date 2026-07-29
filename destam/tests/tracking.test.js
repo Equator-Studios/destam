@@ -449,24 +449,26 @@ const silenceConflicting = fn => async (...args) => {
 	test ('omap replace', async (obj1, flush, obj2) => {
 		obj1.thing = OMap();
 
-		let elem = OObject({id: UUID()});
+		let elem = OObject({_id: UUID()});
 		obj1.thing.setElement(elem);
 
 		for (let i = 0; i < 3; i++) {
 			await flush();
 
-			elem.id = UUID();
+			obj1.thing.deleteElement(elem);
+			elem._id = UUID();
+			obj1.thing.setElement(elem);
 		}
 	});
 
 	test ('omap replace element', async (obj1, flush, obj2) => {
 		obj1.thing = OMap();
 
-		let elem = OObject({id: UUID()});
+		let elem = OObject({_id: UUID()});
 		obj1.thing.setElement(elem);
 
 		await flush();
-		let elem2 = OObject({id: elem.id});
+		let elem2 = OObject({_id: elem._id});
 		obj1.thing.setElement(elem2);
 
 		await flush();
@@ -476,14 +478,60 @@ const silenceConflicting = fn => async (...args) => {
 	test ('omap replace at once', async (obj1, flush, obj2) => {
 		obj1.thing = OMap();
 
-		let elem = OObject({id: UUID()});
+		let elem = OObject({_id: UUID()});
 		obj1.thing.setElement(elem);
 
 		await flush();
 
 		for (let i = 0; i < 3; i++) {
-			elem.id = UUID();
+			obj1.thing.deleteElement(elem);
+			elem._id = UUID();
+			obj1.thing.setElement(elem);
 		}
+	});
+
+	// Two elements re-keyed in one commit. Whichever insert lands first leaves
+	// its element briefly filed under both keys, and the delete that follows has
+	// to unfile the right one - identity alone cannot tell the two apart, since
+	// the open-addressing probe from the old hash can reach the new slot.
+	test ('omap re-key two elements at once', async (obj1, flush) => {
+		obj1.thing = OMap();
+
+		const a = OObject({_id: UUID(), v: 'a'});
+		const b = OObject({_id: UUID(), v: 'b'});
+		obj1.thing.setElement(a);
+		obj1.thing.setElement(b);
+
+		await flush();
+
+		obj1.thing.deleteElement(a);
+		a._id = UUID();
+		obj1.thing.setElement(a);
+
+		obj1.thing.deleteElement(b);
+		b._id = UUID();
+		obj1.thing.setElement(b);
+	});
+
+	// Re-keying onto a key this same commit frees. The digest folds the delete
+	// and the insert at that key into one Modify, so the element arrives keyed
+	// somewhere it is also still filed - the replace path has to vacate the old
+	// slot rather than assume the delete already ran.
+	test ('omap re-key onto a key freed in the same commit', async (obj1, flush) => {
+		obj1.thing = OMap();
+
+		const a = OObject({_id: UUID(), v: 'a'});
+		const b = OObject({_id: UUID(), v: 'b'});
+		obj1.thing.setElement(a);
+		obj1.thing.setElement(b);
+
+		await flush();
+
+		const freed = b._id;
+		obj1.thing.deleteElement(b);
+		obj1.thing.deleteElement(a);
+		a._id = freed;
+		obj1.thing.setElement(a);
 	});
 
 	test ('omap delete and set different id', async (obj1, flush) => {
@@ -652,7 +700,7 @@ const silenceConflicting = fn => async (...args) => {
 	});
 
 	test("weird uuid o_ref indirection", async (object, flush) => {
-		const elem = OObject({id: UUID()});
+		const elem = OObject({_id: UUID()});
 		object.thing = OMap([elem]);
 		await flush();
 

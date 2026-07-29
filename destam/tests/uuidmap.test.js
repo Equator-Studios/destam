@@ -42,7 +42,7 @@ test("omap delete", () => {
 test("omap ignore duplicate element", () => {
 	const map = OMap();
 
-	let elem = OObject({id: UUID()});
+	let elem = OObject({_id: UUID()});
 	map.setElement(elem);
 
 	const events = [];
@@ -50,7 +50,7 @@ test("omap ignore duplicate element", () => {
 
 	map.setElement(elem);
 
-	assert.strictEqual(map.has(elem.id), true);
+	assert.strictEqual(map.has(elem._id), true);
 	assert.deepStrictEqual(events, []);
 });
 
@@ -58,9 +58,9 @@ test("omap modify atomic", () => {
 	const map = OMap();
 
 	const id = UUID();
-	map.setElement(OObject({id}));
+	map.setElement(OObject({_id: id}));
 
-	const elem = OObject({id});
+	const elem = OObject({_id: id});
 
 	const events = [];
 	map.observer.watch(event => events.push(map.getElement(id)));
@@ -74,12 +74,12 @@ test("omap modify value", () => {
 	const map = OMap();
 
 	const id = UUID();
-	map.setElement(OObject({id}));
+	map.setElement(OObject({_id: id}));
 
-	const elem = OObject({id});
+	const elem = OObject({_id: id});
 
 	const events = [];
-	map.observer.ignore(elem.id).watch(event => events.push(map.getElement(id)));
+	map.observer.ignore(elem._id).watch(event => events.push(map.getElement(id)));
 
 	map.setElement(elem);
 
@@ -102,7 +102,7 @@ test("omap delete event actually deleted", () => {
 test("omap delete event previous", () => {
 	const map = OMap();
 
-	const thing = OObject({id: UUID()});
+	const thing = OObject({_id: UUID()});
 	map.setElement(thing);
 
 	map.observer.watch(state => {
@@ -157,85 +157,82 @@ test("omap set element from observer", () => {
 
 	const id = UUID();
 	map.observer.path(id).set(OObject({
-		id
+		_id: id
 	}));
 	assert.strictEqual(map.has(id), true);
 });
 
-test("omap re-key moves the element", () => {
+// `_id` is the bucket the element sits in and never travels in a delta, so
+// moving it in place desyncs the far side - and, exactly as with a bare
+// UUID.Map, corrupts the local map too. Re-keying is a remove and a re-add.
+test("omap re-key by remove and re-add", () => {
 	const map = OMap();
 
-	const elem = OObject({id: UUID(), payload: 'kept'});
+	const elem = OObject({_id: UUID(), v: 1});
 	map.setElement(elem);
 
-	const before = elem.id;
-	elem.id = UUID();
+	const before = elem._id;
+	map.deleteElement(elem);
+	elem._id = UUID();
+	map.setElement(elem);
 
 	assert.strictEqual(map.size, 1);
 	assert.strictEqual(map.getElement(before), undefined);
-	assert.strictEqual(map.getElement(elem.id), elem);
-	assert.strictEqual(map.getElement(elem.id).payload, 'kept');
+	assert.strictEqual(map.getElement(elem._id), elem);
+	assert.strictEqual(map.getElement(elem._id).v, 1);
 });
 
 test("omap re-key repeatedly", () => {
 	const map = OMap();
 
-	const elem = OObject({id: UUID()});
+	const elem = OObject({_id: UUID()});
 	map.setElement(elem);
 
 	for (let i = 0; i < 3; i++) {
-		const before = elem.id;
-		elem.id = UUID();
+		const before = elem._id;
+		map.deleteElement(elem);
+		elem._id = UUID();
+		map.setElement(elem);
 
 		assert.strictEqual(map.size, 1);
 		assert.strictEqual(map.getElement(before), undefined);
-		assert.strictEqual(map.getElement(elem.id), elem);
+		assert.strictEqual(map.getElement(elem._id), elem);
 	}
 });
 
-test("omap re-key onto a live key", () => {
+test("omap re-key onto a live key replaces the incumbent", () => {
 	const map = OMap();
 
-	const elem = OObject({id: UUID()});
-	const other = OObject({id: UUID()});
+	const elem = OObject({_id: UUID()});
+	const other = OObject({_id: UUID()});
 	map.setElement(elem);
 	map.setElement(other);
 
-	const before = other.id;
-	assert.throws(() => other.id = elem.id, /already populated/);
+	map.deleteElement(other);
+	other._id = elem._id;
+	map.setElement(other);
 
-	// the assignment lands before the map can object to it, so it gets put
-	// back - the map must be left exactly as it was
-	assert.strictEqual(UUID.equal(other.id, before), true);
-	assert.strictEqual(map.size, 2);
-	assert.strictEqual(map.getElement(before), other);
-	assert.strictEqual(map.getElement(elem.id), elem);
+	assert.strictEqual(map.size, 1);
+	assert.strictEqual(map.getElement(other._id), other);
 });
 
 test("omap re-key moves path watchers", () => {
 	const map = OMap();
 
 	const a = UUID(), b = UUID();
-	const elem = OObject({id: a, v: 1});
+	const elem = OObject({_id: a, v: 1});
 	map.setElement(elem);
 
-	// which listeners want a link is decided from its query when the link is
-	// made, so a key change has to have the governors recompute
 	let atA = 0, atB = 0;
 	map.observer.path(a).watch(() => atA++);
 	map.observer.path(b).watch(() => atB++);
 
-	elem.id = b;
+	map.deleteElement(elem);
+	elem._id = b;
+	map.setElement(elem);
 
 	atA = atB = 0;
 	elem.v = 2;
 	assert.strictEqual(atA, 0);
 	assert.strictEqual(atB, 1);
-
-	elem.id = a;
-
-	atA = atB = 0;
-	elem.v = 3;
-	assert.strictEqual(atA, 1);
-	assert.strictEqual(atB, 0);
 });

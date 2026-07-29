@@ -87,7 +87,10 @@ export const stringify = (state, options) => {
 
 				let out = [];
 				for (let item of map.elements()) {
-					out.push(item);
+					out.push({
+						ref: item[linkGetter].query_,
+						val: item,
+					});
 				}
 
 				return wrap("observer_map", {id: reg.id.toHex(), vals: out});
@@ -191,12 +194,18 @@ export const parse = (state, options) => {
 			const reg = val[observerGetter];
 			const map = reg.user_;
 
-			for (const val of value.vals) {
-				const link = {reg_: reg, user_: val, query_: val.id};
+			for (const entry of value.vals) {
+				const element = entry.val;
 
-				registerElement(val, link);
-				map.setElement(val);
-				Network.link(link, val[observerGetter]);
+				// the key rides beside the value, never inside it. An element
+				// shared with another map arrives already keyed and frozen.
+				if (!element[linkGetter]) element._id = entry.ref;
+
+				const link = {reg_: reg, user_: element, query_: entry.ref};
+
+				registerElement(element, link);
+				map.setElement(element);
+				Network.link(link, element[observerGetter]);
 			}
 
 			refs.set(value.id, val);

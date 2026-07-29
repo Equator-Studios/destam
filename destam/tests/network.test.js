@@ -293,7 +293,7 @@ test("network crazy", () => {
 	object.map = OMap();
 
 	const elem = OObject({
-		id: UUID()
+		_id: UUID()
 	});
 
 	elem.elem = elem;
@@ -303,7 +303,7 @@ test("network crazy", () => {
 
 	network.remove();
 
-	assert.strictEqual(object.map.delete(elem.id), true);
+	assert.strictEqual(object.map.delete(elem._id), true);
 
 	network2.remove();
 

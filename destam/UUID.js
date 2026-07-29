@@ -123,12 +123,12 @@ UUID.Map = (entries, minAllocation = 16) => {
 
 createClass(UUID.Map, {
 	_insert: (arr, mask, replace, elem) => {
-		let hash = hashCode(elem.id);
+		let hash = hashCode(elem._id);
 
 		while (true) {
 			let spot = arr[hash & mask];
 
-			if (replace && spot && UUID.equal(elem.id, spot.id)){
+			if (replace && spot && UUID.equal(elem._id, spot._id)){
 				arr[hash & mask] = elem;
 				return false;
 			}else if (!spot) {
@@ -154,7 +154,7 @@ createClass(UUID.Map, {
 		this.mask_ = newmask;
 	},
 	set (id, value) {
-		return this.setElement({id, value});
+		return this.setElement({_id: id, value});
 	},
 	setElement (elem) {
 		// if over 80% residency, grow
@@ -177,7 +177,7 @@ createClass(UUID.Map, {
 			let spot = this.arr_[hash & this.mask_];
 			if (!spot) return false;
 
-			if (UUID.equal(id, spot.id)) {
+			if (UUID.equal(id, spot._id)) {
 				return true;
 			}
 
@@ -195,7 +195,7 @@ createClass(UUID.Map, {
 			let spot = this.arr_[hash & this.mask_];
 			if (!spot) return undefined;
 
-			if (UUID.equal(id, spot.id)) {
+			if (UUID.equal(id, spot._id)) {
 				return spot;
 			}
 
@@ -203,11 +203,11 @@ createClass(UUID.Map, {
 		}
 	},
 	deleteElement(elem) {
-		return this.delete(elem.id, spot => spot === elem);
+		return this.delete(elem._id, spot => spot === elem);
 	},
 	delete (id, comp) {
 		if (this.size === 0) return false;
-		if (!comp) comp = (elem, id) => UUID.equal(elem.id, id);
+		if (!comp) comp = (elem, id) => UUID.equal(elem._id, id);
 
 		let hash = hashCode(id);
 		while (true) {
@@ -274,10 +274,10 @@ createClass(UUID.Map, {
 		};
 	},
 	entries () {
-		return this.elements(spot => [spot.id, spot.value]);
+		return this.elements(spot => [spot._id, spot.value]);
 	},
 	keys () {
-		return this.elements(spot => spot.id);
+		return this.elements(spot => spot._id);
 	},
 	values () {
 		return this.elements(spot => spot.value);
