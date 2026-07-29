@@ -7,10 +7,22 @@ import UUID from '../UUID.js';
 import createNetwork from '../Tracking.js';
 
 import {Insert, Modify, Delete} from '../Events.js';
-import { clone, withSeededRandom } from './util.js';
+import { clone, equivalent, withSeededRandom } from './util.js';
 
 const isConflicting = msg =>
 	typeof msg === 'string' && msg.includes('Conflicting id in observer network');
+
+// A commit carries no promise about the order its deltas arrive in, so put
+// every one through a channel that does not preserve it. Unseeded on purpose:
+// each run explores a different order rather than pinning one forever.
+const shuffle = commit => {
+	for (let i = commit.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		[commit[i], commit[j]] = [commit[j], commit[i]];
+	}
+
+	return commit;
+};
 
 // Opt out of the conflict check for the cases that legitimately produce one:
 // distinct objects sharing an id, where two registrations under it are the
@@ -30,41 +42,46 @@ const silenceConflicting = fn => async (...args) => {
 	}
 };
 
+const paired = (label, reorder) => (name, func) => test(label + name, async () => {
+	let object = OObject();
+	let object2 = clone(object);
+	const network = createNetwork(object2.observer);
+
+	// A conflict means a commit registered a second observable under an id
+	// the network already held. Unless the test says otherwise that's a
+	// defect, so collect them across the whole run - including the trailing
+	// flush - and report them all at once rather than throwing at the first.
+	const conflicts = [];
+	const originalWarn = console.warn;
+	console.warn = (msg, ...rest) => {
+		if (isConflicting(msg)) conflicts.push(msg);
+		else originalWarn(msg, ...rest);
+	};
+
+	const tracking = createNetwork(object.observer).digest((changes, observerRefs) => {
+		const decoded = clone(changes, {observerRefs, observerNetwork: network});
+
+		network.apply(reorder(decoded));
+	}, null);
+
+	try {
+		await func(object, tracking.flush, object2);
+		await tracking.flush();
+	} finally {
+		console.warn = originalWarn;
+	}
+
+	const mismatch = equivalent(object, object2);
+	assert.strictEqual(mismatch, null, `diverged at ${mismatch}`);
+	assert.deepStrictEqual(conflicts, [], conflicts.join("\n"));
+
+	network.remove();
+});
+
 [
-	(name, func) => test(name, async () => {
-		let object = OObject();
-		let object2 = clone(object);
-		const network = createNetwork(object2.observer);
-
-		// A conflict means a commit registered a second observable under an id
-		// the network already held. Unless the test says otherwise that's a
-		// defect, so collect them across the whole run - including the trailing
-		// flush - and report them all at once rather than throwing at the first.
-		const conflicts = [];
-		const originalWarn = console.warn;
-		console.warn = (msg, ...rest) => {
-			if (isConflicting(msg)) conflicts.push(msg);
-			else originalWarn(msg, ...rest);
-		};
-
-		const tracking = createNetwork(object.observer).digest((changes, observerRefs) => {
-			const decoded = clone(changes, {observerRefs, observerNetwork: network});
-
-			network.apply(decoded);
-		}, null);
-
-		try {
-			await func(object, tracking.flush, object2);
-			await tracking.flush();
-		} finally {
-			console.warn = originalWarn;
-		}
-
-		assert.deepStrictEqual(object, object2);
-		assert.deepStrictEqual(conflicts, [], conflicts.join("\n"));
-
-		network.remove();
-	}),
+	paired('ordered ', commit => commit),
+	paired('', shuffle),
+	paired('reversed ', commit => commit.reverse()),
 ].forEach(test => {
 	test('basic tracking', async (obj1, flush) => {
 		obj1.thing = 'hello';

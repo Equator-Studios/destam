@@ -5,7 +5,7 @@ import OMap from '../UUIDMap.js';
 import UUID from '../UUID.js';
 import * as Network from '../Network.js';
 import {Insert, Modify, Delete} from '../Events.js';
-import {registerElement} from '../UUIDMap.js';
+import {registerElement, linkGetter} from '../UUIDMap.js';
 import {assert} from '../util.js';
 
 const wrap = (type, props) => {
@@ -25,6 +25,65 @@ const encodeEvent = (value, name, encodeValue) => {
 
 		return [name, val];
 	})));
+};
+
+// deepStrictEqual walks an OMap's raw bucket array, so two maps holding exactly
+// the same entries compare unequal whenever open addressing happened to place
+// them differently. Slot order is not observable state - every operation the
+// map exposes is independent of it - and it only ever matched because both
+// sides happened to apply their operations in the same order. Compare maps by
+// content and stay strict everywhere else. Returns a path to the first
+// mismatch, or null.
+export const equivalent = (a, b, path = '$', seen = new Map()) => {
+	if (Object.is(a, b)) return null;
+
+	if (a instanceof UUID || b instanceof UUID) {
+		return (a instanceof UUID && b instanceof UUID && UUID.equal(a, b)) ? null : path;
+	}
+
+	if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object') return path;
+	if (Object.getPrototypeOf(a) !== Object.getPrototypeOf(b)) return `${path} (prototype)`;
+
+	// shared references and cycles reach the same pair twice
+	let against = seen.get(a);
+	if (!against) seen.set(a, against = new Set());
+	if (against.has(b)) return null;
+	against.add(b);
+
+	if (a instanceof OMap) {
+		if (a.size !== b.size) return `${path} (size ${a.size} vs ${b.size})`;
+
+		for (const element of a.elements()) {
+			const other = b.getElement(element._id);
+			if (!other) return `${path}[${element._id}] missing`;
+
+			const bad = equivalent(element, other, `${path}[${element._id}]`, seen);
+			if (bad) return bad;
+		}
+
+		return null;
+	}
+
+	if (Array.isArray(a)) {
+		if (a.length !== b.length) return `${path} (length ${a.length} vs ${b.length})`;
+
+		for (let i = 0; i < a.length; i++) {
+			const bad = equivalent(a[i], b[i], `${path}[${i}]`, seen);
+			if (bad) return bad;
+		}
+
+		return null;
+	}
+
+	const keys = Object.keys(a).sort(), other = Object.keys(b).sort();
+	if (keys.join() !== other.join()) return `${path} keys {${keys}} vs {${other}}`;
+
+	for (const key of keys) {
+		const bad = equivalent(a[key], b[key], `${path}.${key}`, seen);
+		if (bad) return bad;
+	}
+
+	return null;
 };
 
 export const stringify = (state, options) => {
