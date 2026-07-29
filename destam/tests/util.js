@@ -68,6 +68,10 @@ export const stringify = (state, options) => {
 
 				let out = [];
 				for (const name of Object.keys(value)) {
+					// underscored names are local state and never travel, the
+					// same rule watchGovernor applies
+					if (name[0] === '_') continue;
+
 					out.push({
 						name,
 						val: value[name],
