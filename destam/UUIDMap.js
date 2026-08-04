@@ -29,7 +29,10 @@ const OMap = (map, id) => {
 	}
 
 	reg.user_ = map;
-	reg.getProp_ = (_, prop) => map.getElement(prop);
+	reg.getProp_ = (_, prop) => {
+		const element = map.getElement(prop);
+		return [element, element?.[linkGetter]];
+	};
 	reg.setProp_ = (_, prop, value) => reg.value.setElement(value);
 
 	return reg.value = createInstance(OMap, {

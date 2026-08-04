@@ -222,7 +222,10 @@ const OArray = createClass((init, id) => {
 	};
 
 	reg.indexes_ = indexes;
-	reg.getProp_ = (_, prop) => init[stableIndex(indexes, prop)];
+	reg.getProp_ = (_, prop) => {
+		const index = stableIndex(indexes, prop);
+		return [init[index], indexes[index]];
+	};
 	reg.setProp_ = (_, prop, value) => {
 		const index = stableIndex(indexes, prop);
 		if (index >= 0) setProp(index, value);
