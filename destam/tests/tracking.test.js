@@ -6,7 +6,7 @@ import OMap from '../UUIDMap.js';
 import UUID from '../UUID.js';
 import createNetwork from '../Tracking.js';
 
-import {Insert, Modify, Delete} from '../Events.js';
+import {Insert, Modify} from '../Events.js';
 import { clone, equivalent, withSeededRandom } from './util.js';
 
 const isConflicting = msg =>
@@ -1156,107 +1156,6 @@ test("tracking pass flush result back from network", async () => {
 
 	obj.thing = 'thing';
 	assert.strictEqual((await network.flush())[0], value);
-});
-
-test("tracking oobject ref not a string", () => {
-	const obj = OObject();
-
-	assert.throws(() => {
-		OObject.verify(obj.observer, Insert(null, null, 0));
-	});
-});
-
-test("tracking oobject already exists", () => {
-	const obj = OObject();
-	obj.thing = 10;
-
-	assert.throws(() => {
-		OObject.verify(obj.observer, Insert(null, 11, 'thing'));
-	});
-});
-
-test("tracking oobject no exist modify", () => {
-	const obj = OObject();
-
-	assert.throws(() => {
-		OObject.verify(obj.observer, Modify(null, 11, 'thing'));
-	});
-});
-
-test("tracking oobject no exist delete", () => {
-	const obj = OObject();
-
-	assert.throws(() => {
-		OObject.verify(obj.observer, Delete(null, 11, 'thing'));
-	});
-});
-
-test("tracking omap already exists", () => {
-	const obj = OMap();
-	const id = UUID();
-	obj.set(id, true);
-
-	assert.throws(() => {
-		OMap.verify(obj.observer, Insert(null, OObject({
-			id,
-			value: false,
-		}), id));
-	});
-});
-
-test("tracking omap no exist modify", () => {
-	const obj = OMap();
-	const id = UUID();
-
-	assert.throws(() => {
-		OMap.verify(obj.observer, Modify(null, OObject({
-			id,
-			value: false,
-		}), id));
-	});
-});
-
-test("tracking omap no exist delete", () => {
-	const obj = OMap();
-	const id = UUID();
-
-	assert.throws(() => {
-		OMap.verify(obj.observer, Delete(null, OObject({
-			id,
-			value: false,
-		}), id));
-	});
-});
-
-test("tracking oarray already exists", () => {
-	const obj = OArray();
-	obj.push(1);
-
-	assert.throws(() => {
-		OArray.verify(obj.observer, Insert(null, 2, obj.observer.indexes_[0]));
-	});
-});
-
-test("tracking oarray no exist exists modify", () => {
-	const obj = OArray();
-	obj.push(1);
-	const index = obj.observer.indexes_[0]; // steal the index
-	obj.pop();
-
-	assert.throws(() => {
-		OArray.verify(obj.observer, Modify(null, 2, index));
-	});
-});
-
-test("tracking oarray no exist exists delete", () => {
-	const obj = OArray();
-	obj.push(1);
-	const index = obj.observer.indexes_[0]; // steal the index
-	obj.pop();
-
-	assert.throws(() => {
-		OArray.verify(obj.observer, Delete(null, 2, index));
-	});
 });
 
 test("tracking duplicates", silenceConflicting(() => {

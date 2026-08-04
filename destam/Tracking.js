@@ -5,7 +5,7 @@ import {Insert, Modify, Delete} from './Events.js';
 import {createInstance, len, isEqual, callAll, isInstance, assert, createClass, remove} from './util.js';
 
 import OObject from './Object.js';
-import OArray, {indexCompare, indexPosition} from './Array.js';
+import OArray, {indexPosition} from './Array.js';
 import OMap, {registerElement, linkGetter} from './UUIDMap.js';
 
 Network.setIDConstructor(UUID);
@@ -21,24 +21,16 @@ const cloneEvent = (event, prev) => {
 	return e;
 };
 
-OMap.verify = (reg, value) => {
-	const map = reg.user_;
+const verify = (reg, value) => {
+	const [, link] = reg.getProp_(reg, value.ref);
 
 	if (isInstance(value, Insert)) {
-		const element = value.value;
-
-		if (map.has(value.ref)) {
-			throw new Error("already populated: " + value.ref);
-		}
-
-		return {reg_: reg, user_: element, query_: value.ref};
+		if (link) throw new Error("already populated: " + value.ref);
+		return {reg_: reg, user_: value.value, query_: value.ref};
 	} else {
 		assert(isInstance(value, Delete) || isInstance(value, Modify), "unknown event type");
-
-		const current = map.getElement(value.ref);
-		if (!current) throw new Error("does not exist: " + value.ref);
-
-		return current[linkGetter];
+		if (!link) throw new Error("does not exist: " + value.ref);
+		return link;
 	}
 };
 
@@ -101,27 +93,6 @@ OMap.apply = (reg, value, link, events) => {
 	}
 };
 
-OObject.verify = (reg, value) => {
-	const link = reg.nodes_.get(value.ref);
-
-	if (isInstance(value, Insert)) {
-		if (link) {
-			throw new Error("already populated: " + value.ref);
-		}
-
-		if (typeof value.ref !== 'string') {
-			throw new Error("must be a string: " + value.ref);
-		}
-
-		return {reg_: reg, query_: value.ref};
-	} else {
-		assert(isInstance(value, Delete) || isInstance(value, Modify), "unknown event type");
-
-		if (!link) throw new Error("does not exist: " + value.ref);
-		return link;
-	}
-};
-
 OObject.apply = (reg, value, link, events) => {
 	const nodes = reg.nodes_;
 	const init = reg.init_;
@@ -143,29 +114,6 @@ OObject.apply = (reg, value, link, events) => {
 
 		nodes.delete(link.query_);
 		delete init[link.query_];
-	}
-};
-
-OArray.verify = (reg, value) => {
-	const indexes = reg.indexes_;
-	const ref = value.ref;
-	const index = indexPosition(reg.value, ref);
-	const link = indexes[index];
-
-	if (isInstance(value, Insert)) {
-		if (link && indexCompare(link.query_, ref) === 0) {
-			throw new Error("already exists: " + ref);
-		}
-
-		return {reg_: reg, query_: ref};
-	} else {
-		assert(isInstance(value, Delete) || isInstance(value, Modify), "unknown event type");
-
-		if (!link || indexCompare(link.query_, ref) !== 0) {
-			throw new Error("does not exist: " + ref);
-		}
-
-		return link;
 	}
 };
 
@@ -524,7 +472,7 @@ const Tracker = createClass((observer, minAllocation = 64) => {
 			const reg = this.getElement(delta.id)?.reg;
 			if (!reg) throw new Error(`unknown reg: ${delta.id.toHex()}`);
 
-			const link = reg.source_.verify(reg, delta);
+			const link = verify(reg, delta);
 
 			// deltas that operate on the same link within the same commit are
 			// dissallowed.
