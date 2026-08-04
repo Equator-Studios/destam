@@ -22,7 +22,7 @@ const cloneEvent = (event, prev) => {
 };
 
 const verify = (reg, value) => {
-	const [, link] = reg.getProp_(reg, value.ref);
+	const [, link] = reg.getProp_(value.ref);
 
 	if (isInstance(value, Insert)) {
 		if (link) throw new Error("already populated: " + value.ref);

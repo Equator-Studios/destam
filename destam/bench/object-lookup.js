@@ -46,9 +46,8 @@ bench(`OObject get via cached reg.getProp_`, (ready) => {
     const obj = OObject();
     for (let i = 0; i < N; i++) obj[keys[i]] = i;
     const reg = obj[observerGetter];
-    const init = reg.init_;
     ready();
-    for (let i = 0; i < N; i++) sink += reg.getProp_(init, keys[i])[0];
+    for (let i = 0; i < N; i++) sink += reg.getProp_(keys[i])[0];
 });
 
 bench(`OObject get via fresh reg.getProp_`, (ready) => {
@@ -57,7 +56,7 @@ bench(`OObject get via fresh reg.getProp_`, (ready) => {
     ready();
     for (let i = 0; i < N; i++) {
         const reg = obj[observerGetter];
-        sink += reg.getProp_(reg.init_, keys[i])[0];
+        sink += reg.getProp_(keys[i])[0];
     }
 });
 

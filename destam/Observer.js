@@ -63,7 +63,7 @@ const getPath = (obs, path, off) => {
 	for (let i = 0; i < len(path) - off && current != null; i++) {
 		const obs = current[observerGetter];
 		if (obs) {
-			current = obs.getProp_(obs, path[i])[0];
+			current = obs.getProp_(path[i])[0];
 		} else {
 			current = current[path[i]];
 		}

@@ -29,7 +29,7 @@ const OMap = (map, id) => {
 	}
 
 	reg.user_ = map;
-	reg.getProp_ = (_, prop) => {
+	reg.getProp_ = prop => {
 		const element = map.getElement(prop);
 		return [element, element?.[linkGetter]];
 	};
