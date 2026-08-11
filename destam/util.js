@@ -42,9 +42,7 @@ export const callAll = (arr, arg) => {
 };
 
 export const assert = (condition, error) => {
-	if (!condition && process.env.NODE_ENV !== 'production') {
-		throw new Error(error);
-	}
+	if (!condition) throw new Error(error);
 };
 
 export const noop = () => {};
