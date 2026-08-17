@@ -204,7 +204,7 @@ export const atomic = (cb, args) => {
 	let events = override = [];
 
 	try {
-		cb();
+		return cb();
 	} finally {
 		events.args_ = args;
 		override = old;
