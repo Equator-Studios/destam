@@ -179,3 +179,72 @@ test("uuid map bucket size", () => {
 test("uuid map invalid bucket size", () => {
 	assert.throws(() => UUID.Map(null, 5));
 });
+
+// A uuid's last word is its creation time, and is the one word deliberately kept
+// non-zero so that a uuid is never all-zero
+const TRUNCATES_TO_ZERO = 2 ** 32 * 412;
+
+const atTime = (time, fn) => {
+	const now = Date.now;
+	Date.now = () => time;
+	try {
+		return fn();
+	} finally {
+		Date.now = now;
+	}
+};
+
+test("uuid timestamp truncating to zero is the case under test", () => {
+	assert.strictEqual(TRUNCATES_TO_ZERO | 0, 0);
+	assert.ok(TRUNCATES_TO_ZERO > 1, "and it is not caught by a guard on the value");
+	assert.strictEqual(Math.max(TRUNCATES_TO_ZERO, 1), TRUNCATES_TO_ZERO);
+});
+
+test("uuid timestamp word is never zero", () => {
+	for (const size of [2, 4, 8]) {
+		const id = atTime(TRUNCATES_TO_ZERO, () => UUID(size));
+		assert.notStrictEqual(id.buffer[size - 1], 0, `size ${size} stored a zero timestamp word`);
+	}
+});
+
+test("uuid timestamp word is never zero at the epoch either", () => {
+	assert.notStrictEqual(atTime(0, () => UUID()).buffer[3], 0);
+});
+
+test("uuid timestamp word is never zero across a full 2**32 period", () => {
+	// walk the boundary rather than only landing on it, so an off-by-one in the
+	// guard shows up as well
+	const base = TRUNCATES_TO_ZERO;
+	for (const offset of [-2, -1, 0, 1, 2]) {
+		const id = atTime(base + offset, () => UUID());
+		assert.notStrictEqual(id.buffer[3], 0, `offset ${offset} stored a zero timestamp word`);
+	}
+});
+
+test("uuid timestamp word is otherwise the truncated clock", () => {
+	// the guard must not perturb any reading that does not truncate to zero
+	for (const offset of [1, 1234, -1]) {
+		const time = TRUNCATES_TO_ZERO + offset;
+		assert.strictEqual(atTime(time, () => UUID()).buffer[3], time | 0, `offset ${offset}`);
+	}
+});
+
+test("uuid is never all zero", () => {
+	// The random source supplies every word but the last, so this only says
+	// anything if it yields zeros — otherwise the assertion passes on the random
+	// bytes alone and never exercises the timestamp guard at all.
+	setRandom(bytes => bytes.fill(0));
+	try {
+		const id = atTime(TRUNCATES_TO_ZERO, () => UUID());
+		assert.ok([...id.buffer].some(word => word !== 0), 'produced an all-zero uuid');
+		assert.notStrictEqual(id.toHex(), '#' + '0'.repeat(32));
+	} finally {
+		setRandom(crypto.randomFillSync);
+	}
+});
+
+test("uuid created on the boundary still round-trips through hex", () => {
+	const id = atTime(TRUNCATES_TO_ZERO, () => UUID());
+	assert.strictEqual(UUID.compare(UUID(id.toHex()), id), 0);
+	assert.ok(UUID.equal(UUID(id.toHex()), id));
+});
